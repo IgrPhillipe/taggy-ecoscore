@@ -9,3 +9,5 @@ npm-debug.log*
 pnpm-debug.log*
 yarn-error.log*
 .DS_Store
+package-lock.json
+yarn.lock
