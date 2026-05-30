@@ -10,7 +10,7 @@ type AppLayoutProps = {
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  useWebsocketNotification()
+  useWebsocketNotification(null)
 
   return (
     <div className="flex min-h-screen">

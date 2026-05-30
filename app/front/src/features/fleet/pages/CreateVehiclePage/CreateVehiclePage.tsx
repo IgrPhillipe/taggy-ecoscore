@@ -19,7 +19,7 @@ export const CreateVehiclePage = () => {
   const { mutate, isPending } = useCreateVehicle();
 
   const form = useForm<VehicleFormData>({
-    resolver: zodResolver(vehicleCreateSchema) as Resolver<VehicleFormData>,
+    resolver: zodResolver(vehicleCreateSchema) as Resolver<VehicleFormData, any, VehicleFormData>,
     defaultValues: {
       plate: "",
       model: "",

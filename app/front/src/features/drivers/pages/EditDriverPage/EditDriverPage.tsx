@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { useForm, type Resolver } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -42,7 +42,7 @@ export const EditDriverPage = () => {
   );
 
   const form = useForm<DriverFormData>({
-    resolver: zodResolver(driverFormSchema) as Resolver<DriverFormData>,
+    resolver: zodResolver(driverFormSchema),
     defaultValues: {
       name: "",
       email: "",

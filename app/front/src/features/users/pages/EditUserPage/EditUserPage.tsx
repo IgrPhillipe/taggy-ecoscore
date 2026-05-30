@@ -40,7 +40,7 @@ export const EditUserPage = () => {
   const { mutate: deleteUser, isPending: isDeleting } = useDeleteUser();
 
   const form = useForm<UserFormData>({
-    resolver: zodResolver(userFormSchema) as Resolver<UserFormData>,
+    resolver: zodResolver(userFormSchema) as Resolver<UserFormData, any, UserFormData>,
     defaultValues: {
       name: "",
       email: "",
