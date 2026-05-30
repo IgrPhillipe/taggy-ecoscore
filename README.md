@@ -1,4 +1,4 @@
-# Projeto Taggy
+# Projeto Taggy 
 
 O _Taggy_ é uma solução de pagamento automático (Tag) que vai além da conveniência. Nosso objetivo é transformar cada passagem por pedágios e estacionamentos em dados acionáveis de sustentabilidade (ESG), economia de combustível e eficiência operacional.
 
