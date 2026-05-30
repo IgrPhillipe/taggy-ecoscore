@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useForm, type Resolver } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -26,7 +26,7 @@ export const EditVehiclePage = () => {
   const { mutate, isPending } = useUpdateVehicle();
 
   const form = useForm<VehicleFormData>({
-    resolver: zodResolver(vehicleCreateSchema) as Resolver<VehicleFormData, any, VehicleFormData>,
+    resolver: zodResolver(vehicleCreateSchema) as any,
     defaultValues: {
       plate: "",
       model: "",

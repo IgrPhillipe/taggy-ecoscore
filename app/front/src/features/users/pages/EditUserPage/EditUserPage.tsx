@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useForm, type Resolver } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, Navigate, useNavigate, useParams } from "@tanstack/react-router";
 import { Trash } from "lucide-react";
@@ -40,7 +40,7 @@ export const EditUserPage = () => {
   const { mutate: deleteUser, isPending: isDeleting } = useDeleteUser();
 
   const form = useForm<UserFormData>({
-    resolver: zodResolver(userFormSchema) as Resolver<UserFormData, any, UserFormData>,
+    resolver: zodResolver(userFormSchema) as any,
     defaultValues: {
       name: "",
       email: "",
