@@ -7,6 +7,7 @@ import {
   useQueryStates,
 } from "nuqs";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
+import { FileSpreadsheet } from "lucide-react";
 import { OrganizationsRelationSelect } from "@/components/form/relation-selects";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
@@ -187,6 +188,18 @@ export const TransactionsAuditPage = () => {
             onChange={handleFiltersChange}
             showPlate
           />
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto flex items-center gap-1.5"
+            onClick={() => {
+              const url = `/api/reports/calculadora.xlsx?plate=DEMO0001&elapsed_time=30&context=pedagio&uf=SP`;
+              window.open(url, "_blank");
+            }}
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Planilha Auditável
+          </Button>
           {isAdmin && (
             <OrganizationsRelationSelect
               value={org ?? undefined}

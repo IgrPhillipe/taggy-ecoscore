@@ -35,6 +35,17 @@ class WeeklyGoalSummaryPublic(SQLModel):
     is_completed: bool
 
 
+class PassageCo2BreakdownPublic(SQLModel):
+    co2_fossil_kg: float | None = None
+    co2_biogenic_kg: float | None = None
+    ch4_kg_co2e: float | None = None
+    n2o_kg_co2e: float | None = None
+    co2e_scope1_kg: float | None = None
+    co2e_scope2_kg: float | None = None
+    paper_co2_avoided_kg: float | None = None
+    fuel_unit: str | None = None
+
+
 class PassagePublic(SQLModel):
     id: int
     local_name: str
@@ -42,6 +53,8 @@ class PassagePublic(SQLModel):
     carbon: str
     water_saved: str
     time: str
+    fuel_type: str | None = None
+    co2e_breakdown: PassageCo2BreakdownPublic | None = None
 
 
 class PassagesListPublic(SQLModel):
@@ -206,17 +219,39 @@ async def get_passages(
     repo = TransactionRepository(db)
     txs, total = await repo.get_by_user_paginated(user_id, page, page_size)
 
-    passages = [
-        PassagePublic(
+    passages = []
+    for t in txs:
+        # Extract CO₂e breakdown from parameters_snapshot if available
+        breakdown: PassageCo2BreakdownPublic | None = None
+        fuel_type: str | None = None
+        snapshot = t.parameters_snapshot or {}
+        result_data = snapshot.get("result", {})
+        env = result_data.get("environmental", {})
+        if env:
+            breakdown = PassageCo2BreakdownPublic(
+                co2_fossil_kg=env.get("co2_fossil_kg"),
+                co2_biogenic_kg=env.get("co2_biogenic_kg"),
+                ch4_kg_co2e=env.get("ch4_kg_co2e"),
+                n2o_kg_co2e=env.get("n2o_kg_co2e"),
+                co2e_scope1_kg=env.get("co2e_scope1_kg"),
+                co2e_scope2_kg=env.get("co2e_scope2_kg"),
+                paper_co2_avoided_kg=env.get("paper_co2_avoided_kg"),
+                fuel_unit=env.get("fuel_unit"),
+            )
+        payload = snapshot.get("payload", {})
+        vehicle_info = payload.get("vehicle", {})
+        fuel_type = vehicle_info.get("fuel_type")
+
+        passages.append(PassagePublic(
             id=t.id,
             local_name=_context_label(t.context, t.uf),
             passage_datetime=_fmt_datetime(t.created_at),
             carbon=_fmt_carbon(t.co2_avoided_kg),
             water_saved=_fmt_water(t.water_saved_liters),
             time=_fmt_time(t.time_saved_sec),
-        )
-        for t in txs
-    ]
+            fuel_type=fuel_type,
+            co2e_breakdown=breakdown,
+        ))
 
     return PassagesListPublic(
         total_results=total,

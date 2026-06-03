@@ -93,6 +93,17 @@ export const getPassages = async (
         carbon: string
         water_saved: string
         time: string
+        fuel_type?: string | null
+        co2e_breakdown?: {
+          co2_fossil_kg?: number | null
+          co2_biogenic_kg?: number | null
+          ch4_kg_co2e?: number | null
+          n2o_kg_co2e?: number | null
+          co2e_scope1_kg?: number | null
+          co2e_scope2_kg?: number | null
+          paper_co2_avoided_kg?: number | null
+          fuel_unit?: string | null
+        } | null
       }>
     }>()
 
@@ -106,6 +117,17 @@ export const getPassages = async (
       carbon: p.carbon,
       waterSaved: p.water_saved,
       time: p.time,
+      fuelType: p.fuel_type ?? null,
+      co2eBreakdown: p.co2e_breakdown ? {
+        co2FossilKg: p.co2e_breakdown.co2_fossil_kg,
+        co2BiogenicKg: p.co2e_breakdown.co2_biogenic_kg,
+        ch4KgCo2e: p.co2e_breakdown.ch4_kg_co2e,
+        n2oKgCo2e: p.co2e_breakdown.n2o_kg_co2e,
+        co2eScope1Kg: p.co2e_breakdown.co2e_scope1_kg,
+        co2eScope2Kg: p.co2e_breakdown.co2e_scope2_kg,
+        paperCo2AvoidedKg: p.co2e_breakdown.paper_co2_avoided_kg,
+        fuelUnit: p.co2e_breakdown.fuel_unit,
+      } : null,
     })),
   }
 }

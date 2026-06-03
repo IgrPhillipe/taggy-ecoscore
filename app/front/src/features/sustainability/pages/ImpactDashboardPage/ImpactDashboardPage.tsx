@@ -1,4 +1,4 @@
-import { Droplet, Leaf, Scroll } from "lucide-react";
+import { Droplet, Info, Leaf, Scroll } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MetricCard } from "@/features/sustainability/components/MetricCard";
@@ -18,7 +18,7 @@ export const ImpactDashboardPage = () => {
       key: "carbono",
       title: `${metrics?.treeSaved ?? 0} árvores`,
       subtitle: "equivalentes plantadas por 1 ano",
-      detail: `${metrics?.totalCarbon ?? 0} kg de CO₂`,
+      detail: `${metrics?.totalCarbon ?? 0} kg de CO₂e`,
       icon: <Leaf className="h-10 w-10 text-primary" />,
     },
     {
@@ -53,6 +53,13 @@ export const ImpactDashboardPage = () => {
             <span className="text-xs font-semibold text-muted-foreground">
               dias economizados em filas de pedágio
             </span>
+            <a
+              href="/metodologia"
+              className="mt-3 inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+            >
+              <Info className="h-3 w-3" />
+              Como calculamos?
+            </a>
           </MetricCard>
         )}
       </section>

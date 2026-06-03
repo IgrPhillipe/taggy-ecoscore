@@ -7,9 +7,11 @@ import { AppShell } from "@/components/layout/AppShell";
 import { queryClient } from "@/lib/query-client";
 import { requireAuth } from "@/lib/route-guard";
 
+const PUBLIC_PATHS = ["/login", "/metodologia"];
+
 export const Route = createRootRoute({
   beforeLoad: ({ location }) => {
-    if (location.pathname === "/login") return;
+    if (PUBLIC_PATHS.includes(location.pathname)) return;
     requireAuth()();
   },
   component: RootComponent,
@@ -17,12 +19,12 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isLogin = pathname === "/login";
+  const isPublic = PUBLIC_PATHS.includes(pathname);
 
   return (
     <NuqsAdapter>
       <QueryClientProvider client={queryClient}>
-        {isLogin ? <Outlet /> : <AppShell />}
+        {isPublic ? <Outlet /> : <AppShell />}
         <ReactQueryDevtools initialIsOpen={false} />
         <Toaster richColors closeButton />
       </QueryClientProvider>

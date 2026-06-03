@@ -1,12 +1,17 @@
 import io
 from datetime import date
+from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.connection import get_db
+from src.engine import CalcEngine, CalcEngineError, TransactionOrchestrator
+from src.engine.report_builder import build_audit_workbook
 from src.repositories.transaction_repository import TransactionRepository
+from src.services.technical_specs import get_all_specs
+from src.services.vehicle_lookup_service import resolve_vehicle_from_plate
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
@@ -77,6 +82,75 @@ async def export_transactions(
 
     filename = f"relatorio_passagens_usuario_{user_id}.xlsx"
 
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/calculadora.xlsx")
+async def export_calculadora(
+    plate: str = Query(default="DEMO0001", max_length=10),
+    elapsed_time: int = Query(default=30, ge=0),
+    context: Literal["pedagio", "estacionamento"] = Query(default="pedagio"),
+    uf: str = Query(default="SP", min_length=2, max_length=2),
+    is_digital: bool = Query(default=True),
+    fleet_size: int = Query(default=1, ge=1, le=100000),
+    fuel_type: str | None = Query(default=None),
+    category: str | None = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    """
+    Gera planilha auditável com 5 sheets:
+    Premissas | Passo a Passo | Comparação | Sensibilidade | Escala
+    """
+    try:
+        specs = await get_all_specs(db)
+    except CalcEngineError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+    # Resolve vehicle data
+    if fuel_type and category:
+        vehicle = {"category": category, "fuel_type": fuel_type, "model": ""}
+    else:
+        lookup = await resolve_vehicle_from_plate(plate)
+        if lookup["error"] or lookup["vehicle"] is None:
+            # Fallback to sensible demo values
+            vehicle = {"category": "leve", "fuel_type": "gasolina_c", "model": "Veículo demo"}
+        else:
+            vehicle = lookup["vehicle"]
+
+    payload = {
+        "plate": plate.upper(),
+        "elapsed_time": elapsed_time,
+        "context": context,
+        "uf_passagem": uf.upper(),
+        "is_digital": is_digital,
+        "vehicle": vehicle,
+    }
+
+    try:
+        engine = CalcEngine(specs)
+        orchestrator = TransactionOrchestrator(engine)
+        result = orchestrator.handle_tag_event(payload)
+    except CalcEngineError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+
+    params = {
+        "plate": plate.upper(),
+        "elapsed_time": elapsed_time,
+        "context": context,
+        "uf": uf.upper(),
+        "is_digital": is_digital,
+    }
+
+    try:
+        buffer = build_audit_workbook(result, specs, vehicle, params, fleet_size=fleet_size)
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+    filename = f"ecoscore_calculo_{plate.upper()}_{context}_{uf.upper()}.xlsx"
     return StreamingResponse(
         buffer,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

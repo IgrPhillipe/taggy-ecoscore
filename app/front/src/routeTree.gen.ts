@@ -14,6 +14,7 @@ import { Route as RotaRouteImport } from './routes/rota'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as PassagensAuditoriaRouteImport } from './routes/passagens-auditoria'
 import { Route as PassagensRouteImport } from './routes/passagens'
+import { Route as MetodologiaRouteImport } from './routes/metodologia'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ImpactoRouteImport } from './routes/impacto'
 import { Route as AjudaRouteImport } from './routes/ajuda'
@@ -56,6 +57,11 @@ const PassagensAuditoriaRoute = PassagensAuditoriaRouteImport.update({
 const PassagensRoute = PassagensRouteImport.update({
   id: '/passagens',
   path: '/passagens',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MetodologiaRoute = MetodologiaRouteImport.update({
+  id: '/metodologia',
+  path: '/metodologia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/ajuda': typeof AjudaRoute
   '/impacto': typeof ImpactoRoute
   '/login': typeof LoginRoute
+  '/metodologia': typeof MetodologiaRoute
   '/passagens': typeof PassagensRoute
   '/passagens-auditoria': typeof PassagensAuditoriaRoute
   '/relatorios': typeof RelatoriosRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/ajuda': typeof AjudaRoute
   '/impacto': typeof ImpactoRoute
   '/login': typeof LoginRoute
+  '/metodologia': typeof MetodologiaRoute
   '/passagens': typeof PassagensRoute
   '/passagens-auditoria': typeof PassagensAuditoriaRoute
   '/relatorios': typeof RelatoriosRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/ajuda': typeof AjudaRoute
   '/impacto': typeof ImpactoRoute
   '/login': typeof LoginRoute
+  '/metodologia': typeof MetodologiaRoute
   '/passagens': typeof PassagensRoute
   '/passagens-auditoria': typeof PassagensAuditoriaRoute
   '/relatorios': typeof RelatoriosRoute
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/ajuda'
     | '/impacto'
     | '/login'
+    | '/metodologia'
     | '/passagens'
     | '/passagens-auditoria'
     | '/relatorios'
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/ajuda'
     | '/impacto'
     | '/login'
+    | '/metodologia'
     | '/passagens'
     | '/passagens-auditoria'
     | '/relatorios'
@@ -282,6 +293,7 @@ export interface FileRouteTypes {
     | '/ajuda'
     | '/impacto'
     | '/login'
+    | '/metodologia'
     | '/passagens'
     | '/passagens-auditoria'
     | '/relatorios'
@@ -308,6 +320,7 @@ export interface RootRouteChildren {
   AjudaRoute: typeof AjudaRoute
   ImpactoRoute: typeof ImpactoRoute
   LoginRoute: typeof LoginRoute
+  MetodologiaRoute: typeof MetodologiaRoute
   PassagensRoute: typeof PassagensRoute
   PassagensAuditoriaRoute: typeof PassagensAuditoriaRoute
   RelatoriosRoute: typeof RelatoriosRoute
@@ -364,6 +377,13 @@ declare module '@tanstack/react-router' {
       path: '/passagens'
       fullPath: '/passagens'
       preLoaderRoute: typeof PassagensRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/metodologia': {
+      id: '/metodologia'
+      path: '/metodologia'
+      fullPath: '/metodologia'
+      preLoaderRoute: typeof MetodologiaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -500,6 +520,7 @@ const rootRouteChildren: RootRouteChildren = {
   AjudaRoute: AjudaRoute,
   ImpactoRoute: ImpactoRoute,
   LoginRoute: LoginRoute,
+  MetodologiaRoute: MetodologiaRoute,
   PassagensRoute: PassagensRoute,
   PassagensAuditoriaRoute: PassagensAuditoriaRoute,
   RelatoriosRoute: RelatoriosRoute,
