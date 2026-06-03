@@ -7,6 +7,7 @@ from typing import Any
 from src.engine.exceptions import CalcEngineError
 
 _REQUIRED_FUEL_TYPES = ("diesel_s10", "gasolina_c", "etanol")
+_OPTIONAL_FUEL_TYPES = ("gnv", "eletrico_kwh")
 _REQUIRED_CATEGORIES = ("leve", "pesado")
 _REQUIRED_CONTEXTS = ("pedagio", "estacionamento")
 _LUDIC_AXES = ("carbon", "water", "paper")
@@ -28,8 +29,8 @@ def validate_engine_specs(specs: dict[str, Any]) -> None:
         if k not in ef:
             raise CalcEngineError(f"emission_factors sem chave obrigatória: {k}")
         v = float(ef[k])
-        if v <= 0:
-            raise CalcEngineError(f"emission_factors[{k}] deve ser > 0.")
+        if v < 0:
+            raise CalcEngineError(f"emission_factors[{k}] não pode ser negativo.")
 
     idle = specs.get("idle_rates")
     if not isinstance(idle, dict):
@@ -39,15 +40,6 @@ def validate_engine_specs(specs: dict[str, Any]) -> None:
             raise CalcEngineError(f"idle_rates sem chave obrigatória: {k}")
         if float(idle[k]) < 0:
             raise CalcEngineError(f"idle_rates[{k}] não pode ser negativo.")
-
-    accel = specs.get("accel_surge")
-    if not isinstance(accel, dict):
-        raise CalcEngineError("accel_surge em falta ou inválido.")
-    for k in _REQUIRED_CATEGORIES:
-        if k not in accel:
-            raise CalcEngineError(f"accel_surge sem chave obrigatória: {k}")
-        if float(accel[k]) < 0:
-            raise CalcEngineError(f"accel_surge[{k}] não pode ser negativo.")
 
     maint = specs.get("maint_costs")
     if not isinstance(maint, dict):

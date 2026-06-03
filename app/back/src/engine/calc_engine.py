@@ -4,63 +4,109 @@ from typing import Any, Dict, List, Optional
 
 from src.engine.exceptions import CalcEngineError
 
+# Fuel types that consume in m³ (not liters)
+_GAS_FUELS = {"gnv"}
+# Fuel types that consume in kWh (Scope 2 only)
+_ELECTRIC_FUELS = {"eletrico"}
+
 
 class CalcEngine:
     def __init__(self, technical_specs: Dict[str, Any]):
         self.specs = technical_specs
 
-    def convert_to_co2(self, value: float, unit: str) -> float:
-        if unit == "water_liters":
-            wpt = float(self.specs["paper_impact"]["water_per_ticket"])
-            if wpt == 0:
-                raise CalcEngineError("paper_impact.water_per_ticket não pode ser zero.")
-            tickets = value / wpt
-            return tickets * float(self.specs["paper_impact"]["co2_per_ticket"])
-        if unit == "paper_tickets":
-            return value * float(self.specs["paper_impact"]["co2_per_ticket"])
-        if unit.startswith("fuel_liters_"):
-            fuel_type = unit.replace("fuel_liters_", "")
-            return self.calculate_emissions_from_fuel(value, fuel_type)
-        raise CalcEngineError(f"Unidade desconhecida para convert_to_co2: {unit!r}.")
+    # ── Unit helpers ──────────────────────────────────────────────────────────
 
-    def convert_from_co2(self, co2_kg: float, target_unit: str) -> float:
-        bench = self.specs["benchmarks"]
-        factors = self.specs["ludic_factors"]
-        cpt = float(self.specs["paper_impact"]["co2_per_ticket"])
-        wpt = float(self.specs["paper_impact"]["water_per_ticket"])
+    def fuel_unit(self, fuel_type: str) -> str:
+        if fuel_type in _GAS_FUELS:
+            return "m3"
+        if fuel_type in _ELECTRIC_FUELS:
+            return "kWh"
+        return "L"
 
-        mapping: Dict[str, float] = {
-            "trees": co2_kg / float(factors["tree_year_absorption"]),
-            "water": (co2_kg / cpt) * wpt,
-            "smartphone": co2_kg * float(factors["phone_charge_factor"]),
-            "km_driven": co2_kg / float(bench["kg_co2_per_km_car"]),
-            "burgers": co2_kg / float(bench["kg_co2_per_burger"]),
+    # ── CO₂e calculation (replaces calculate_emissions_from_fuel) ─────────────
+
+    def calculate_co2e_from_fuel(self, amount: float, fuel_type: str) -> Dict[str, float]:
+        """
+        Returns CO₂e breakdown for a given fuel amount.
+
+        For electric vehicles: Scope 2 only (grid factor).
+        For ethanol: CO₂ is biogenic (not Scope 1); only CH4+N2O contribute to Scope 1.
+        For all others: CO₂ fossil (Scope 1) + CH4 CO₂e + N2O CO₂e.
+        """
+        if fuel_type in _ELECTRIC_FUELS:
+            grid = float(self.specs["emission_factors"].get("eletrico_kwh", 0.0))
+            co2_scope2 = amount * grid
+            return {
+                "co2_fossil_kg": 0.0,
+                "co2_biogenic_kg": 0.0,
+                "ch4_kg_co2e": 0.0,
+                "n2o_kg_co2e": 0.0,
+                "co2e_scope1_kg": 0.0,
+                "co2e_scope2_kg": round(co2_scope2, 6),
+                "co2e_total_kg": round(co2_scope2, 6),
+            }
+
+        ef = self.specs["emission_factors"]
+        if fuel_type not in ef:
+            raise CalcEngineError(f"emission_factors sem tipo de combustível: {fuel_type!r}.")
+
+        ch4_factors = self.specs.get("ch4_factors", {})
+        n2o_factors = self.specs.get("n2o_factors", {})
+        gwp = self.specs.get("gwp100", {"ch4": 27.9, "n2o": 273.0})
+
+        if fuel_type == "etanol":
+            # Etanol: CO₂ é biogênico — não entra no Escopo 1 (GHG Protocol Brasil)
+            co2_fossil = 0.0
+            co2_biogenic = amount * float(ef["etanol"])
+        else:
+            co2_fossil = amount * float(ef[fuel_type])
+            co2_biogenic = 0.0
+
+        ch4_kg = amount * float(ch4_factors.get(fuel_type, 0.0))
+        n2o_kg = amount * float(n2o_factors.get(fuel_type, 0.0))
+        ch4_co2e = ch4_kg * float(gwp["ch4"])
+        n2o_co2e = n2o_kg * float(gwp["n2o"])
+
+        co2e_scope1 = co2_fossil + ch4_co2e + n2o_co2e
+
+        return {
+            "co2_fossil_kg": round(co2_fossil, 6),
+            "co2_biogenic_kg": round(co2_biogenic, 6),
+            "ch4_kg_co2e": round(ch4_co2e, 6),
+            "n2o_kg_co2e": round(n2o_co2e, 6),
+            "co2e_scope1_kg": round(co2e_scope1, 6),
+            "co2e_scope2_kg": 0.0,
+            "co2e_total_kg": round(co2e_scope1, 6),
         }
-        if target_unit not in mapping:
-            raise CalcEngineError(
-                f"Unidade destino desconhecida para convert_from_co2: {target_unit!r}."
-            )
-        return mapping[target_unit]
 
     def calculate_emissions_from_fuel(self, liters: float, fuel_type: str) -> float:
-        factors = self.specs["emission_factors"]
-        if fuel_type not in factors:
-            raise CalcEngineError(
-                f"emission_factors sem tipo de combustível: {fuel_type!r}."
-            )
-        return liters * float(factors[fuel_type])
+        """Backward-compat shim → returns total CO₂e (scope1+scope2)."""
+        return self.calculate_co2e_from_fuel(liters, fuel_type)["co2e_total_kg"]
 
-    def calculate_avoided_idle_fuel(self, time_saved_sec: int, category: str) -> float:
+    # ── Idle fuel ──────────────────────────────────────────────────────────────
+
+    def calculate_avoided_idle_fuel(self, time_saved_sec: int, category: str, fuel_type: str) -> float:
+        """
+        Returns fuel amount saved from not idling (L, m³, or kWh depending on fuel_type).
+        Idle rate is per-second; category drives the rate for combustion vehicles.
+        GNV uses its own idle rate; electric uses its own kWh rate.
+        """
         rates = self.specs["idle_rates"]
-        if category not in rates:
-            raise CalcEngineError(f"idle_rates sem categoria: {category!r}.")
-        return time_saved_sec * float(rates[category])
 
-    def calculate_avoided_acceleration_fuel(self, category: str) -> float:
-        surge = self.specs["accel_surge"]
-        if category not in surge:
-            raise CalcEngineError(f"accel_surge sem categoria: {category!r}.")
-        return float(surge[category])
+        if fuel_type in _GAS_FUELS:
+            rate_key = "gnv"
+        elif fuel_type in _ELECTRIC_FUELS:
+            rate_key = "eletrico"
+        else:
+            if category not in rates:
+                raise CalcEngineError(f"idle_rates sem categoria: {category!r}.")
+            return time_saved_sec * float(rates[category])
+
+        if rate_key not in rates:
+            raise CalcEngineError(f"idle_rates sem chave: {rate_key!r}.")
+        return time_saved_sec * float(rates[rate_key])
+
+    # ── Paper/water savings ────────────────────────────────────────────────────
 
     def calculate_paper_and_water_savings(self, is_digital: bool) -> Dict[str, float]:
         if not is_digital:
@@ -71,6 +117,8 @@ class CalcEngine:
             "water": float(pi["water_per_ticket"]),
             "paper_tickets": 1.0,
         }
+
+    # ── Financial savings ──────────────────────────────────────────────────────
 
     def resolve_fuel_price_brl_per_liter(
         self, uf_passagem: str, fuel_type: str
@@ -85,40 +133,39 @@ class CalcEngine:
         if not isinstance(row, dict):
             raise CalcEngineError(f"Sem preços de combustível para a UF {uf}.")
         if fuel_type not in row:
+            # EV and GNV may not have price data; return 0 gracefully
+            if fuel_type in _ELECTRIC_FUELS or fuel_type in _GAS_FUELS:
+                return 0.0, uf
             raise CalcEngineError(
                 f"Sem preço para combustível {fuel_type!r} na UF {uf}."
             )
         price = float(row[fuel_type])
-        if price <= 0:
+        if price < 0:
             raise CalcEngineError(
-                f"Preço inválido (<= 0) para {fuel_type} na UF {uf}."
+                f"Preço inválido (< 0) para {fuel_type} na UF {uf}."
             )
         return price, uf
 
     def calculate_financial_savings(
         self,
-        idle_liters: float,
-        accel_liters: float,
+        idle_fuel_amount: float,
         fuel_type: str,
         category: str,
-        fuel_price_brl_per_liter: float,
+        fuel_price_brl_per_unit: float,
     ) -> Dict[str, Any]:
         maint_map = self.specs["maint_costs"]
         if category not in maint_map:
             raise CalcEngineError(f"maint_costs sem categoria: {category!r}.")
-        price = float(fuel_price_brl_per_liter)
-        idle_brl = round(idle_liters * price, 2)
-        accel_brl = round(accel_liters * price, 2)
+        fuel_savings_brl = round(idle_fuel_amount * fuel_price_brl_per_unit, 2)
         maint = float(maint_map[category])
-        fuel_total_brl = round(idle_brl + accel_brl, 2)
-        total = round(fuel_total_brl + maint, 2)
+        total = round(fuel_savings_brl + maint, 2)
         return {
-            "fuel_savings_idle_brl": idle_brl,
-            "fuel_savings_accel_brl": accel_brl,
-            "fuel_savings_brl": fuel_total_brl,
+            "fuel_savings_brl": fuel_savings_brl,
             "maintenance_savings_brl": maint,
             "total_savings_brl": total,
         }
+
+    # ── Comparison (scenario with/without tag) ────────────────────────────────
 
     def build_comparison(
         self,
@@ -126,74 +173,77 @@ class CalcEngine:
         real_time_sec: int,
         vehicle_data: Dict[str, Any],
         is_digital: bool,
-        fuel_price_brl_per_liter: float,
+        fuel_price_brl_per_unit: float,
     ) -> Dict[str, Any]:
         cat = vehicle_data["category"]
         fuel_type = vehicle_data["fuel_type"]
         rates = self.specs["idle_rates"]
-        surge = self.specs["accel_surge"]
-        if cat not in rates:
-            raise CalcEngineError(f"idle_rates sem categoria: {cat!r}.")
-        if cat not in surge:
-            raise CalcEngineError(f"accel_surge sem categoria: {cat!r}.")
-        rate = float(rates[cat])
-        accel = float(surge[cat])
 
-        without_idle = baseline_time_sec * rate
-        without_total = without_idle + accel
+        def _get_rate() -> float:
+            if fuel_type in _GAS_FUELS:
+                return float(rates.get("gnv", 0.0))
+            if fuel_type in _ELECTRIC_FUELS:
+                return float(rates.get("eletrico", 0.0))
+            if cat not in rates:
+                raise CalcEngineError(f"idle_rates sem categoria: {cat!r}.")
+            return float(rates[cat])
 
-        with_idle = max(0, real_time_sec) * rate
-        with_total = with_idle
+        rate = _get_rate()
+        without_fuel = baseline_time_sec * rate
+        with_fuel = max(0, real_time_sec) * rate
 
         paper_without = self.calculate_paper_and_water_savings(is_digital=False)
         paper_with = self.calculate_paper_and_water_savings(is_digital=is_digital)
 
-        co2_without = self.calculate_emissions_from_fuel(
-            without_total, fuel_type
-        ) + paper_without["co2"]
-        co2_with = self.calculate_emissions_from_fuel(with_total, fuel_type) + paper_with[
-            "co2"
-        ]
+        co2e_without = self.calculate_co2e_from_fuel(without_fuel, fuel_type)
+        co2e_with = self.calculate_co2e_from_fuel(with_fuel, fuel_type)
 
-        fin_without = self.calculate_financial_savings(
-            idle_liters=without_idle,
-            accel_liters=accel,
-            fuel_type=fuel_type,
-            category=cat,
-            fuel_price_brl_per_liter=fuel_price_brl_per_liter,
-        )
-        fin_with = self.calculate_financial_savings(
-            idle_liters=with_idle,
-            accel_liters=0.0,
-            fuel_type=fuel_type,
-            category=cat,
-            fuel_price_brl_per_liter=fuel_price_brl_per_liter,
-        )
+        fin_without = self.calculate_financial_savings(without_fuel, fuel_type, cat, fuel_price_brl_per_unit)
+        fin_with = self.calculate_financial_savings(with_fuel, fuel_type, cat, fuel_price_brl_per_unit)
+
+        unit = self.fuel_unit(fuel_type)
 
         return {
             "without_tag": {
                 "time_sec": baseline_time_sec,
-                "fuel_liters": round(without_total, 4),
-                "co2_kg": round(co2_without, 4),
+                "fuel_amount": round(without_fuel, 4),
+                "fuel_unit": unit,
+                "fuel_liters": round(without_fuel, 4) if unit == "L" else 0.0,
+                "co2e_scope1_kg": co2e_without["co2e_scope1_kg"],
+                "co2_biogenic_kg": co2e_without["co2_biogenic_kg"],
+                "co2e_scope2_kg": co2e_without["co2e_scope2_kg"],
                 "water_liters": paper_without["water"],
                 "estimated_brl": fin_without["total_savings_brl"],
             },
             "with_tag": {
                 "time_sec": real_time_sec,
-                "fuel_liters": round(with_total, 4),
-                "co2_kg": round(co2_with, 4),
+                "fuel_amount": round(with_fuel, 4),
+                "fuel_unit": unit,
+                "fuel_liters": round(with_fuel, 4) if unit == "L" else 0.0,
+                "co2e_scope1_kg": co2e_with["co2e_scope1_kg"],
+                "co2_biogenic_kg": co2e_with["co2_biogenic_kg"],
+                "co2e_scope2_kg": co2e_with["co2e_scope2_kg"],
                 "water_liters": paper_with["water"],
                 "estimated_brl": fin_with["total_savings_brl"],
             },
             "delta": {
-                "fuel_liters": round(without_total - with_total, 4),
-                "co2_kg": round(co2_without - co2_with, 4),
+                "fuel_amount": round(without_fuel - with_fuel, 4),
+                "fuel_unit": unit,
+                "fuel_liters": round(without_fuel - with_fuel, 4) if unit == "L" else 0.0,
+                "co2e_scope1_kg": round(
+                    co2e_without["co2e_scope1_kg"] - co2e_with["co2e_scope1_kg"], 4
+                ),
+                "co2_biogenic_kg": round(
+                    co2e_without["co2_biogenic_kg"] - co2e_with["co2_biogenic_kg"], 4
+                ),
                 "water_liters": round(paper_with["water"] - paper_without["water"], 4),
                 "estimated_brl": round(
                     fin_without["total_savings_brl"] - fin_with["total_savings_brl"], 2
                 ),
             },
         }
+
+    # ── Ludic metrics ──────────────────────────────────────────────────────────
 
     def get_ludic_metrics(self, total_co2_avoided: float) -> Dict[str, Any]:
         factors = self.specs["ludic_factors"]
@@ -216,32 +266,16 @@ class CalcEngine:
         out: Dict[str, List[Dict[str, Any]]] = {"carbon": [], "water": [], "paper": []}
         for m in raw["carbon"]:
             kg = float(m["kg_co2_per_unit"])
-            out["carbon"].append(
-                {
-                    "id": m["id"],
-                    "label": m["label"],
-                    "value": round(total_co2_kg / kg, 4),
-                }
-            )
+            out["carbon"].append({"id": m["id"], "label": m["label"], "value": round(total_co2_kg / kg, 4)})
         for m in raw["water"]:
             lu = float(m["liters_per_unit"])
-            out["water"].append(
-                {
-                    "id": m["id"],
-                    "label": m["label"],
-                    "value": round(water_liters / lu, 4),
-                }
-            )
+            out["water"].append({"id": m["id"], "label": m["label"], "value": round(water_liters / lu, 4)})
         for m in raw["paper"]:
             tu = float(m["tickets_per_unit"])
-            out["paper"].append(
-                {
-                    "id": m["id"],
-                    "label": m["label"],
-                    "value": round(paper_tickets / tu, 4),
-                }
-            )
+            out["paper"].append({"id": m["id"], "label": m["label"], "value": round(paper_tickets / tu, 4)})
         return out
+
+    # ── Payback ───────────────────────────────────────────────────────────────
 
     @staticmethod
     def calculate_payback_snapshot(
@@ -259,6 +293,65 @@ class CalcEngine:
             "net_brl": net,
             "status": "tag_paga" if net >= 0 else "em_payback",
         }
+
+    # ── Sensitivity ───────────────────────────────────────────────────────────
+
+    def calculate_sensitivity(
+        self,
+        real_time_sec: int,
+        vehicle_data: Dict[str, Any],
+        context: str,
+        base_co2e_kg: float,
+    ) -> Dict[str, Any]:
+        """Returns sensitivity table varying key parameters ±50%."""
+        baselines = self.specs["baselines"]
+        baseline_base = int(baselines[context]["avg_wait_sec"])
+        cat = vehicle_data["category"]
+        fuel_type = vehicle_data["fuel_type"]
+        rates = self.specs["idle_rates"]
+
+        def _rate() -> float:
+            if fuel_type in _GAS_FUELS:
+                return float(rates.get("gnv", 0.0))
+            if fuel_type in _ELECTRIC_FUELS:
+                return float(rates.get("eletrico", 0.0))
+            return float(rates.get(cat, 0.0))
+
+        rate_base = _rate()
+
+        def _co2e(baseline_s: int, rate: float) -> float:
+            time_saved = max(0, baseline_s - real_time_sec)
+            fuel = time_saved * rate
+            return self.calculate_co2e_from_fuel(fuel, fuel_type)["co2e_total_kg"]
+
+        def _variants(base_val: float, compute_fn):
+            return {
+                "base": round(base_val, 4),
+                "low_50pct": round(compute_fn(base_val * 0.5), 4),
+                "low_20pct": round(compute_fn(base_val * 0.8), 4),
+                "high_20pct": round(compute_fn(base_val * 1.2), 4),
+                "high_50pct": round(compute_fn(base_val * 1.5), 4),
+            }
+
+        return {
+            "base_co2e_kg": round(base_co2e_kg, 4),
+            "parameters": [
+                {
+                    "key": "baseline_wait_sec",
+                    "label": "Tempo médio sem tag (s)",
+                    "note": "Parâmetro de maior sensibilidade — premissa declarada sem fonte oficial",
+                    **_variants(float(baseline_base), lambda v: _co2e(int(v), rate_base)),
+                },
+                {
+                    "key": "idle_rate",
+                    "label": f"Taxa idle {cat} (L ou m³/s)",
+                    "note": "U.S. DOE Fact #861 (2015) — proxy",
+                    **_variants(rate_base, lambda v: _co2e(baseline_base, v)),
+                },
+            ],
+        }
+
+    # ── Main transaction processor ─────────────────────────────────────────────
 
     def process_transaction(
         self,
@@ -279,30 +372,29 @@ class CalcEngine:
             if key not in vehicle_data:
                 raise CalcEngineError(f"vehicle_data sem campo obrigatório: {key}.")
 
+        fuel_type = vehicle_data["fuel_type"]
+        category = vehicle_data["category"]
         baseline_time = int(baselines[context]["avg_wait_sec"])
         time_saved = max(0, baseline_time - real_time_sec)
 
-        idle_liters = self.calculate_avoided_idle_fuel(
-            time_saved, vehicle_data["category"]
-        )
-        accel_liters = self.calculate_avoided_acceleration_fuel(
-            vehicle_data["category"]
-        )
-        total_liters_saved = idle_liters + accel_liters
+        # Combustível economizado (pure time-based — accel_surge não é mais usado)
+        idle_fuel_saved = self.calculate_avoided_idle_fuel(time_saved, category, fuel_type)
 
+        # CO₂e evitado (Escopo 1 + biogênico separado + Escopo 2 para EV)
+        co2e = self.calculate_co2e_from_fuel(idle_fuel_saved, fuel_type)
+
+        # Papel/água
         paper_water = self.calculate_paper_and_water_savings(is_digital)
-        fuel_co2 = self.calculate_emissions_from_fuel(
-            total_liters_saved, vehicle_data["fuel_type"]
-        )
-        total_co2_avoided = fuel_co2 + paper_water["co2"]
 
-        fuel_type = vehicle_data["fuel_type"]
-        price_per_l, uf_applied = self.resolve_fuel_price_brl_per_liter(
-            uf_passagem, fuel_type
-        )
+        # CO₂e total evitado = emissão de combustível + emissão do ticket de papel
+        total_co2e_avoided = co2e["co2e_total_kg"] + paper_water["co2"]
+
+        # Preço do combustível para cálculo financeiro
+        price_per_unit, uf_applied = self.resolve_fuel_price_brl_per_liter(uf_passagem, fuel_type)
         meta = self.specs["fuel_prices_meta"]
         pricing_snapshot = {
-            "fuel_price_brl_per_liter": round(price_per_l, 4),
+            "fuel_price_brl_per_unit": round(price_per_unit, 4),
+            "fuel_unit": self.fuel_unit(fuel_type),
             "fuel_type_applied": fuel_type,
             "uf_applied": uf_applied,
             "currency": "BRL",
@@ -311,11 +403,7 @@ class CalcEngine:
         }
 
         financial = self.calculate_financial_savings(
-            idle_liters,
-            accel_liters,
-            fuel_type,
-            vehicle_data["category"],
-            fuel_price_brl_per_liter=price_per_l,
+            idle_fuel_saved, fuel_type, category, price_per_unit
         )
 
         comparison = self.build_comparison(
@@ -323,28 +411,56 @@ class CalcEngine:
             real_time_sec=real_time_sec,
             vehicle_data=vehicle_data,
             is_digital=is_digital,
-            fuel_price_brl_per_liter=price_per_l,
+            fuel_price_brl_per_unit=price_per_unit,
         )
 
         storytelling = {
-            "legacy": self.get_ludic_metrics(total_co2_avoided),
+            "legacy": self.get_ludic_metrics(total_co2e_avoided),
             "by_axis": self.get_ludic_metrics_by_axis(
-                total_co2_avoided,
+                total_co2e_avoided,
                 paper_water["water"],
                 paper_water["paper_tickets"],
             ),
         }
 
+        unit = self.fuel_unit(fuel_type)
+
+        environmental = {
+            # Backward-compat: total CO₂e avoided (combustion + paper)
+            "co2_kg": round(total_co2e_avoided, 4),
+            # Full CO₂e breakdown (combustion only — not paper)
+            "co2_fossil_kg": round(co2e["co2_fossil_kg"], 4),
+            "co2_biogenic_kg": round(co2e["co2_biogenic_kg"], 4),
+            "ch4_kg_co2e": round(co2e["ch4_kg_co2e"], 4),
+            "n2o_kg_co2e": round(co2e["n2o_kg_co2e"], 4),
+            # Scope 1 = direct combustion CO₂e (excludes paper, which is upstream/Scope 3)
+            "co2e_scope1_kg": round(co2e["co2e_scope1_kg"], 4),
+            # Scope 2 = grid electricity (EV only)
+            "co2e_scope2_kg": round(co2e["co2e_scope2_kg"], 4),
+            # Paper ticket lifecycle CO₂ avoided (upstream/Scope 3 proxy)
+            "paper_co2_avoided_kg": round(paper_water["co2"], 4),
+            # Fuel
+            "fuel_amount": round(idle_fuel_saved, 4),
+            "fuel_unit": unit,
+            "fuel_liters": round(idle_fuel_saved, 4) if unit == "L" else 0.0,
+            # Paper/water
+            "water_liters": paper_water["water"],
+            "paper_tickets": paper_water["paper_tickets"],
+        }
+
+        sensitivity = self.calculate_sensitivity(
+            real_time_sec=real_time_sec,
+            vehicle_data=vehicle_data,
+            context=context,
+            base_co2e_kg=total_co2e_avoided,
+        )
+
         payload: Dict[str, Any] = {
-            "environmental": {
-                "co2_kg": round(total_co2_avoided, 4),
-                "water_liters": paper_water["water"],
-                "fuel_liters": round(total_liters_saved, 4),
-                "paper_tickets": paper_water["paper_tickets"],
-            },
+            "environmental": environmental,
             "financial": financial,
             "comparison": comparison,
             "storytelling": storytelling,
+            "sensitivity": sensitivity,
             "metadata": {
                 "time_saved_sec": time_saved,
                 "baseline_wait_sec": baseline_time,
@@ -360,9 +476,44 @@ class CalcEngine:
             for k in required:
                 if k not in payback:
                     raise CalcEngineError(f"payback em falta: campo obrigatório {k!r}.")
-            acc = float(payback["accumulated_savings_brl"])
-            monthly = float(payback["monthly_tag_fee_brl"])
-            months = float(payback["billing_months"])
-            payload["payback"] = self.calculate_payback_snapshot(acc, monthly, months)
+            payload["payback"] = self.calculate_payback_snapshot(
+                float(payback["accumulated_savings_brl"]),
+                float(payback["monthly_tag_fee_brl"]),
+                float(payback["billing_months"]),
+            )
 
         return payload
+
+    # ── Legacy convert helpers (backward compat) ──────────────────────────────
+
+    def convert_to_co2(self, value: float, unit: str) -> float:
+        if unit == "water_liters":
+            wpt = float(self.specs["paper_impact"]["water_per_ticket"])
+            if wpt == 0:
+                raise CalcEngineError("paper_impact.water_per_ticket não pode ser zero.")
+            tickets = value / wpt
+            return tickets * float(self.specs["paper_impact"]["co2_per_ticket"])
+        if unit == "paper_tickets":
+            return value * float(self.specs["paper_impact"]["co2_per_ticket"])
+        if unit.startswith("fuel_liters_"):
+            fuel_type = unit.replace("fuel_liters_", "")
+            return self.calculate_emissions_from_fuel(value, fuel_type)
+        raise CalcEngineError(f"Unidade desconhecida para convert_to_co2: {unit!r}.")
+
+    def convert_from_co2(self, co2_kg: float, target_unit: str) -> float:
+        bench = self.specs["benchmarks"]
+        factors = self.specs["ludic_factors"]
+        cpt = float(self.specs["paper_impact"]["co2_per_ticket"])
+        wpt = float(self.specs["paper_impact"]["water_per_ticket"])
+        mapping: Dict[str, float] = {
+            "trees": co2_kg / float(factors["tree_year_absorption"]),
+            "water": (co2_kg / cpt) * wpt,
+            "smartphone": co2_kg * float(factors["phone_charge_factor"]),
+            "km_driven": co2_kg / float(bench["kg_co2_per_km_car"]),
+            "burgers": co2_kg / float(bench["kg_co2_per_burger"]),
+        }
+        if target_unit not in mapping:
+            raise CalcEngineError(
+                f"Unidade destino desconhecida para convert_from_co2: {target_unit!r}."
+            )
+        return mapping[target_unit]

@@ -27,6 +27,7 @@ from src.services.transactions import (
     update_transaction as update_transaction_svc,
 )
 from src.services.user_stats import upsert_user_stats_from_transaction
+from src.services.vehicle_lookup_service import resolve_vehicle_from_plate
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
@@ -167,13 +168,27 @@ async def process_transaction(
     engine = CalcEngine(specs)
     orchestrator = TransactionOrchestrator(engine)
 
+    # Resolve vehicle data: from request body or from plate lookup
+    vehicle_resolution: dict[str, Any] | None = None
+    if body.vehicle is not None:
+        vehicle_dict = body.vehicle.model_dump()
+    else:
+        lookup = await resolve_vehicle_from_plate(body.plate)
+        if lookup["error"] or lookup["vehicle"] is None:
+            raise HTTPException(
+                status_code=422,
+                detail=lookup["error"] or "Não foi possível resolver dados do veículo pela placa.",
+            )
+        vehicle_dict = lookup["vehicle"]
+        vehicle_resolution = lookup["resolution"]
+
     payload_dict: dict[str, Any] = {
         "plate": body.plate.strip().upper(),
         "elapsed_time": body.elapsed_time,
         "context": body.context,
         "uf_passagem": body.uf.strip().upper(),
         "is_digital": body.is_digital,
-        "vehicle": body.vehicle.model_dump(),
+        "vehicle": vehicle_dict,
     }
 
     if body.payback is not None:
@@ -184,6 +199,10 @@ async def process_transaction(
     except CalcEngineError as e:
         raise HTTPException(status_code=422, detail=err.CALC_ENGINE_FAILED) from e
 
+    env = result.get("environmental") or {}
+    meta = result.get("metadata") or {}
+    fin = result.get("financial") or {}
+
     transaction_in = TransactionIn(
         user_id=body.user_id,
         vehicle_id=body.vehicle_id,
@@ -193,16 +212,21 @@ async def process_transaction(
         uf=body.uf.strip().upper(),
         elapsed_time_sec=float(body.elapsed_time),
         is_digital=body.is_digital,
-        co2_avoided_kg=result.get("co2_avoided_kg"),
-        fuel_saved_liters=result.get("fuel_saved_liters"),
-        time_saved_sec=result.get("time_saved_sec"),
-        financial_savings_brl=result.get("financial_savings_brl"),
-        water_saved_liters=result.get("water_saved_liters"),
+        co2_avoided_kg=env.get("co2_kg"),
+        fuel_saved_liters=env.get("fuel_liters"),
+        time_saved_sec=meta.get("time_saved_sec"),
+        financial_savings_brl=fin.get("total_savings_brl"),
+        water_saved_liters=env.get("water_liters"),
         parameters_snapshot={
             "payload": payload_dict,
             "emission_factors": specs.get("emission_factors"),
+            "ch4_factors": specs.get("ch4_factors"),
+            "n2o_factors": specs.get("n2o_factors"),
+            "gwp100": specs.get("gwp100"),
+            "blend": specs.get("blend"),
+            "sources": specs.get("sources"),
+            "vehicle_resolution": vehicle_resolution,
             "pricing_snapshot": {
-                "fuel_prices": specs.get("fuel_prices"),
                 "fuel_prices_by_uf": specs.get("fuel_prices_by_uf"),
                 "fuel_prices_meta": specs.get("fuel_prices_meta"),
             },
@@ -216,17 +240,17 @@ async def process_transaction(
         await upsert_user_stats_from_transaction(
             db=db,
             user_id=body.user_id,
-            time_saved_sec=result.get("time_saved_sec"),
-            co2_kg=result.get("co2_avoided_kg"),
-            fuel_liters=result.get("fuel_saved_liters"),
-            water_liters=result.get("water_saved_liters"),
-            financial_brl=result.get("financial_savings_brl"),
+            time_saved_sec=meta.get("time_saved_sec"),
+            co2_kg=env.get("co2_kg"),
+            fuel_liters=env.get("fuel_liters"),
+            water_liters=env.get("water_liters"),
+            financial_brl=fin.get("total_savings_brl"),
         )
 
         await increment_current_week_goal_progress(
             db=db,
             user_id=body.user_id,
-            co2_increment_kg=result.get("co2_avoided_kg"),
+            co2_increment_kg=env.get("co2_kg"),
         )
 
     await db.commit()

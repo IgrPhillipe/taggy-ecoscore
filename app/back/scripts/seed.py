@@ -85,25 +85,82 @@ async def reset_all(db):
 # ---------------------------------------------------------------------------
 
 _TECHNICAL_SPECS_VALUES = {
-    "emission_factor_diesel_s10": 2.51,
-    "emission_factor_gasolina_c": 2.15,
-    "emission_factor_etanol": 0.44,
-    "idle_rate_leve": 0.00027,
-    "idle_rate_pesado": 0.00069,
-    "paper_co2_per_ticket": 0.012,
-    "paper_water_per_ticket": 0.5,
+    # ── Fatores CO₂ fóssil BASE (kg CO₂/L ou m³) ──
+    # Gasolina C: gasolina A pura (FGV GHG Protocol, BEN 2023, linha 103)
+    # O engine aplica o blend (1 − E27 = 73%) para calcular a fração fóssil comercial.
+    "emission_factor_diesel_s10": 2.631,   # diesel puro; blend B14 aplicado no engine → 2.263 kg/L
+    "emission_factor_gasolina_c": 2.239,   # gasolina A pura; blend E27 aplicado no engine → 1.635 kg/L
+    # Etanol: CO₂ é biogênico — armazenamos o valor biogênico para reportar separado do Escopo 1.
+    # CO₂e Escopo 1 do etanol vem apenas de CH4/N2O (muito pequeno).
+    "emission_factor_etanol": 1.510,       # FGV linha 117 — biogênico; NÃO entra no Escopo 1
+    "emission_factor_gnv": 1.999,          # FGV linha 105, BEN 2023 (kg CO₂/m³)
+    "emission_factor_eletrico_kwh": 0.040, # SIN média 2023-2025, FGV Aba Fatores Variáveis (kg CO₂/kWh)
+
+    # ── Fatores CH4 (kg CH4/L ou m³) — FGV GHG Protocol, BEN 2023 ──
+    "ch4_factor_gasolina_c": 0.000556,     # linha 103; blend E27 aplicado no engine
+    "ch4_factor_diesel_s10": 0.000185,     # linha 104; blend B14 aplicado no engine
+    "ch4_factor_etanol": 0.000425,         # linha 117 (etanol hidratado)
+    "ch4_factor_gnv": 0.0000184,           # linha 105
+
+    # ── Fatores N2O (kg N2O/L ou m³) — FGV GHG Protocol, BEN 2023 ──
+    "n2o_factor_gasolina_c": 0.000242,     # linha 103; blend E27 aplicado no engine
+    "n2o_factor_diesel_s10": 0.0000995,    # linha 104; blend B14 aplicado no engine
+    "n2o_factor_etanol": 0.000130,         # linha 117
+    "n2o_factor_gnv": 0.00000368,          # linha 105
+
+    # ── GWP100 — IPCC AR6 2021, Tabela 7.SM.7 ──
+    "gwp100_ch4": 27.9,
+    "gwp100_n2o": 273.0,
+
+    # ── Percentuais de biocombustível (ANP/CNPE vigentes 2024) ──
+    "blend_etanol_pct": 0.27,             # E27: ANP + Lei 14.993/2024 (E30 a partir ago/2025)
+    "blend_biodiesel_pct": 0.14,          # B14: CNPE Resolução mar/2024 (B15 a partir ago/2025)
+
+    # ── Taxas de consumo em idle ──
+    # Fonte: U.S. DOE Fact #861 (2015) — proxy; sem equivalente CETESB/INMETRO público
+    "idle_rate_leve": 0.00028,            # 1.0 L/h para veículos leves (frota brasileira média)
+    "idle_rate_pesado": 0.00069,          # 2.5 L/h para caminhões médios (VW Delivery, MB Atego)
+    "idle_rate_gnv": 0.00014,             # 0.50 m³/h — derivado por conversão energética
+    "idle_rate_eletrico": 0.00028,        # 1.0 kWh/h — estimativa; sem fonte disponível
+
+    # ── Impacto do ticket de papel — Ecoinvent 3.9 (papel térmico 80g/m²) ──
+    "paper_co2_per_ticket": 0.012,        # kg CO₂ por ticket térmico
+    "paper_water_per_ticket": 0.5,        # litros de água por ticket
+
+    # ── Metáforas lúdicas ──
     "ludic_tree_year_absorption": 15.0,
     "ludic_phone_charge_factor": 120.0,
     "ludic_coffee_factor": 10.0,
     "ludic_metaphor_units": default_ludic_metaphor_units(),
-    "baseline_pedagio_avg_wait_sec": 300,
-    "baseline_estacionamento_avg_wait_sec": 180,
+
+    # ── Tempos baseline (premissas declaradas — sem fonte oficial pública) ──
+    # Pedágio: pagamento manual ~30–45s + fila estimada → 180s conservador (fora do pico)
+    # Estacionamento: emissão de ticket + cancela → 120s
+    "baseline_pedagio_avg_wait_sec": 180,
+    "baseline_estacionamento_avg_wait_sec": 120,
+
+    # ── Custos de manutenção (para cálculo financeiro) ──
     "maint_cost_leve": 0.05,
     "maint_cost_pesado": 0.25,
-    "accel_surge_leve": 0.015,
-    "accel_surge_pesado": 0.080,
+
+    # ── Accel surge (mantido no DB; engine usa apenas idle_rate) ──
+    "accel_surge_leve": 0.0,
+    "accel_surge_pesado": 0.0,
+
+    # ── Benchmarks ──
     "benchmark_kg_co2_per_km_car": 0.12,
     "benchmark_kg_co2_per_burger": 2.5,
+
+    # ── Source attribution ──
+    "emission_factors_source": "FGV GHG Protocol Tool / BEN 2023 / MCTIC 2016",
+    "emission_factors_year": 2023,
+    "idle_rates_source": "U.S. DOE Fact #861 (fev/2015) — proxy; sem equivalente CETESB/INMETRO público",
+    "idle_rates_year": 2015,
+    "gwp100_source": "IPCC AR6 2021, Tabela 7.SM.7",
+    "blend_factors_source": "ANP/CNPE: E27 por Lei 14.993/2024; B14 por Resolução CNPE mar/2024",
+    "blend_factors_year": 2024,
+    "paper_impact_source": "Ecoinvent 3.9 — papel térmico 80g/m²",
+    "grid_factor_source": "FGV GHG Protocol Tool, Aba Fatores Variáveis / ONS 2023–2025",
 }
 
 

@@ -7,8 +7,8 @@ from sqlmodel import SQLModel
 
 class TransactionVehicleIn(BaseModel):
     category: Literal["leve", "pesado"]
-    fuel_type: Literal["diesel_s10", "gasolina_c", "etanol"]
-    model: str = Field(min_length=1, max_length=256)
+    fuel_type: Literal["diesel_s10", "diesel_s500", "gasolina_c", "etanol", "gnv", "eletrico"]
+    model: str = Field(default="", max_length=256)
 
 
 class PaybackIn(BaseModel):
@@ -31,7 +31,7 @@ class ProcessTransactionBody(BaseModel):
         pattern=r"^[A-Za-z]{2}$",
     )
     is_digital: bool = True
-    vehicle: TransactionVehicleIn
+    vehicle: TransactionVehicleIn | None = None  # None → resolve via plate lookup
     payback: PaybackIn | None = None
 
 
