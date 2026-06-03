@@ -1,5 +1,41 @@
 # EcoScore Calc Engine — Documentação Técnica
 
+## 0. Fluxo de dados
+
+```mermaid
+flowchart TD
+    A["🔍 Placa"] -->|brasil.io RENAVAM| B["Veículo\ncombustível · categoria"]
+    C["context · uf · is_digital"] --> D
+
+    B --> D["⚙️ CalcEngine"]
+
+    D --> E["tempo_salvo\n= baseline_avg_wait_sec − elapsed_avg_sec\n(ambos: premissas declaradas)"]
+    E --> F["combustível_evitado\n= tempo_salvo × idle_rate[categoria]"]
+
+    F --> G["co2_fossil\n= comb × fator_CO₂[combustível]"]
+    F --> H["ch4_co2e\n= comb × CH4_factor × GWP100_CH4"]
+    F --> I["n2o_co2e\n= comb × N2O_factor × GWP100_N2O"]
+
+    G --> J["co2e_scope1\n= co2_fossil + ch4_co2e + n2o_co2e"]
+    H --> J
+    I --> J
+
+    K["is_digital?"] -->|sim| L["paper_co2 = 0.012 kg"]
+    K -->|não| M["paper_co2 = 0"]
+    L --> N
+    M --> N
+    J --> N
+
+    N["✅ TOTAL CO₂e evitado"]
+
+    N --> O1["environmental\nco2_kg · co2e_scope1\nch4 · n2o · biogenic"]
+    N --> O2["financial\nfuel_savings_brl"]
+    N --> O3["comparison\nsem tag vs com tag"]
+    N --> O4["sensitivity\n±20% ±50%"]
+```
+
+---
+
 ## 1. O que o engine calcula
 
 O `CalcEngine` estima as **emissões de GEE evitadas** quando um veículo utiliza uma tag de pagamento automático (pedágio/estacionamento) em vez do pagamento manual.
@@ -25,8 +61,8 @@ Emissões evitadas = Emissões (cenário sem tag) − Emissões (cenário com ta
 | `vehicle.fuel_type` | ver abaixo | Define o fator de emissão |
 
 **`fuel_type` suportados:**
-- `gasolina_c` — gasolina comercial (E27 blend)
-- `diesel_s10` — diesel comercial (B14 blend)
+- `gasolina_c` — gasolina comercial (E30 blend, em vigor desde ago/2025)
+- `diesel_s10` — diesel comercial (B15 blend, em vigor desde ago/2025)
 - `diesel_s500` — diesel pré-2013 (sem blend)
 - `etanol` — etanol hidratado (CO₂ biogênico)
 - `gnv` — gás natural veicular (m³)
@@ -62,16 +98,16 @@ O CO₂ biogênico é calculado e reportado separadamente como `co2_biogenic_kg`
 ## 4. Fatores de emissão por combustível
 
 Fonte: **FGV GHG Protocol Tool / BEN 2023 / MCTIC 2016**
-Blend percentages: **ANP/CNPE 2024** (E27 vigente; B14 vigente — E30/B15 a partir ago/2025)
+Blend percentages: **ANP/CNPE** (E30 em vigor desde ago/2025; B15 em vigor desde ago/2025)
 
 | Combustível | CO₂ fóssil (base) | Blend aplicado | CO₂ fóssil (comercial) | CH4 (kg/L) | N2O (kg/L) |
 |---|---|---|---|---|---|
-| Gasolina C | 2.239 kg/L | E27 (×0.73) | **1.634 kg/L** | 0.000406 | 0.000177 |
-| Diesel S10 | 2.631 kg/L | B14 (×0.86) | **2.263 kg/L** | 0.000159 | 0.0000857 |
+| Gasolina C | 2.239 kg/L | E30 (×0.70) | **1.567 kg/L** | 0.000406 | 0.000177 |
+| Diesel S10 | 2.631 kg/L | B15 (×0.85) | **2.236 kg/L** | 0.000159 | 0.0000857 |
 | Diesel S500 | 2.631 kg/L | sem blend | **2.662 kg/L** | 0.000185 | 0.0000995 |
 | Etanol | 1.510 kg/L | — | **0 (biogênico)** | 0.000425 | 0.000130 |
 | GNV | 1.999 kg/m³ | — | **1.999 kg/m³** | 0.0000184/m³ | 0.00000368/m³ |
-| Elétrico | — | — | **0.040 kg/kWh** (SIN) | — | — |
+| Elétrico | — | — | **0.046 kg/kWh** (SIN média 2023-2025) | — | — |
 
 **GWP100 (IPCC AR6 2021, Tabela 7.SM.7):** CH4 = 27.9 | N2O = 273.0
 
@@ -186,8 +222,8 @@ Isso garante rastreabilidade: o cálculo pode ser replicado a partir do snapshot
 |---|---|---|
 | `idle_rate_leve/pesado` | Proxy U.S. DOE 2015 | Validar com CETESB ou fabricantes BR |
 | `baseline_*_avg_wait_sec` | Premissa declarada | Medir com cronômetro em campo (50 amostras) |
-| `emission_factor_eletrico_kwh` | Estimativa SIN 2023-2025 | Atualizar anualmente com FGV/ONS |
-| Blend percentages | E27/B14 vigentes | Monitorar resoluções ANP — E30/B15 a partir ago/2025 |
+| `emission_factor_eletrico_kwh` | SIN média 2023-2025 = 0.046 kg/kWh (FGV Aba Fatores Variáveis) | Atualizar anualmente com FGV/ONS |
+| Blend percentages | E30/B15 em vigor desde ago/2025 | Monitorar próximas resoluções ANP/CNPE |
 
 ---
 
@@ -217,8 +253,8 @@ A API valida os valores e aplica o blend automaticamente no próximo cálculo.
 |---|---|---|
 | FGV GHG Protocol Tool | https://bibliotecadigital.fgv.br/dspace/handle/10438/30248 | Fatores CO₂, CH4, N2O por combustível |
 | IPCC AR6 2021 | https://www.ipcc.ch/report/ar6/wg1/ | GWP100: CH4=27.9, N2O=273.0 |
-| ANP Lei 14.993/2024 | https://www.anp.gov.br | Blend E27 gasolina (→E30 ago/2025) |
-| CNPE Resolução 2024 | https://www.gov.br/mdic | Blend B14 diesel (→B15 ago/2025) |
+| ANP Lei 14.993/2024 | https://www.anp.gov.br | Blend gasolina: E27 → E30 (em vigor desde ago/2025) |
+| CNPE Resolução 2024 | https://www.gov.br/mdic | Blend diesel: B14 → B15 (em vigor desde ago/2025) |
 | U.S. DOE Fact #861 | https://www.energy.gov/eere/vehicles/fact-861 | Idle rate proxy |
 | brasil.io RENAVAM | https://brasil.io/dataset/veiculos/ | Plate lookup → fuel_type, category |
 | ONS/FGV 2023-2025 | Aba "Fatores Variáveis" GHG Protocol Tool | Fator SIN elétrico |

@@ -82,6 +82,7 @@ class TechnicalSpecsRepository:
             "ludic_tree_year_absorption", "ludic_phone_charge_factor", "ludic_coffee_factor",
             "ludic_metaphor_units",
             "baseline_pedagio_avg_wait_sec", "baseline_estacionamento_avg_wait_sec",
+            "elapsed_pedagio_avg_sec", "elapsed_estacionamento_avg_sec", "elapsed_times_source",
             "maint_cost_leve", "maint_cost_pesado",
             "accel_surge_leve", "accel_surge_pesado",
             "benchmark_kg_co2_per_km_car", "benchmark_kg_co2_per_burger",

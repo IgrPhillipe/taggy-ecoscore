@@ -78,12 +78,12 @@ def _set_col_widths(ws: "Worksheet", widths: list[int]):
 _PREMISES: list[dict] = [
     # key, label, unit, source_key, warn
     ("emission_factor_gasolina_c_base", "Fator CO₂ gasolina A pura (base)", "kg CO₂/L", "emission_factors", False),
-    ("blend_etanol_pct", "Blend etanol na gasolina C (E27)", "%", "blend_factors", False),
+    ("blend_etanol_pct", "Blend etanol na gasolina C (E30)", "%", "blend_factors", False),
     ("emission_factor_gasolina_c_comercial", "Fator CO₂ gasolina C comercial (aplicado)", "kg CO₂/L", "emission_factors", False),
     ("ch4_factor_gasolina_c", "Fator CH4 gasolina C", "kg CH4/L", "emission_factors", False),
     ("n2o_factor_gasolina_c", "Fator N2O gasolina C", "kg N2O/L", "emission_factors", False),
     ("emission_factor_diesel_s10_base", "Fator CO₂ diesel S10 puro (base)", "kg CO₂/L", "emission_factors", False),
-    ("blend_biodiesel_pct", "Blend biodiesel no diesel S10 (B14)", "%", "blend_factors", False),
+    ("blend_biodiesel_pct", "Blend biodiesel no diesel S10 (B15)", "%", "blend_factors", False),
     ("emission_factor_diesel_s10_comercial", "Fator CO₂ diesel S10 comercial (aplicado)", "kg CO₂/L", "emission_factors", False),
     ("ch4_factor_diesel_s10", "Fator CH4 diesel S10", "kg CH4/L", "emission_factors", False),
     ("n2o_factor_diesel_s10", "Fator N2O diesel S10", "kg N2O/L", "emission_factors", False),
@@ -145,13 +145,13 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any]):
         return (src_text, str(src_year))
 
     values_map = {
-        "emission_factor_gasolina_c_base": (round(ef.get("gasolina_c", 0) / (1 - blend.get("etanol_pct", 0.27)), 4) if blend.get("etanol_pct", 0) < 1 else ef.get("gasolina_c", 0), "emission_factors"),
-        "blend_etanol_pct": (f"{int(blend.get('etanol_pct', 0.27) * 100)}%", "blend_factors"),
+        "emission_factor_gasolina_c_base": (round(ef.get("gasolina_c", 0) / (1 - blend.get("etanol_pct", 0.30)), 4) if blend.get("etanol_pct", 0) < 1 else ef.get("gasolina_c", 0), "emission_factors"),
+        "blend_etanol_pct": (f"{int(blend.get('etanol_pct', 0.30) * 100)}%", "blend_factors"),
         "emission_factor_gasolina_c_comercial": (round(ef.get("gasolina_c", 0), 4), "emission_factors"),
         "ch4_factor_gasolina_c": (round(ch4.get("gasolina_c", 0), 8), "emission_factors"),
         "n2o_factor_gasolina_c": (round(n2o.get("gasolina_c", 0), 8), "emission_factors"),
-        "emission_factor_diesel_s10_base": (round(ef.get("diesel_s10", 0) / (1 - blend.get("biodiesel_pct", 0.14)), 4) if blend.get("biodiesel_pct", 0) < 1 else ef.get("diesel_s10", 0), "emission_factors"),
-        "blend_biodiesel_pct": (f"{int(blend.get('biodiesel_pct', 0.14) * 100)}%", "blend_factors"),
+        "emission_factor_diesel_s10_base": (round(ef.get("diesel_s10", 0) / (1 - blend.get("biodiesel_pct", 0.15)), 4) if blend.get("biodiesel_pct", 0) < 1 else ef.get("diesel_s10", 0), "emission_factors"),
+        "blend_biodiesel_pct": (f"{int(blend.get('biodiesel_pct', 0.15) * 100)}%", "blend_factors"),
         "emission_factor_diesel_s10_comercial": (round(ef.get("diesel_s10", 0), 4), "emission_factors"),
         "ch4_factor_diesel_s10": (round(ch4.get("diesel_s10", 0), 8), "emission_factors"),
         "n2o_factor_diesel_s10": (round(n2o.get("diesel_s10", 0), 8), "emission_factors"),
@@ -171,10 +171,10 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any]):
     }
 
     notes_map = {
-        "emission_factor_gasolina_c_base": "Gasolina A pura antes do blend E27",
-        "emission_factor_gasolina_c_comercial": f"= base × (1 − {int(blend.get('etanol_pct',0.27)*100)}%) blend aplicado no cálculo",
-        "emission_factor_diesel_s10_base": "Diesel puro antes do blend B14",
-        "emission_factor_diesel_s10_comercial": f"= base × (1 − {int(blend.get('biodiesel_pct',0.14)*100)}%) blend aplicado no cálculo",
+        "emission_factor_gasolina_c_base": "Gasolina A pura antes do blend E30",
+        "emission_factor_gasolina_c_comercial": f"= base × (1 − {int(blend.get('etanol_pct',0.30)*100)}%) blend aplicado no cálculo",
+        "emission_factor_diesel_s10_base": "Diesel puro antes do blend B15",
+        "emission_factor_diesel_s10_comercial": f"= base × (1 − {int(blend.get('biodiesel_pct',0.15)*100)}%) blend aplicado no cálculo",
         "emission_factor_etanol": "CO₂ biogênico — reportado separado; não conta no Escopo 1",
         "idle_rate_leve": "Proxy U.S. DOE Fact #861 (2015) — sem dado CETESB/INMETRO público",
         "idle_rate_pesado": "Proxy U.S. DOE Fact #861 (2015) — sem dado CETESB/INMETRO público",

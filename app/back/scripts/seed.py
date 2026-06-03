@@ -87,24 +87,24 @@ async def reset_all(db):
 _TECHNICAL_SPECS_VALUES = {
     # ── Fatores CO₂ fóssil BASE (kg CO₂/L ou m³) ──
     # Gasolina C: gasolina A pura (FGV GHG Protocol, BEN 2023, linha 103)
-    # O engine aplica o blend (1 − E27 = 73%) para calcular a fração fóssil comercial.
-    "emission_factor_diesel_s10": 2.631,   # diesel puro; blend B14 aplicado no engine → 2.263 kg/L
-    "emission_factor_gasolina_c": 2.239,   # gasolina A pura; blend E27 aplicado no engine → 1.635 kg/L
+    # O engine aplica o blend (1 − E30 = 70%) para calcular a fração fóssil comercial.
+    "emission_factor_diesel_s10": 2.631,   # diesel puro; blend B15 aplicado no engine → 2.236 kg/L
+    "emission_factor_gasolina_c": 2.239,   # gasolina A pura; blend E30 aplicado no engine → 1.567 kg/L
     # Etanol: CO₂ é biogênico — armazenamos o valor biogênico para reportar separado do Escopo 1.
     # CO₂e Escopo 1 do etanol vem apenas de CH4/N2O (muito pequeno).
     "emission_factor_etanol": 1.510,       # FGV linha 117 — biogênico; NÃO entra no Escopo 1
     "emission_factor_gnv": 1.999,          # FGV linha 105, BEN 2023 (kg CO₂/m³)
-    "emission_factor_eletrico_kwh": 0.040, # SIN média 2023-2025, FGV Aba Fatores Variáveis (kg CO₂/kWh)
+    "emission_factor_eletrico_kwh": 0.046, # SIN média 2023-2025, FGV Aba Fatores Variáveis (kg CO₂/kWh) — calculado: 2023=0.039, 2024=0.055, 2025=0.046
 
     # ── Fatores CH4 (kg CH4/L ou m³) — FGV GHG Protocol, BEN 2023 ──
-    "ch4_factor_gasolina_c": 0.000556,     # linha 103; blend E27 aplicado no engine
-    "ch4_factor_diesel_s10": 0.000185,     # linha 104; blend B14 aplicado no engine
+    "ch4_factor_gasolina_c": 0.000556,     # linha 103; blend E30 aplicado no engine
+    "ch4_factor_diesel_s10": 0.000185,     # linha 104; blend B15 aplicado no engine
     "ch4_factor_etanol": 0.000425,         # linha 117 (etanol hidratado)
     "ch4_factor_gnv": 0.0000184,           # linha 105
 
     # ── Fatores N2O (kg N2O/L ou m³) — FGV GHG Protocol, BEN 2023 ──
-    "n2o_factor_gasolina_c": 0.000242,     # linha 103; blend E27 aplicado no engine
-    "n2o_factor_diesel_s10": 0.0000995,    # linha 104; blend B14 aplicado no engine
+    "n2o_factor_gasolina_c": 0.000242,     # linha 103; blend E30 aplicado no engine
+    "n2o_factor_diesel_s10": 0.0000995,    # linha 104; blend B15 aplicado no engine
     "n2o_factor_etanol": 0.000130,         # linha 117
     "n2o_factor_gnv": 0.00000368,          # linha 105
 
@@ -112,9 +112,9 @@ _TECHNICAL_SPECS_VALUES = {
     "gwp100_ch4": 27.9,
     "gwp100_n2o": 273.0,
 
-    # ── Percentuais de biocombustível (ANP/CNPE vigentes 2024) ──
-    "blend_etanol_pct": 0.27,             # E27: ANP + Lei 14.993/2024 (E30 a partir ago/2025)
-    "blend_biodiesel_pct": 0.14,          # B14: CNPE Resolução mar/2024 (B15 a partir ago/2025)
+    # ── Percentuais de biocombustível (ANP/CNPE vigentes) ──
+    "blend_etanol_pct": 0.30,             # E30: Lei 14.993/2024 — em vigor desde ago/2025
+    "blend_biodiesel_pct": 0.15,          # B15: Resolução CNPE — em vigor desde ago/2025
 
     # ── Taxas de consumo em idle ──
     # Fonte: U.S. DOE Fact #861 (2015) — proxy; sem equivalente CETESB/INMETRO público
@@ -139,6 +139,11 @@ _TECHNICAL_SPECS_VALUES = {
     "baseline_pedagio_avg_wait_sec": 180,
     "baseline_estacionamento_avg_wait_sec": 120,
 
+    # ── Tempos estimados COM tag (premissas declaradas — Sem Parar/ConectCar não publicam) ──
+    "elapsed_pedagio_avg_sec": 15,
+    "elapsed_estacionamento_avg_sec": 30,
+    "elapsed_times_source": "Premissa declarada — sem dado público disponível (Sem Parar/ConectCar não publicam tempo médio por passagem)",
+
     # ── Custos de manutenção (para cálculo financeiro) ──
     "maint_cost_leve": 0.05,
     "maint_cost_pesado": 0.25,
@@ -157,8 +162,8 @@ _TECHNICAL_SPECS_VALUES = {
     "idle_rates_source": "U.S. DOE Fact #861 (fev/2015) — proxy; sem equivalente CETESB/INMETRO público",
     "idle_rates_year": 2015,
     "gwp100_source": "IPCC AR6 2021, Tabela 7.SM.7",
-    "blend_factors_source": "ANP/CNPE: E27 por Lei 14.993/2024; B14 por Resolução CNPE mar/2024",
-    "blend_factors_year": 2024,
+    "blend_factors_source": "ANP/CNPE: E30 por Lei 14.993/2024 (em vigor ago/2025); B15 por Resolução CNPE (em vigor ago/2025)",
+    "blend_factors_year": 2025,
     "paper_impact_source": "Ecoinvent 3.9 — papel térmico 80g/m²",
     "grid_factor_source": "FGV GHG Protocol Tool, Aba Fatores Variáveis / ONS 2023–2025",
 }

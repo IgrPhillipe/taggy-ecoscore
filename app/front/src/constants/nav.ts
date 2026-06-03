@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   Building2,
   ChartLine,
   FileText,
@@ -83,6 +84,7 @@ export const APP_NAV_ITEMS: NavItem[] = [
   { to: "/impacto", label: "Meu Impacto", icon: Home, exact: true, roles: ["motorista"] },
   { to: "/rota", label: "Calcular Rota", icon: Map, roles: ["motorista"] },
   { to: "/passagens", label: "Minhas Passagens", icon: Ticket, exact: true, roles: ["motorista"] },
+  { to: "/metodologia", label: "Metodologia", icon: BookOpen, exact: true },
 ];
 
 export function filterNavItemsByRole(

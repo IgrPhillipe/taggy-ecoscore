@@ -143,6 +143,19 @@ class TechnicalSpecs(SQLModel, table=True):
         default=0, sa_column=Column(Integer, nullable=False)
     )
 
+    # ── Tempos estimados COM tag (segundos) — premissa declarada ──
+    # Sem Parar/ConectCar não publicam tempo médio por passagem; valores estimados.
+    elapsed_pedagio_avg_sec: int = Field(
+        default=15, sa_column=Column(Integer, nullable=False, server_default="15")
+    )
+    elapsed_estacionamento_avg_sec: int = Field(
+        default=30, sa_column=Column(Integer, nullable=False, server_default="30")
+    )
+    elapsed_times_source: str = Field(
+        default="Premissa declarada — sem dado público disponível (Sem Parar/ConectCar não publicam tempo médio por passagem)",
+        sa_column=Column(String, nullable=False, server_default=""),
+    )
+
     # ── Custos de manutenção (mantido para cálculo financeiro) ──
     maint_cost_leve: float = Field(
         default=0, sa_column=Column(Float, nullable=False))
