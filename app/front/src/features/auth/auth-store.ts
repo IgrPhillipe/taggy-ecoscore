@@ -34,3 +34,17 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 );
+
+/** Waits for encrypted localStorage rehydration before route guards run. */
+export function waitForAuthHydration(): Promise<void> {
+  if (useAuthStore.persist.hasHydrated()) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const unsubscribe = useAuthStore.persist.onFinishHydration(() => {
+      unsubscribe();
+      resolve();
+    });
+  });
+}

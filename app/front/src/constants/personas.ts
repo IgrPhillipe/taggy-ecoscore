@@ -1,6 +1,27 @@
 import type { CurrentUser } from "@/features/auth/types";
 
-/** Personas alinhadas ao seed (app/back/scripts/seed.py) */
+/** Senha padrão de todos os usuários criados pelo seed (app/back/scripts/seed.py). */
+export const SEED_DEFAULT_PASSWORD = "senha@123";
+
+/** Atalhos de login na página de desenvolvimento — credenciais do seed. */
+export const SEED_PERSONAS: { label: string; email: string; password: string }[] = [
+  { label: "Administrador", email: "admin@taggy.com.br", password: SEED_DEFAULT_PASSWORD },
+  { label: "Gestor de Frota", email: "carlos@taggy.com.br", password: SEED_DEFAULT_PASSWORD },
+  {
+    label: "Gestor de Frota (Express)",
+    email: "fernanda@taggy.com.br",
+    password: SEED_DEFAULT_PASSWORD,
+  },
+  { label: "Motorista (Org)", email: "joao@taggy.com.br", password: SEED_DEFAULT_PASSWORD },
+  {
+    label: "Motorista (Express)",
+    email: "ana@taggy.com.br",
+    password: SEED_DEFAULT_PASSWORD,
+  },
+  { label: "Motorista Comum", email: "pedro@taggy.com.br", password: SEED_DEFAULT_PASSWORD },
+];
+
+/** Personas alinhadas ao seed (app/back/scripts/seed.py) — usadas no switcher dev da sidebar. */
 export const PERSONA_MOCKS: { persona: CurrentUser; label: string }[] = [
   {
     persona: {
@@ -61,5 +82,17 @@ export const PERSONA_MOCKS: { persona: CurrentUser; label: string }[] = [
       token: "",
     },
     label: "Motorista Comum",
+  },
+  {
+    persona: {
+      id: 5,
+      name: "Ana Motorista",
+      email: "ana@taggy.com.br",
+      role: "motorista",
+      organization_id: 2,
+      status: "active",
+      token: "",
+    },
+    label: "Motorista (Express)",
   },
 ];

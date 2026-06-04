@@ -14,9 +14,9 @@ const PUBLIC_LAYOUT_PATHS = ["/calcular", "/metodologia"];
 const PUBLIC_PATHS = ["/login", ...PUBLIC_LAYOUT_PATHS];
 
 export const Route = createRootRoute({
-  beforeLoad: ({ location }) => {
+  beforeLoad: async ({ location }) => {
     if (PUBLIC_PATHS.includes(location.pathname)) return;
-    requireAuth()();
+    await requireAuth()();
   },
   component: RootComponent,
 });

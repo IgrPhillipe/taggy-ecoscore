@@ -16,6 +16,9 @@ const BRAZIL_CENTER: [number, number] = [-52, -14];
 const TAGGY_GREEN = "#72C215";
 const EMPTY_COLOR = "#e5e7eb";
 
+const BRAZIL_STATES_GEOJSON_URL =
+  "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson";
+
 type Props = {
   organizationId?: number;
 };
@@ -50,26 +53,16 @@ function buildColorExpression(
 
   return [
     "match",
-    ["slice", ["get", "iso_3166_2"], 3],
+    ["get", "uf"],
     ...pairs,
     EMPTY_COLOR,
   ] as mapboxgl.Expression;
 }
 
-const SOURCE_ID = "taggy-country-boundaries";
+const SOURCE_ID = "taggy-brazil-states";
 const LAYER_FILL_ID = "taggy-brazil-fill";
 const LAYER_LINE_ID = "taggy-brazil-line";
 const LAYER_HIT_ID = "taggy-brazil-hit";
-
-const BR_FILTER: mapboxgl.Expression = [
-  "all",
-  ["==", ["get", "iso_3166_1"], "BR"],
-  [
-    "any",
-    ["==", ["get", "worldview"], "US"],
-    ["==", ["get", "worldview"], "all"],
-  ],
-];
 
 export const RegionalEmissionsMap = ({ organizationId }: Props) => {
   const { data: items = [] } = useEmissionsByUF({ organizationId });
@@ -78,7 +71,6 @@ export const RegionalEmissionsMap = ({ organizationId }: Props) => {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const popupRef = useRef<mapboxgl.Popup | null>(null);
   const mapLoadedRef = useRef(false);
-  // Always-fresh ref so closures inside map events see latest data
   const itemsRef = useRef<EmissionsByUFItem[]>(items);
   itemsRef.current = items;
 
@@ -113,83 +105,93 @@ export const RegionalEmissionsMap = ({ organizationId }: Props) => {
     map.on("load", () => {
       mapLoadedRef.current = true;
 
-      map.addSource(SOURCE_ID, {
-        type: "vector",
-        url: "mapbox://mapbox.country-boundaries-v1",
-      });
+      fetch(BRAZIL_STATES_GEOJSON_URL)
+        .then((r) => r.json())
+        .then((geojson: GeoJSON.FeatureCollection) => {
+          // `sigla` already contains UF code (e.g. "SP", "RJ")
+          const enriched: GeoJSON.FeatureCollection = {
+            ...geojson,
+            features: geojson.features.map((f) => ({
+              ...f,
+              properties: {
+                ...f.properties,
+                uf: (f.properties?.sigla as string | undefined)?.toUpperCase() ?? null,
+              },
+            })),
+          };
 
-      map.addLayer({
-        id: LAYER_FILL_ID,
-        type: "fill",
-        source: SOURCE_ID,
-        "source-layer": "country_boundaries",
-        filter: BR_FILTER,
-        paint: {
-          "fill-color": buildColorExpression(itemsRef.current),
-          "fill-opacity": 0.85,
-        },
-      });
+          if (!mapRef.current) return;
 
-      map.addLayer({
-        id: LAYER_LINE_ID,
-        type: "line",
-        source: SOURCE_ID,
-        "source-layer": "country_boundaries",
-        filter: BR_FILTER,
-        paint: {
-          "line-color": "#aaa",
-          "line-width": 0.5,
-        },
-      });
+          map.addSource(SOURCE_ID, { type: "geojson", data: enriched });
 
-      // Hit-test layer — fully transparent but queryable
-      map.addLayer({
-        id: LAYER_HIT_ID,
-        type: "fill",
-        source: SOURCE_ID,
-        "source-layer": "country_boundaries",
-        filter: BR_FILTER,
-        paint: {
-          "fill-color": "#000",
-          "fill-opacity": 0,
-        },
-      });
+          map.addLayer({
+            id: LAYER_FILL_ID,
+            type: "fill",
+            source: SOURCE_ID,
+            paint: {
+              "fill-color": buildColorExpression(itemsRef.current),
+              "fill-opacity": 0.85,
+            },
+          });
 
-      map.on("mousemove", LAYER_HIT_ID, (e) => {
-        map.getCanvas().style.cursor = "pointer";
-        const feature = e.features?.[0];
-        if (!feature) return;
+          map.addLayer({
+            id: LAYER_LINE_ID,
+            type: "line",
+            source: SOURCE_ID,
+            paint: {
+              "line-color": "#aaa",
+              "line-width": 0.5,
+            },
+          });
 
-        const iso2 = feature.properties?.iso_3166_2 as string | undefined;
-        const uf = iso2?.slice(3).toUpperCase();
-        const dataMap = Object.fromEntries(
-          itemsRef.current.map((i) => [i.uf.toUpperCase(), i]),
-        );
-        const entry = uf ? dataMap[uf] : undefined;
-        const name =
-          (feature.properties?.name_en as string | undefined) ?? uf ?? "–";
-        const co2 = entry
-          ? `${entry.co2_total_kg.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg CO₂`
-          : "Sem dados";
-        const txLine = entry
-          ? `<br/>${entry.transaction_count.toLocaleString("pt-BR")} transações`
-          : "";
+          map.addLayer({
+            id: LAYER_HIT_ID,
+            type: "fill",
+            source: SOURCE_ID,
+            paint: {
+              "fill-color": "rgba(0,0,0,0)",
+              "fill-opacity": 0,
+            },
+          });
 
-        popupRef.current
-          ?.setLngLat(e.lngLat)
-          .setHTML(
-            `<div style="font-size:12px;line-height:1.6">
-              <strong>${name}${uf ? ` (${uf})` : ""}</strong><br/>
-              ${co2}${txLine}
-            </div>`,
-          )
-          .addTo(map);
-      });
+          map.on("mousemove", LAYER_HIT_ID, (e) => {
+            map.getCanvas().style.cursor = "pointer";
+            const feature = e.features?.[0];
+            if (!feature) return;
 
-      map.on("mouseleave", LAYER_HIT_ID, () => {
-        map.getCanvas().style.cursor = "";
-        popupRef.current?.remove();
-      });
+            const uf = feature.properties?.uf as string | null;
+            const dataMap = Object.fromEntries(
+              itemsRef.current.map((i) => [i.uf.toUpperCase(), i]),
+            );
+            const entry = uf ? dataMap[uf] : undefined;
+            const name =
+              (feature.properties?.name as string | undefined) ?? uf ?? "–";
+            const co2 = entry
+              ? `${entry.co2_total_kg.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} kg CO₂`
+              : "Sem dados";
+            const txLine = entry
+              ? `<br/>${entry.transaction_count.toLocaleString("pt-BR")} transações`
+              : "";
+
+            popupRef.current
+              ?.setLngLat(e.lngLat)
+              .setHTML(
+                `<div style="font-size:12px;line-height:1.6">
+                  <strong>${uf ?? name}</strong><br/>
+                  ${co2}${txLine}
+                </div>`,
+              )
+              .addTo(map);
+          });
+
+          map.on("mouseleave", LAYER_HIT_ID, () => {
+            map.getCanvas().style.cursor = "";
+            popupRef.current?.remove();
+          });
+
+          // Apply colors in case items already arrived before fetch completed
+          applyColors(map);
+        });
     });
 
     mapRef.current = map;
