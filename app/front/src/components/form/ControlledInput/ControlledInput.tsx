@@ -7,6 +7,7 @@ import {
 
 import { FormField, formFieldErrorId } from "@/components/form/FormField";
 import { Input } from "@/components/ui/input";
+import { PlateInput } from "@/components/ui/PlateInput";
 import { fieldControlErrorClassName } from "@/lib/field-control";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ type ControlledInputProps<T extends FieldValues> = {
   type?: "text" | "password" | "number";
   placeholder?: string;
   disabled?: boolean;
+  plate?: boolean;
 };
 
 export const ControlledInput = <T extends FieldValues>({
@@ -26,6 +28,7 @@ export const ControlledInput = <T extends FieldValues>({
   type = "text",
   placeholder,
   disabled,
+  plate = false,
 }: ControlledInputProps<T>) => {
   const id = String(name);
   return (
@@ -36,18 +39,33 @@ export const ControlledInput = <T extends FieldValues>({
         const errorMsg = fieldState.error?.message;
         return (
           <FormField id={id} label={label} error={errorMsg}>
-            <Input
-              {...field}
-              id={id}
-              type={type}
-              placeholder={placeholder}
-              disabled={disabled}
-              aria-invalid={!!errorMsg}
-              aria-describedby={errorMsg ? formFieldErrorId(id) : undefined}
-              className={cn(errorMsg && fieldControlErrorClassName)}
-              value={field.value ?? ""}
-              onClear={() => field.onChange("")}
-            />
+            {plate ? (
+              <PlateInput
+                id={id}
+                placeholder={placeholder}
+                disabled={disabled}
+                aria-invalid={!!errorMsg}
+                aria-describedby={errorMsg ? formFieldErrorId(id) : undefined}
+                className={cn(errorMsg && fieldControlErrorClassName)}
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                onClear={() => field.onChange("")}
+              />
+            ) : (
+              <Input
+                {...field}
+                id={id}
+                type={type}
+                placeholder={placeholder}
+                disabled={disabled}
+                aria-invalid={!!errorMsg}
+                aria-describedby={errorMsg ? formFieldErrorId(id) : undefined}
+                className={cn(errorMsg && fieldControlErrorClassName)}
+                value={field.value ?? ""}
+                onClear={() => field.onChange("")}
+              />
+            )}
           </FormField>
         );
       }}

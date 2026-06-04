@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
-import { ArrowLeft, Coins, Fuel, Leaf, Scroll, Ticket } from "lucide-react";
+import { ArrowLeft, Clock, Coins, Fuel, Leaf, Scroll, Ticket } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
@@ -14,6 +14,7 @@ import {
   formatKpiCo2,
   formatKpiCount,
   formatKpiFuel,
+  formatKpiHours,
   formatKpiPaper,
   KPI_ICON_SIZE,
   KPI_TITLES,
@@ -195,7 +196,7 @@ export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
         />
       )}
 
-      <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6">
         <KpiCard
           title={KPI_TITLES.passages}
           value={formatKpiCount(summary?.transaction_count)}
@@ -210,6 +211,11 @@ export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
           title={KPI_TITLES.fuelSaved}
           value={formatKpiFuel(summary?.fuel_total_liters)}
           icon={<Fuel className="text-[#72C215]" size={KPI_ICON_SIZE} />}
+        />
+        <KpiCard
+          title={KPI_TITLES.hoursSaved}
+          value={formatKpiHours(summary?.time_total_sec != null ? summary.time_total_sec / 3600 : null)}
+          icon={<Clock className="text-[#72C215]" size={KPI_ICON_SIZE} />}
         />
         <KpiCard
           title={KPI_TITLES.paperSaved}

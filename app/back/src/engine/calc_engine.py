@@ -86,6 +86,16 @@ class CalcEngine:
 
     # ── Idle fuel ──────────────────────────────────────────────────────────────
 
+    def _accel_surge_fuel(self, category: str, fuel_type: str) -> float:
+        """Extra fuel (liters) from braking+acceleration cycle at manual toll/parking.
+        Only applies to combustion vehicles — EV and GNV return 0."""
+        if fuel_type in _GAS_FUELS or fuel_type in _ELECTRIC_FUELS:
+            return 0.0
+        surge = self.specs.get("accel_surge", {})
+        if category not in surge:
+            return 0.0
+        return float(surge[category])
+
     def calculate_avoided_idle_fuel(self, time_saved_sec: int, category: str, fuel_type: str) -> float:
         """
         Returns fuel amount saved from not idling (L, m³, or kWh depending on fuel_type).
@@ -109,8 +119,9 @@ class CalcEngine:
 
     # ── Paper/water savings ────────────────────────────────────────────────────
 
-    def calculate_paper_and_water_savings(self, is_digital: bool) -> Dict[str, float]:
-        if not is_digital:
+    def calculate_paper_and_water_savings(self, is_digital: bool, context: str = "estacionamento") -> Dict[str, float]:
+        # Paper tickets only exist at estacionamento — pedagio has no physical ticket
+        if not is_digital or context != "estacionamento":
             return {"co2": 0.0, "water": 0.0, "paper_tickets": 0.0}
         pi = self.specs["paper_impact"]
         return {
@@ -159,16 +170,10 @@ class CalcEngine:
         category: str,
         fuel_price_brl_per_unit: float,
     ) -> Dict[str, Any]:
-        maint_map = self.specs["maint_costs"]
-        if category not in maint_map:
-            raise CalcEngineError(f"maint_costs sem categoria: {category!r}.")
         fuel_savings_brl = round(idle_fuel_amount * fuel_price_brl_per_unit, 2)
-        maint = float(maint_map[category])
-        total = round(fuel_savings_brl + maint, 2)
         return {
             "fuel_savings_brl": fuel_savings_brl,
-            "maintenance_savings_brl": maint,
-            "total_savings_brl": total,
+            "total_savings_brl": fuel_savings_brl,
         }
 
     # ── Comparison (scenario with/without tag) ────────────────────────────────
@@ -180,6 +185,7 @@ class CalcEngine:
         vehicle_data: Dict[str, Any],
         is_digital: bool,
         fuel_price_brl_per_unit: float,
+        context: str = "estacionamento",
     ) -> Dict[str, Any]:
         cat = vehicle_data["category"]
         fuel_type = vehicle_data["fuel_type"]
@@ -195,11 +201,12 @@ class CalcEngine:
             return float(rates[cat])
 
         rate = _get_rate()
-        without_fuel = baseline_time_sec * rate
+        accel_surge = self._accel_surge_fuel(cat, fuel_type)
+        without_fuel = baseline_time_sec * rate + accel_surge
         with_fuel = max(0, real_time_sec) * rate
 
-        paper_without = self.calculate_paper_and_water_savings(is_digital=False)
-        paper_with = self.calculate_paper_and_water_savings(is_digital=is_digital)
+        paper_without = self.calculate_paper_and_water_savings(is_digital=False, context=context)
+        paper_with = self.calculate_paper_and_water_savings(is_digital=is_digital, context=context)
 
         co2e_without = self.calculate_co2e_from_fuel(without_fuel, fuel_type)
         co2e_with = self.calculate_co2e_from_fuel(with_fuel, fuel_type)
@@ -382,14 +389,15 @@ class CalcEngine:
         real_time_sec = int(baselines[context].get("with_tag_avg_sec", _fallback.get(context, 15)))
         time_saved = max(0, baseline_time - real_time_sec)
 
-        # Combustível economizado (pure time-based — accel_surge não é mais usado)
         idle_fuel_saved = self.calculate_avoided_idle_fuel(time_saved, category, fuel_type)
+        accel_fuel_saved = self._accel_surge_fuel(category, fuel_type)
+        total_fuel_saved = idle_fuel_saved + accel_fuel_saved
 
         # CO₂e evitado (Escopo 1 + biogênico separado + Escopo 2 para EV)
-        co2e = self.calculate_co2e_from_fuel(idle_fuel_saved, fuel_type)
+        co2e = self.calculate_co2e_from_fuel(total_fuel_saved, fuel_type)
 
-        # Papel/água
-        paper_water = self.calculate_paper_and_water_savings(is_digital)
+        # Papel/água — ticket físico só existe em estacionamento
+        paper_water = self.calculate_paper_and_water_savings(is_digital, context)
 
         # CO₂e total evitado = emissão de combustível + emissão do ticket de papel
         total_co2e_avoided = co2e["co2e_total_kg"] + paper_water["co2"]
@@ -408,7 +416,7 @@ class CalcEngine:
         }
 
         financial = self.calculate_financial_savings(
-            idle_fuel_saved, fuel_type, category, price_per_unit
+            total_fuel_saved, fuel_type, category, price_per_unit
         )
 
         comparison = self.build_comparison(
@@ -417,6 +425,7 @@ class CalcEngine:
             vehicle_data=vehicle_data,
             is_digital=is_digital,
             fuel_price_brl_per_unit=price_per_unit,
+            context=context,
         )
 
         storytelling = {
@@ -445,9 +454,9 @@ class CalcEngine:
             # Paper ticket lifecycle CO₂ avoided (upstream/Scope 3 proxy)
             "paper_co2_avoided_kg": round(paper_water["co2"], 4),
             # Fuel
-            "fuel_amount": round(idle_fuel_saved, 4),
+            "fuel_amount": round(total_fuel_saved, 4),
             "fuel_unit": unit,
-            "fuel_liters": round(idle_fuel_saved, 4) if unit == "L" else 0.0,
+            "fuel_liters": round(total_fuel_saved, 4) if unit == "L" else 0.0,
             # Paper/water
             "water_liters": paper_water["water"],
             "paper_tickets": paper_water["paper_tickets"],

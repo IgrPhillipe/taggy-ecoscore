@@ -36,7 +36,10 @@ export function formatKpiCo2(kg: number | null | undefined): string {
 }
 
 export function formatKpiFuel(liters: number | null | undefined): string {
-  return formatOrDash(liters, (n) => `${ptNumber.format(n)}L`);
+  return formatOrDash(liters, (n) => {
+    if (n < 0.1) return `${(n * 1000).toFixed(0)}mL`;
+    return `${ptNumber.format(n)}L`;
+  });
 }
 
 export function formatKpiPaper(meters: number | null | undefined): string {

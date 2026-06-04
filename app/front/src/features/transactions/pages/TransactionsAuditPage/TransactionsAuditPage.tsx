@@ -227,6 +227,7 @@ export const TransactionsAuditPage = () => {
             onDebouncedSearchChange={setPlateSearch}
             placeholder="Buscar por placa"
             searchId="audit-plate-search"
+            plate
             className="max-w-md"
           >
             <FilterModal

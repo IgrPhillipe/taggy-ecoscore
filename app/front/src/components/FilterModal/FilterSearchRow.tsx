@@ -9,6 +9,7 @@ type FilterSearchRowProps = {
   placeholder: string;
   searchId?: string;
   debounceMs?: number;
+  plate?: boolean;
   className?: string;
   children: ReactNode;
 };
@@ -19,6 +20,7 @@ export const FilterSearchRow = ({
   placeholder,
   searchId,
   debounceMs = 300,
+  plate = false,
   className,
   children,
 }: FilterSearchRowProps) => (
@@ -29,6 +31,7 @@ export const FilterSearchRow = ({
       value={searchValue}
       debounceMs={debounceMs}
       onDebouncedChange={onDebouncedSearchChange}
+      plate={plate}
       className="min-w-0 flex-1"
     />
     {children}

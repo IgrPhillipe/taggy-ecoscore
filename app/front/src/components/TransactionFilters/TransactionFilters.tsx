@@ -45,6 +45,7 @@ export const TransactionFiltersForm = ({
             id="tx-plate"
             placeholder="Buscar por placa"
             value={filters.plate ?? ""}
+            plate
             onChange={(e) =>
               onChange({ ...filters, plate: e.target.value || undefined })
             }

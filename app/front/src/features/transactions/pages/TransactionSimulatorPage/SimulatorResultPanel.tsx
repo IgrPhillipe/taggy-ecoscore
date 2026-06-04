@@ -81,10 +81,10 @@ function formatComparisonValue(
 }
 
 const COMPARISON_ROWS: { key: keyof CalcComparisonSide; label: string }[] = [
-  { key: "time_sec", label: "Tempo de espera" },
-  { key: "fuel_liters", label: "Combustível idle" },
-  { key: "co2e_scope1_kg", label: "CO₂e Escopo 1" },
-  { key: "water_liters", label: "Água (papel)" },
+  { key: "time_sec", label: "Tempo parado" },
+  { key: "fuel_liters", label: "Combustível desperdiçado (motor ligado)" },
+  { key: "co2e_scope1_kg", label: "CO₂ emitido" },
+  { key: "water_liters", label: "Água (ticket de papel)" },
   { key: "estimated_brl", label: "Custo estimado" },
 ];
 
@@ -218,35 +218,50 @@ export function SimulatorResultPanel({ result, transaction }: SimulatorResultPan
       )}
 
       <SectionCard title="Detalhamento ambiental">
-        <InfoRow label="CO₂ fóssil evitado" value={`${formatNumber(env.co2_fossil_kg)} kg`} />
-        <InfoRow label="CO₂ biogênico" value={`${formatNumber(env.co2_biogenic_kg)} kg`} />
-        <InfoRow label="CH₄ (CO₂e)" value={`${formatNumber(env.ch4_kg_co2e)} kg`} />
-        <InfoRow label="N₂O (CO₂e)" value={`${formatNumber(env.n2o_kg_co2e)} kg`} />
-        <InfoRow label="CO₂e Escopo 1" value={`${formatNumber(env.co2e_scope1_kg)} kg`} />
-        <InfoRow label="CO₂e Escopo 2" value={`${formatNumber(env.co2e_scope2_kg)} kg`} />
         <InfoRow
-          label="Água poupada"
-          value={
-            env.water_liters != null ? (
+          label="CO₂ evitado no total"
+          value={`${formatNumber(env.co2_kg)} kg`}
+        />
+        {fuelUnit === "kWh" ? (
+          <InfoRow
+            label="CO₂ da rede elétrica evitado"
+            value={`${formatNumber(env.co2e_scope2_kg)} kg`}
+          />
+        ) : (
+          <InfoRow
+            label="CO₂ da queima do combustível"
+            value={`${formatNumber(env.co2_fossil_kg)} kg`}
+          />
+        )}
+        {(env.co2_biogenic_kg ?? 0) > 0 && (
+          <InfoRow
+            label="CO₂ biogênico (etanol)"
+            value={`${formatNumber(env.co2_biogenic_kg)} kg`}
+          />
+        )}
+        {(env.paper_co2_avoided_kg ?? 0) > 0 && (
+          <InfoRow
+            label="CO₂ do ticket de papel evitado"
+            value={`${formatNumber(env.paper_co2_avoided_kg)} kg`}
+          />
+        )}
+        {(env.water_liters ?? 0) > 0 && (
+          <InfoRow
+            label="Água poupada (ticket de papel)"
+            value={
               <span className="inline-flex items-center gap-1">
                 <Droplet className="h-3.5 w-3.5 text-primary" />
                 {formatNumber(env.water_liters, 2)} L
               </span>
-            ) : (
-              "—"
-            )
-          }
-        />
+            }
+          />
+        )}
       </SectionCard>
 
       <SectionCard title="Detalhamento financeiro">
         <InfoRow
           label="Economia de combustível"
           value={formatKpiCurrency(fin.fuel_savings_brl)}
-        />
-        <InfoRow
-          label="Economia de manutenção"
-          value={formatKpiCurrency(fin.maintenance_savings_brl)}
         />
         <InfoRow
           label="Total"

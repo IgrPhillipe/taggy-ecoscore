@@ -217,6 +217,7 @@ export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
             onDebouncedSearchChange={setPlateSearch}
             placeholder="Buscar por placa"
             searchId="driver-tx-plate-search"
+            plate
             className="max-w-md"
           >
             <FilterModal

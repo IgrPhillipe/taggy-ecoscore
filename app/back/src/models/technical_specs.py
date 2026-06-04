@@ -162,7 +162,7 @@ class TechnicalSpecs(SQLModel, table=True):
     maint_cost_pesado: float = Field(
         default=0, sa_column=Column(Float, nullable=False))
 
-    # ── Accel surge (mantido no DB para compatibilidade; engine usa apenas idle_rate) ──
+    # ── Accel surge — extra fuel per braking+acceleration event at manual toll/parking ──
     accel_surge_leve: float = Field(
         default=0, sa_column=Column(Float, nullable=False))
     accel_surge_pesado: float = Field(

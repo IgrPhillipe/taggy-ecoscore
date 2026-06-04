@@ -152,7 +152,8 @@ export const VehicleFormDialog = ({
             control={form.control}
             name="license_plate"
             label="Placa"
-            placeholder="AAA-0000"
+            placeholder="ABC1D23"
+            plate
           />
           <ControlledInput
             control={form.control}
