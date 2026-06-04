@@ -99,6 +99,8 @@ async def export_calculadora(
     fleet_size: int = Query(default=1, ge=1, le=100000),
     fuel_type: str | None = Query(default=None),
     category: str | None = Query(default=None),
+    transaction_id: int | None = Query(default=None),
+    passage_date: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
 ) -> StreamingResponse:
     """
@@ -137,12 +139,17 @@ async def export_calculadora(
     except CalcEngineError as e:
         raise HTTPException(status_code=422, detail=str(e)) from e
 
+    pricing = (result.get("metadata") or {}).get("pricing_snapshot") or {}
     params = {
         "plate": plate.upper(),
         "elapsed_time": elapsed_time,
         "context": context,
         "uf": uf.upper(),
         "is_digital": is_digital,
+        "fuel_price_brl_per_unit": pricing.get("fuel_price_brl_per_unit", 0.0),
+        "fuel_price_unit": pricing.get("fuel_unit", "L"),
+        "fuel_price_source": pricing.get("price_source", "ANP"),
+        "fuel_price_uf": pricing.get("uf_applied", uf.upper()),
     }
 
     try:
@@ -150,7 +157,9 @@ async def export_calculadora(
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
-    filename = f"ecoscore_calculo_{plate.upper()}_{context}_{uf.upper()}.xlsx"
+    date_str = (passage_date or "")[:10].replace("-", "") or "s-data"
+    tid_str = f"id{transaction_id}" if transaction_id else "novo"
+    filename = f"ecoscore_{plate.upper()}_{date_str}_{tid_str}_{context}_{uf.upper()}.xlsx"
     return StreamingResponse(
         buffer,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

@@ -1,6 +1,6 @@
 """
-Constrói a planilha auditável de cálculo de emissões evitadas.
-5 sheets: Premissas | Passo a passo | Comparação | Sensibilidade | Escala
+Planilha auditável — valores calculados usam fórmulas Excel que referenciam
+as premissas. Altere qualquer premissa e todos os resultados se atualizam.
 """
 
 from __future__ import annotations
@@ -18,26 +18,20 @@ except ImportError:
     _HAS_OPENPYXL = False
 
 # ── Palette ───────────────────────────────────────────────────────────────────
-_C_HEADER_BG   = "1A3A4A"  # azul escuro
-_C_HEADER_FG   = "FFFFFF"
-_C_SUB_BG      = "2E6B8A"  # azul médio (sub-header)
-_C_WARN_BG     = "FFF3CD"  # amarelo — parâmetro sem fonte oficial
-_C_ALT_BG      = "F5F8FA"  # cinza claro — linhas alternadas
-_C_TOTAL_BG    = "D4EDDA"  # verde claro — linha de total
-_C_BORDER      = "CCCCCC"
+_C_HEADER_BG = "1A3A4A"
+_C_HEADER_FG = "FFFFFF"
+_C_WARN_BG   = "FFF3CD"
+_C_ALT_BG    = "F5F8FA"
+_C_TOTAL_BG  = "D4EDDA"
+_C_BORDER    = "CCCCCC"
 
-_FONT_HEADER  = lambda: Font(bold=True, color=_C_HEADER_FG, name="Calibri", size=11)
-_FONT_TITLE   = lambda: Font(bold=True, name="Calibri", size=14)
-_FONT_SUBHDR  = lambda: Font(bold=True, color=_C_HEADER_FG, name="Calibri", size=10)
-_FONT_BOLD    = lambda: Font(bold=True, name="Calibri", size=10)
-_FONT_NORMAL  = lambda: Font(name="Calibri", size=10)
-_FONT_SMALL   = lambda: Font(name="Calibri", size=9, color="555555")
+_FONT_TITLE  = lambda: Font(bold=True, name="Calibri", size=14)
+_FONT_SMALL  = lambda: Font(name="Calibri", size=9, color="555555")
 
-_FILL_HEADER  = lambda: PatternFill("solid", fgColor=_C_HEADER_BG)
-_FILL_SUB     = lambda: PatternFill("solid", fgColor=_C_SUB_BG)
-_FILL_WARN    = lambda: PatternFill("solid", fgColor=_C_WARN_BG)
-_FILL_ALT     = lambda: PatternFill("solid", fgColor=_C_ALT_BG)
-_FILL_TOTAL   = lambda: PatternFill("solid", fgColor=_C_TOTAL_BG)
+_FILL_HEADER = lambda: PatternFill("solid", fgColor=_C_HEADER_BG)
+_FILL_WARN   = lambda: PatternFill("solid", fgColor=_C_WARN_BG)
+_FILL_ALT    = lambda: PatternFill("solid", fgColor=_C_ALT_BG)
+_FILL_TOTAL  = lambda: PatternFill("solid", fgColor=_C_TOTAL_BG)
 
 _THIN = lambda: Border(
     left=Side(style="thin", color=_C_BORDER),
@@ -47,146 +41,275 @@ _THIN = lambda: Border(
 )
 
 
-def _h(ws: "Worksheet", row: int, col: int, value, *, bold=False, fill=None, number_format=None, wrap=False, size=10):
-    cell = ws.cell(row=row, column=col, value=value)
-    cell.font = Font(bold=bold, name="Calibri", size=size)
-    cell.border = _THIN()
-    if fill:
-        cell.fill = fill
-    if number_format:
-        cell.number_format = number_format
-    cell.alignment = Alignment(wrap_text=wrap, vertical="top")
-    return cell
-
-
-def _header_row(ws: "Worksheet", row: int, cols: list[str]):
+def _header_row(ws: "Worksheet", row: int, cols: list[str]) -> None:
     for i, v in enumerate(cols, 1):
         c = ws.cell(row=row, column=i, value=v)
-        c.font = _FONT_HEADER()
+        c.font = Font(bold=True, color=_C_HEADER_FG, name="Calibri", size=11)
         c.fill = _FILL_HEADER()
         c.border = _THIN()
         c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
 
-def _set_col_widths(ws: "Worksheet", widths: list[int]):
+def _set_col_widths(ws: "Worksheet", widths: list[int]) -> None:
     for i, w in enumerate(widths, 1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
 
-# ── Sheet 1: Premissas ────────────────────────────────────────────────────────
+def _cell(ws: "Worksheet", row: int, col: int, value, *,
+          bold=False, fill=None, fmt=None, wrap=False, size=10, color="000000"):
+    c = ws.cell(row=row, column=col, value=value)
+    c.font = Font(bold=bold, name="Calibri", size=size, color=color)
+    c.border = _THIN()
+    if fill:
+        c.fill = fill
+    if fmt:
+        c.number_format = fmt
+    c.alignment = Alignment(wrap_text=wrap, vertical="top")
+    return c
 
-_PREMISES: list[dict] = [
-    # key, label, unit, source_key, warn
-    ("emission_factor_gasolina_c_base", "Fator CO₂ gasolina A pura (base)", "kg CO₂/L", "emission_factors", False),
-    ("blend_etanol_pct", "Blend etanol na gasolina C (E30)", "%", "blend_factors", False),
-    ("emission_factor_gasolina_c_comercial", "Fator CO₂ gasolina C comercial (aplicado)", "kg CO₂/L", "emission_factors", False),
-    ("ch4_factor_gasolina_c", "Fator CH4 gasolina C", "kg CH4/L", "emission_factors", False),
-    ("n2o_factor_gasolina_c", "Fator N2O gasolina C", "kg N2O/L", "emission_factors", False),
-    ("emission_factor_diesel_s10_base", "Fator CO₂ diesel S10 puro (base)", "kg CO₂/L", "emission_factors", False),
-    ("blend_biodiesel_pct", "Blend biodiesel no diesel S10 (B15)", "%", "blend_factors", False),
-    ("emission_factor_diesel_s10_comercial", "Fator CO₂ diesel S10 comercial (aplicado)", "kg CO₂/L", "emission_factors", False),
-    ("ch4_factor_diesel_s10", "Fator CH4 diesel S10", "kg CH4/L", "emission_factors", False),
-    ("n2o_factor_diesel_s10", "Fator N2O diesel S10", "kg N2O/L", "emission_factors", False),
-    ("emission_factor_etanol", "Fator CO₂ etanol (biogênico — não conta no Escopo 1)", "kg CO₂/L", "emission_factors", False),
-    ("emission_factor_gnv", "Fator CO₂ GNV", "kg CO₂/m³", "emission_factors", False),
-    ("emission_factor_eletrico_kwh", "Fator CO₂ rede SIN (veículo elétrico)", "kg CO₂/kWh", "emission_factors", False),
-    ("gwp100_ch4", "GWP100 CH4 (IPCC AR6)", "—", "gwp100", False),
-    ("gwp100_n2o", "GWP100 N2O (IPCC AR6)", "—", "gwp100", False),
-    ("idle_rate_leve", "Taxa consumo idle leve", "L/s", "idle_rates", True),
-    ("idle_rate_pesado", "Taxa consumo idle pesado", "L/s", "idle_rates", True),
-    ("idle_rate_gnv", "Taxa consumo idle GNV", "m³/s", "idle_rates", True),
-    ("idle_rate_eletrico", "Taxa consumo idle elétrico", "kWh/s", "idle_rates", True),
-    ("baseline_pedagio_avg_wait_sec", "Tempo médio sem tag — pedágio", "s", None, True),
-    ("baseline_estacionamento_avg_wait_sec", "Tempo médio sem tag — estacionamento", "s", None, True),
-    ("paper_co2_per_ticket", "CO₂ por ticket de papel", "kg CO₂", "paper_impact", False),
-    ("paper_water_per_ticket", "Água por ticket de papel", "L", "paper_impact", False),
+
+# ── Premises list ─────────────────────────────────────────────────────────────
+# (key, label, unit, source_key, warn)
+_PREMISES: list[tuple] = [
+    ("emission_factor_gasolina_c_base",      "Fator CO₂ gasolina A pura (base)",                  "kg CO₂/L",   "emission_factors", False),
+    ("blend_etanol_pct",                      "Blend etanol na gasolina C (E27-E30)",               "%",          "blend_factors",    False),
+    ("emission_factor_gasolina_c_comercial",  "Fator CO₂ gasolina C comercial (blendado)",         "kg CO₂/L",   "emission_factors", False),
+    ("ch4_factor_gasolina_c",                 "Fator CH4 gasolina C (blendado)",                   "kg CH4/L",   "emission_factors", False),
+    ("n2o_factor_gasolina_c",                 "Fator N2O gasolina C (blendado)",                   "kg N2O/L",   "emission_factors", False),
+    ("emission_factor_diesel_s10_base",       "Fator CO₂ diesel S10 puro (base)",                  "kg CO₂/L",   "emission_factors", False),
+    ("blend_biodiesel_pct",                   "Blend biodiesel no diesel S10 (B14-B15)",            "%",          "blend_factors",    False),
+    ("emission_factor_diesel_s10_comercial",  "Fator CO₂ diesel S10 comercial (blendado)",         "kg CO₂/L",   "emission_factors", False),
+    ("ch4_factor_diesel_s10",                 "Fator CH4 diesel S10 (blendado)",                   "kg CH4/L",   "emission_factors", False),
+    ("n2o_factor_diesel_s10",                 "Fator N2O diesel S10 (blendado)",                   "kg N2O/L",   "emission_factors", False),
+    ("emission_factor_etanol",                "Fator CO₂ etanol (biogênico — Escopo 1 = 0)",       "kg CO₂/L",   "emission_factors", False),
+    ("ch4_factor_etanol",                     "Fator CH4 etanol",                                  "kg CH4/L",   "emission_factors", False),
+    ("n2o_factor_etanol",                     "Fator N2O etanol",                                  "kg N2O/L",   "emission_factors", False),
+    ("emission_factor_gnv",                   "Fator CO₂ GNV",                                    "kg CO₂/m³",  "emission_factors", False),
+    ("ch4_factor_gnv",                        "Fator CH4 GNV",                                    "kg CH4/m³",  "emission_factors", False),
+    ("n2o_factor_gnv",                        "Fator N2O GNV",                                    "kg N2O/m³",  "emission_factors", False),
+    ("emission_factor_eletrico_kwh",          "Fator CO₂ rede SIN (veículo elétrico)",             "kg CO₂/kWh", "emission_factors", False),
+    ("gwp100_ch4",                            "GWP100 CH4 (IPCC AR6)",                            "—",          "gwp100",           False),
+    ("gwp100_n2o",                            "GWP100 N2O (IPCC AR6)",                            "—",          "gwp100",           False),
+    ("idle_rate_leve",                        "Taxa consumo idle — leve (L/s)",                    "L/s",        "idle_rates",       True),
+    ("idle_rate_pesado",                      "Taxa consumo idle — pesado (L/s)",                  "L/s",        "idle_rates",       True),
+    ("idle_rate_gnv",                         "Taxa consumo idle — GNV (m³/s)",                   "m³/s",       "idle_rates",       True),
+    ("idle_rate_eletrico",                    "Taxa consumo idle — elétrico (kWh/s)",              "kWh/s",      "idle_rates",       True),
+    ("accel_surge_leve",                      "Combustível extra freada+aceleração — leve",        "L",          None,               True),
+    ("accel_surge_pesado",                    "Combustível extra freada+aceleração — pesado",      "L",          None,               True),
+    ("baseline_pedagio_avg_wait_sec",         "Tempo médio sem tag — pedágio",                    "s",          None,               True),
+    ("baseline_estacionamento_avg_wait_sec",  "Tempo médio sem tag — estacionamento",             "s",          None,               True),
+    ("paper_co2_per_ticket",                  "CO₂ por ticket de papel (estacionamento)",         "kg CO₂",     "paper_impact",     False),
+    ("paper_water_per_ticket",                "Água por ticket de papel (estacionamento)",        "L",          "paper_impact",     False),
+    ("fuel_price_brl_per_unit",               "Preço médio do combustível (ANP/UF)",              "R$/unid.",   "fuel_prices",      False),
 ]
 
+# Precomputed row numbers: first data row = 4 (title=1, note=2, header=3)
+_PREM_ROW: dict[str, int] = {key: 4 + i for i, (key, *_) in enumerate(_PREMISES)}
 
-def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any]):
+
+# ── Step row assignments in Sheet 2 ──────────────────────────────────────────
+# title=1, vehicle_info=2, header=3, data starts at 4
+_SR: dict[str, int] = {
+    "baseline":   4,
+    "elapsed":    5,
+    "time_saved": 6,
+    "fuel":       7,
+    "co2_fossil": 8,
+    "ch4_abs":    9,
+    "ch4_co2e":   10,
+    "n2o_abs":    11,
+    "n2o_co2e":   12,
+    "scope1":     13,
+    "scope2":     14,
+    "paper":      15,
+    "total":      16,
+}
+
+
+# ── Fuel helpers ──────────────────────────────────────────────────────────────
+
+def _idle_key(fuel_type: str, category: str) -> str:
+    if fuel_type == "eletrico":
+        return "idle_rate_eletrico"
+    if fuel_type == "gnv":
+        return "idle_rate_gnv"
+    return "idle_rate_pesado" if category == "pesado" else "idle_rate_leve"
+
+
+def _accel_key(fuel_type: str, category: str) -> str | None:
+    if fuel_type in ("gnv", "eletrico"):
+        return None
+    return "accel_surge_pesado" if category == "pesado" else "accel_surge_leve"
+
+
+def _ef_scope1_key(fuel_type: str) -> str | None:
+    return {
+        "gasolina_c": "emission_factor_gasolina_c_comercial",
+        "diesel_s10": "emission_factor_diesel_s10_comercial",
+        "gnv":        "emission_factor_gnv",
+    }.get(fuel_type)
+
+
+def _ch4_key(fuel_type: str) -> str | None:
+    return {
+        "gasolina_c": "ch4_factor_gasolina_c",
+        "diesel_s10": "ch4_factor_diesel_s10",
+        "etanol":     "ch4_factor_etanol",
+        "gnv":        "ch4_factor_gnv",
+    }.get(fuel_type)
+
+
+def _n2o_key(fuel_type: str) -> str | None:
+    return {
+        "gasolina_c": "n2o_factor_gasolina_c",
+        "diesel_s10": "n2o_factor_diesel_s10",
+        "etanol":     "n2o_factor_etanol",
+        "gnv":        "n2o_factor_gnv",
+    }.get(fuel_type)
+
+
+def _fuel_unit(fuel_type: str) -> str:
+    return "kWh" if fuel_type == "eletrico" else ("m³" if fuel_type == "gnv" else "L")
+
+
+# ── Cross-sheet formula refs ──────────────────────────────────────────────────
+_P  = "'1. Premissas'"
+_S2 = "'2. Passo a Passo'"
+
+
+def _pref(row: int) -> str:
+    return f"{_P}!C{row}"
+
+
+def _s2e(row: int) -> str:
+    return f"{_S2}!E{row}"
+
+
+def _sens_total(
+    time_expr: str,
+    idle_expr: str,
+    accel_term: str,
+    ef_expr: str,
+    ch4_expr: str,
+    n2o_expr: str,
+    gwp_ch4_expr: str,
+    gwp_n2o_expr: str,
+    scope2_ef_expr: str,
+    paper_expr: str,
+) -> str:
+    """Build Excel formula for total CO₂e, varying one parameter at a time."""
+    fuel = f"({time_expr}*{idle_expr}{accel_term})"
+    scope1 = f"({fuel}*({ef_expr}+{ch4_expr}*{gwp_ch4_expr}+{n2o_expr}*{gwp_n2o_expr}))"
+    scope2 = f"({fuel}*{scope2_ef_expr})" if scope2_ef_expr else "0"
+    return f"={scope1}+{scope2}+({paper_expr})"
+
+
+# ── Sheet 1: Premissas ────────────────────────────────────────────────────────
+
+def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: float = 0.0, fuel_price_meta: dict | None = None) -> dict[str, int]:
     ws.title = "1. Premissas"
 
-    # Title
     ws.merge_cells("A1:G1")
-    tc = ws["A1"]
-    tc.value = "Premissas e Fontes do Cálculo de Emissões Evitadas"
-    tc.font = _FONT_TITLE()
-    tc.alignment = Alignment(horizontal="left", vertical="center")
+    ws["A1"].value = "Premissas e Fontes — Valores Brutos (altere aqui para atualizar todos os cálculos)"
+    ws["A1"].font = _FONT_TITLE()
+    ws["A1"].alignment = Alignment(horizontal="left", vertical="center")
     ws.row_dimensions[1].height = 30
 
     ws.merge_cells("A2:G2")
-    nc = ws["A2"]
-    nc.value = (
-        "⚠️  Linhas em amarelo = parâmetro sem fonte pública oficial brasileira disponível (estimativa declarada). "
-        "Ver seção 'Limitações' na página /metodologia."
+    ws["A2"].value = (
+        "⚠️  Linhas em amarelo = estimativa sem fonte pública oficial brasileira. "
+        "Todas as outras sheets usam fórmulas que referenciam a coluna C desta sheet — "
+        "altere qualquer valor e os resultados se atualizam automaticamente."
     )
-    nc.font = Font(name="Calibri", size=9, italic=True, color="7D6608")
-    nc.fill = PatternFill("solid", fgColor="FFF9E6")
-    nc.alignment = Alignment(wrap_text=True)
-    ws.row_dimensions[2].height = 28
+    ws["A2"].font = Font(name="Calibri", size=9, italic=True, color="7D6608")
+    ws["A2"].fill = PatternFill("solid", fgColor="FFF9E6")
+    ws["A2"].alignment = Alignment(wrap_text=True)
+    ws.row_dimensions[2].height = 32
 
-    _header_row(ws, 3, ["Parâmetro", "Descrição", "Valor", "Unidade", "Fonte", "Ano", "Notas"])
+    _header_row(ws, 3, ["Chave", "Descrição", "Valor", "Unidade", "Fonte", "Ano", "Notas"])
 
-    ef = specs.get("emission_factors", {})
-    ch4 = specs.get("ch4_factors", {})
-    n2o = specs.get("n2o_factors", {})
-    gwp = specs.get("gwp100", {})
-    idle = specs.get("idle_rates", {})
-    baselines = specs.get("baselines", {})
-    paper = specs.get("paper_impact", {})
-    blend = specs.get("blend", {})
-    sources = specs.get("sources", {})
+    ef     = specs.get("emission_factors", {})
+    ch4    = specs.get("ch4_factors", {})
+    n2o    = specs.get("n2o_factors", {})
+    gwp    = specs.get("gwp100", {})
+    idle   = specs.get("idle_rates", {})
+    bases  = specs.get("baselines", {})
+    paper  = specs.get("paper_impact", {})
+    blend  = specs.get("blend", {})
+    accel  = specs.get("accel_surge", {})
+    src    = specs.get("sources", {})
 
-    def _src(source_key):
-        if not source_key:
+    def _src(sk: str | None) -> tuple[str, str]:
+        if not sk:
             return ("Premissa declarada — sem dado público disponível", "—")
-        src_text = sources.get(source_key, "—")
-        src_year = sources.get(f"{source_key}_year", "—")
-        return (src_text, str(src_year))
+        if sk == "fuel_prices":
+            fmeta = fuel_price_meta or {}
+            return (fmeta.get("source", "ANP"), "—")
+        return (src.get(sk, "—"), str(src.get(f"{sk}_year", "—")))
 
-    values_map = {
-        "emission_factor_gasolina_c_base": (round(ef.get("gasolina_c", 0) / (1 - blend.get("etanol_pct", 0.30)), 4) if blend.get("etanol_pct", 0) < 1 else ef.get("gasolina_c", 0), "emission_factors"),
-        "blend_etanol_pct": (f"{int(blend.get('etanol_pct', 0.30) * 100)}%", "blend_factors"),
-        "emission_factor_gasolina_c_comercial": (round(ef.get("gasolina_c", 0), 4), "emission_factors"),
-        "ch4_factor_gasolina_c": (round(ch4.get("gasolina_c", 0), 8), "emission_factors"),
-        "n2o_factor_gasolina_c": (round(n2o.get("gasolina_c", 0), 8), "emission_factors"),
-        "emission_factor_diesel_s10_base": (round(ef.get("diesel_s10", 0) / (1 - blend.get("biodiesel_pct", 0.15)), 4) if blend.get("biodiesel_pct", 0) < 1 else ef.get("diesel_s10", 0), "emission_factors"),
-        "blend_biodiesel_pct": (f"{int(blend.get('biodiesel_pct', 0.15) * 100)}%", "blend_factors"),
-        "emission_factor_diesel_s10_comercial": (round(ef.get("diesel_s10", 0), 4), "emission_factors"),
-        "ch4_factor_diesel_s10": (round(ch4.get("diesel_s10", 0), 8), "emission_factors"),
-        "n2o_factor_diesel_s10": (round(n2o.get("diesel_s10", 0), 8), "emission_factors"),
-        "emission_factor_etanol": (ef.get("etanol", 0), "emission_factors"),
-        "emission_factor_gnv": (ef.get("gnv", 0), "emission_factors"),
-        "emission_factor_eletrico_kwh": (ef.get("eletrico_kwh", 0), "emission_factors"),
-        "gwp100_ch4": (gwp.get("ch4", 27.9), "gwp100"),
-        "gwp100_n2o": (gwp.get("n2o", 273.0), "gwp100"),
-        "idle_rate_leve": (idle.get("leve", 0), "idle_rates"),
-        "idle_rate_pesado": (idle.get("pesado", 0), "idle_rates"),
-        "idle_rate_gnv": (idle.get("gnv", 0), "idle_rates"),
-        "idle_rate_eletrico": (idle.get("eletrico", 0), "idle_rates"),
-        "baseline_pedagio_avg_wait_sec": (baselines.get("pedagio", {}).get("avg_wait_sec", 180), None),
-        "baseline_estacionamento_avg_wait_sec": (baselines.get("estacionamento", {}).get("avg_wait_sec", 120), None),
-        "paper_co2_per_ticket": (paper.get("co2_per_ticket", 0), "paper_impact"),
-        "paper_water_per_ticket": (paper.get("water_per_ticket", 0), "paper_impact"),
-    }
+    blend_eth = blend.get("etanol_pct", 0.27)
+    blend_bio = blend.get("biodiesel_pct", 0.14)
 
-    notes_map = {
-        "emission_factor_gasolina_c_base": "Gasolina A pura antes do blend E30",
-        "emission_factor_gasolina_c_comercial": f"= base × (1 − {int(blend.get('etanol_pct',0.30)*100)}%) blend aplicado no cálculo",
-        "emission_factor_diesel_s10_base": "Diesel puro antes do blend B15",
-        "emission_factor_diesel_s10_comercial": f"= base × (1 − {int(blend.get('biodiesel_pct',0.15)*100)}%) blend aplicado no cálculo",
-        "emission_factor_etanol": "CO₂ biogênico — reportado separado; não conta no Escopo 1",
-        "idle_rate_leve": "Proxy U.S. DOE Fact #861 (2015) — sem dado CETESB/INMETRO público",
-        "idle_rate_pesado": "Proxy U.S. DOE Fact #861 (2015) — sem dado CETESB/INMETRO público",
-        "idle_rate_gnv": "Estimativa por conversão energética vs gasolina",
-        "idle_rate_eletrico": "Estimativa — sem fonte disponível",
-        "baseline_pedagio_avg_wait_sec": "Premissa: pagamento manual ~30-45s + fila estimada",
+    gas_base = round(ef.get("gasolina_c", 0) / (1 - blend_eth), 6) if blend_eth < 1 else ef.get("gasolina_c", 0)
+    die_base = round(ef.get("diesel_s10", 0) / (1 - blend_bio), 6) if blend_bio < 1 else ef.get("diesel_s10", 0)
+
+    notes_map: dict[str, str] = {
+        "emission_factor_gasolina_c_base":     "Gasolina A pura antes do blend etanol",
+        "emission_factor_gasolina_c_comercial": f"= base × (1 − {round(blend_eth*100,1)}%) blend aplicado",
+        "emission_factor_diesel_s10_base":     "Diesel puro antes do blend biodiesel",
+        "emission_factor_diesel_s10_comercial": f"= base × (1 − {round(blend_bio*100,1)}%) blend aplicado",
+        "emission_factor_etanol":              "CO₂ biogênico — não entra no Escopo 1 (GHG Protocol)",
+        "idle_rate_leve":                      "Proxy U.S. DOE Fact #861 (2015) — sem dado CETESB público",
+        "idle_rate_pesado":                    "Proxy U.S. DOE Fact #861 (2015) — sem dado CETESB público",
+        "idle_rate_gnv":                       "Estimativa por conversão energética",
+        "idle_rate_eletrico":                  "Estimativa — sem fonte disponível",
+        "accel_surge_leve":                    "Extra pelo ciclo freada+aceleração ao pagar manualmente",
+        "accel_surge_pesado":                  "Extra pelo ciclo freada+aceleração ao pagar manualmente",
+        "baseline_pedagio_avg_wait_sec":       "Premissa: pagamento manual ~30-45s + fila estimada",
         "baseline_estacionamento_avg_wait_sec": "Premissa: emissão de ticket + cancela",
+        "paper_co2_per_ticket":                "Aplica-se apenas a estacionamento",
+        "paper_water_per_ticket":              "Aplica-se apenas a estacionamento",
+        "fuel_price_brl_per_unit":             (f"UF: {(fuel_price_meta or {}).get('uf', '?')} | {(fuel_price_meta or {}).get('unit', 'L')}/R$ | Fonte: {(fuel_price_meta or {}).get('source', 'ANP')}"),
     }
+
+    values_map: dict[str, Any] = {
+        "emission_factor_gasolina_c_base":      gas_base,
+        "blend_etanol_pct":                     f"{round(blend_eth * 100, 1)}%",
+        "emission_factor_gasolina_c_comercial": round(ef.get("gasolina_c", 0), 6),
+        "ch4_factor_gasolina_c":                round(ch4.get("gasolina_c", 0), 8),
+        "n2o_factor_gasolina_c":                round(n2o.get("gasolina_c", 0), 8),
+        "emission_factor_diesel_s10_base":      die_base,
+        "blend_biodiesel_pct":                  f"{round(blend_bio * 100, 1)}%",
+        "emission_factor_diesel_s10_comercial": round(ef.get("diesel_s10", 0), 6),
+        "ch4_factor_diesel_s10":                round(ch4.get("diesel_s10", 0), 8),
+        "n2o_factor_diesel_s10":                round(n2o.get("diesel_s10", 0), 8),
+        "emission_factor_etanol":               round(ef.get("etanol", 0), 6),
+        "ch4_factor_etanol":                    round(ch4.get("etanol", 0), 8),
+        "n2o_factor_etanol":                    round(n2o.get("etanol", 0), 8),
+        "emission_factor_gnv":                  round(ef.get("gnv", 0), 6),
+        "ch4_factor_gnv":                       round(ch4.get("gnv", 0), 8),
+        "n2o_factor_gnv":                       round(n2o.get("gnv", 0), 8),
+        "emission_factor_eletrico_kwh":         round(ef.get("eletrico_kwh", 0), 6),
+        "gwp100_ch4":                           gwp.get("ch4", 27.9),
+        "gwp100_n2o":                           gwp.get("n2o", 273.0),
+        "idle_rate_leve":                       idle.get("leve", 0),
+        "idle_rate_pesado":                     idle.get("pesado", 0),
+        "idle_rate_gnv":                        idle.get("gnv", 0),
+        "idle_rate_eletrico":                   idle.get("eletrico", 0),
+        "accel_surge_leve":                     round(accel.get("leve", 0), 6),
+        "accel_surge_pesado":                   round(accel.get("pesado", 0), 6),
+        "baseline_pedagio_avg_wait_sec":        bases.get("pedagio", {}).get("avg_wait_sec", 180),
+        "baseline_estacionamento_avg_wait_sec": bases.get("estacionamento", {}).get("avg_wait_sec", 120),
+        "paper_co2_per_ticket":                 round(paper.get("co2_per_ticket", 0), 6),
+        "paper_water_per_ticket":               round(paper.get("water_per_ticket", 0), 4),
+        "fuel_price_brl_per_unit":              round(float(fuel_price or 0), 4),
+    }
+
+    prem_rows: dict[str, int] = {}
 
     for row_i, (key, desc, unit, src_key, warn) in enumerate(_PREMISES, 4):
-        val_info = values_map.get(key, (0, src_key))
-        val = val_info if not isinstance(val_info, tuple) else val_info[0]
+        prem_rows[key] = row_i
+        val = values_map.get(key, 0)
         src_text, src_year = _src(src_key)
         note = notes_map.get(key, "")
         fill = _FILL_WARN() if warn else (_FILL_ALT() if row_i % 2 == 0 else None)
@@ -198,157 +321,419 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any]):
             c.alignment = Alignment(wrap_text=True, vertical="top")
             if fill:
                 c.fill = fill
+            if col == 3 and isinstance(val, float):
+                c.number_format = "0.00######"
 
-    _set_col_widths(ws, [32, 42, 12, 12, 48, 8, 48])
+    _set_col_widths(ws, [38, 46, 12, 12, 52, 8, 54])
     ws.freeze_panes = "A4"
+    return prem_rows
 
 
-# ── Sheet 2: Passo a passo ────────────────────────────────────────────────────
+# ── Sheet 2: Passo a Passo ────────────────────────────────────────────────────
 
-def _build_steps_sheet(ws: "Worksheet", result: Dict[str, Any], vehicle: Dict[str, Any], params: Dict[str, Any], specs: Dict[str, Any]):
+def _build_steps_sheet(
+    ws: "Worksheet",
+    vehicle: Dict[str, Any],
+    params: Dict[str, Any],
+    prem_rows: dict[str, int],
+) -> None:
     ws.title = "2. Passo a Passo"
 
-    env = result.get("environmental", {})
-    meta = result.get("metadata", {})
-    baselines = specs.get("baselines", {})
-    idle = specs.get("idle_rates", {})
-    ch4_factors = specs.get("ch4_factors", {})
-    n2o_factors = specs.get("n2o_factors", {})
-    gwp = specs.get("gwp100", {})
-    ef = specs.get("emission_factors", {})
+    fuel_type  = vehicle.get("fuel_type", "gasolina_c")
+    category   = vehicle.get("category", "leve")
+    context    = params.get("context", "pedagio")
+    elapsed    = int(params.get("elapsed_time", 30))
+    is_digital = bool(params.get("is_digital", True))
 
-    fuel_type = vehicle.get("fuel_type", "gasolina_c")
-    category = vehicle.get("category", "leve")
-    context = params.get("context", "pedagio")
-    baseline = baselines.get(context, {}).get("avg_wait_sec", 180)
-    elapsed = params.get("elapsed_time", baselines.get(context, {}).get("with_tag_avg_sec", 15))
-    time_saved = max(0, baseline - elapsed)
+    funit        = _fuel_unit(fuel_type)
+    idle_key     = _idle_key(fuel_type, category)
+    accel_key    = _accel_key(fuel_type, category)
+    ef_key       = _ef_scope1_key(fuel_type)
+    ch4_k        = _ch4_key(fuel_type)
+    n2o_k        = _n2o_key(fuel_type)
+    baseline_key = f"baseline_{context}_avg_wait_sec"
+    is_ev        = fuel_type == "eletrico"
 
-    if fuel_type in ("eletrico",):
-        idle_rate = idle.get("eletrico", 0)
-        fuel_unit = "kWh"
-    elif fuel_type == "gnv":
-        idle_rate = idle.get("gnv", 0)
-        fuel_unit = "m³"
-    elif category == "pesado":
-        idle_rate = idle.get("pesado", 0)
-        fuel_unit = "L"
-    else:
-        idle_rate = idle.get("leve", 0)
-        fuel_unit = "L"
+    r_bl    = prem_rows[baseline_key]
+    r_idle  = prem_rows[idle_key]
+    r_ef    = prem_rows.get(ef_key) if ef_key else None
+    r_ch4   = prem_rows.get(ch4_k) if ch4_k else None
+    r_n2o   = prem_rows.get(n2o_k) if n2o_k else None
+    r_accel = prem_rows.get(accel_key) if accel_key else None
+    r_gch4  = prem_rows["gwp100_ch4"]
+    r_gn2o  = prem_rows["gwp100_n2o"]
+    r_paper = prem_rows["paper_co2_per_ticket"]
+    r_ev_ef = prem_rows["emission_factor_eletrico_kwh"]
 
-    fuel_saved = time_saved * idle_rate
-    co2_fossil = env.get("co2_fossil_kg", 0)
-    ch4_abs = fuel_saved * ch4_factors.get(fuel_type, 0)
-    n2o_abs = fuel_saved * n2o_factors.get(fuel_type, 0)
-    ch4_co2e = ch4_abs * gwp.get("ch4", 27.9)
-    n2o_co2e = n2o_abs * gwp.get("n2o", 273.0)
-    co2e_scope1 = env.get("co2e_scope1_kg", 0)
-    paper_co2 = env.get("paper_co2_avoided_kg", 0)
-    co2e_scope2 = env.get("co2e_scope2_kg", 0)
-    total = env.get("co2_kg", 0)
+    ef_ref    = _pref(r_ef)    if r_ef    else "0"
+    ch4_ref   = _pref(r_ch4)   if r_ch4   else "0"
+    n2o_ref   = _pref(r_n2o)   if r_n2o   else "0"
+    accel_sfx = f"+{_pref(r_accel)}" if r_accel else ""
 
-    # Title
+    R = _SR
+
+    use_paper = context == "estacionamento" and is_digital
+    paper_formula = f"={_pref(r_paper)}" if use_paper else "=0"
+
+    # (key, description, formula_desc, result_value_or_formula, unit)
+    steps = [
+        ("baseline_sem_tag",
+         "Tempo médio sem usar tag",
+         f"Premissas!C{r_bl}",
+         f"={_pref(r_bl)}",
+         "s"),
+
+        ("tempo_com_tag",
+         "Tempo real da passagem com tag (input do sistema)",
+         "Parâmetro da requisição — medido",
+         elapsed,
+         "s"),
+
+        ("tempo_salvo",
+         "Tempo economizado",
+         f"MAX(0, E{R['baseline']} − E{R['elapsed']})",
+         f"=MAX(0,E{R['baseline']}-E{R['elapsed']})",
+         "s"),
+
+        ("combustivel_evitado",
+         f"Combustível não consumido ({funit})",
+         f"E{R['time_saved']} × Premissas!C{r_idle}" + (f" + Premissas!C{r_accel}" if r_accel else ""),
+         f"=E{R['time_saved']}*{_pref(r_idle)}{accel_sfx}",
+         funit),
+
+        ("co2_fossil",
+         "CO₂ fóssil evitado" + (" — biogênico, Escopo 1 = 0" if fuel_type == "etanol" else ""),
+         f"E{R['fuel']} × {ef_ref}" + (" (biogênico)" if fuel_type == "etanol" else ""),
+         f"=E{R['fuel']}*{ef_ref}",
+         "kg CO₂"),
+
+        ("ch4_absoluto",
+         "CH4 evitado (massa)",
+         f"E{R['fuel']} × {ch4_ref}",
+         f"=E{R['fuel']}*{ch4_ref}",
+         "kg CH4"),
+
+        ("ch4_co2e",
+         "CH4 em CO₂e",
+         f"E{R['ch4_abs']} × Premissas!C{r_gch4} (GWP100)",
+         f"=E{R['ch4_abs']}*{_pref(r_gch4)}",
+         "kg CO₂e"),
+
+        ("n2o_absoluto",
+         "N2O evitado (massa)",
+         f"E{R['fuel']} × {n2o_ref}",
+         f"=E{R['fuel']}*{n2o_ref}",
+         "kg N2O"),
+
+        ("n2o_co2e",
+         "N2O em CO₂e",
+         f"E{R['n2o_abs']} × Premissas!C{r_gn2o} (GWP100)",
+         f"=E{R['n2o_abs']}*{_pref(r_gn2o)}",
+         "kg CO₂e"),
+
+        ("co2e_scope1",
+         "CO₂e Escopo 1 (combustão direta)",
+         f"E{R['co2_fossil']} + E{R['ch4_co2e']} + E{R['n2o_co2e']}",
+         f"=E{R['co2_fossil']}+E{R['ch4_co2e']}+E{R['n2o_co2e']}",
+         "kg CO₂e"),
+
+        ("co2e_scope2",
+         "CO₂e Escopo 2 (rede elétrica — só EV)",
+         f"E{R['fuel']} × Premissas!C{r_ev_ef}" if is_ev else f"0 (não aplica a {fuel_type})",
+         f"=E{R['fuel']}*{_pref(r_ev_ef)}" if is_ev else "=0",
+         "kg CO₂e"),
+
+        ("paper_co2_avoided",
+         "CO₂ ticket de papel evitado",
+         f"Premissas!C{r_paper}" if use_paper else "0 (pedágio ou não-digital)",
+         paper_formula,
+         "kg CO₂"),
+
+        ("TOTAL_EVITADO",
+         "TOTAL CO₂e EVITADO",
+         f"E{R['scope1']} + E{R['scope2']} + E{R['paper']}",
+         f"=E{R['scope1']}+E{R['scope2']}+E{R['paper']}",
+         "kg CO₂e"),
+    ]
+
     ws.merge_cells("A1:F1")
-    ws["A1"].value = "Passo a Passo do Cálculo — Emissões Evitadas por Passagem com Tag"
+    ws["A1"].value = "Passo a Passo — Emissões Evitadas por Passagem com Tag"
     ws["A1"].font = _FONT_TITLE()
     ws["A1"].alignment = Alignment(horizontal="left", vertical="center")
     ws.row_dimensions[1].height = 28
 
-    # Vehicle info
     ws.merge_cells("A2:F2")
     ws["A2"].value = (
-        f"Veículo: {vehicle.get('model') or 'N/A'} | "
-        f"Combustível: {fuel_type} | Categoria: {category} | "
-        f"Contexto: {context} | UF: {params.get('uf','?')} | "
-        f"Passagem: {elapsed}s | Baseline: {baseline}s"
+        f"Veículo: {vehicle.get('model') or 'N/A'} | Combustível: {fuel_type} | "
+        f"Categoria: {category} | Contexto: {context} | UF: {params.get('uf','?')} | "
+        f"Tempo passagem: {elapsed}s"
     )
     ws["A2"].font = _FONT_SMALL()
     ws.row_dimensions[2].height = 20
 
-    _header_row(ws, 3, ["Passo", "Descrição", "Fórmula", "Inputs", "Resultado", "Unidade"])
+    _header_row(ws, 3, ["Passo", "Descrição", "Fórmula / Referência", "Referências (células)", "Resultado", "Unidade"])
 
-    steps = [
-        ("baseline_sem_tag", "Tempo médio sem usar tag", "parâmetro configurável", f"{baseline} s", baseline, "s"),
-        ("tempo_com_tag", "Tempo real da passagem com tag (input)", "input do sistema", f"{elapsed} s", elapsed, "s"),
-        ("tempo_salvo", "Tempo economizado", "baseline − tempo_com_tag", f"{baseline} − {elapsed}", time_saved, "s"),
-        ("combustivel_evitado", f"Combustível não consumido", f"tempo_salvo × idle_rate_{category}", f"{time_saved} × {idle_rate:.6f}", round(fuel_saved, 6), fuel_unit),
-        ("co2_fossil", "CO₂ fóssil evitado", f"combustivel × fator_co2_{fuel_type}", f"{round(fuel_saved,6)} × {round(ef.get(fuel_type,0),4)}", round(co2_fossil, 6), "kg CO₂"),
-        ("ch4_absoluto", "CH4 evitado (massa)", f"combustivel × ch4_factor_{fuel_type}", f"{round(fuel_saved,6)} × {ch4_factors.get(fuel_type,0):.8f}", round(ch4_abs, 8), "kg CH4"),
-        ("ch4_co2e", "CH4 convertido em CO₂e", f"ch4_absoluto × gwp100_ch4", f"{round(ch4_abs,8)} × {gwp.get('ch4',27.9)}", round(ch4_co2e, 6), "kg CO₂e"),
-        ("n2o_absoluto", "N2O evitado (massa)", f"combustivel × n2o_factor_{fuel_type}", f"{round(fuel_saved,6)} × {n2o_factors.get(fuel_type,0):.8f}", round(n2o_abs, 8), "kg N2O"),
-        ("n2o_co2e", "N2O convertido em CO₂e", f"n2o_absoluto × gwp100_n2o", f"{round(n2o_abs,8)} × {gwp.get('n2o',273.0)}", round(n2o_co2e, 6), "kg CO₂e"),
-        ("co2e_scope1", "CO₂e Escopo 1 (combustão direta)", "co2_fossil + ch4_co2e + n2o_co2e", f"{round(co2_fossil,4)} + {round(ch4_co2e,4)} + {round(n2o_co2e,4)}", round(co2e_scope1, 6), "kg CO₂e"),
-        ("co2e_scope2", "CO₂e Escopo 2 (rede elétrica, só EV)", "combustivel_kWh × fator_SIN", "—" if fuel_type != "eletrico" else f"{round(fuel_saved,4)} × {ef.get('eletrico_kwh',0)}", round(co2e_scope2, 6), "kg CO₂e"),
-        ("paper_co2_avoided", "CO₂ ticket de papel evitado", "is_digital × co2_per_ticket", f"{'Sim' if params.get('is_digital',True) else 'Não'} × 0.012", round(paper_co2, 4), "kg CO₂"),
-        ("TOTAL_EVITADO", "TOTAL CO₂e EVITADO", "co2e_scope1 + co2e_scope2 + paper", f"{round(co2e_scope1,4)} + {round(co2e_scope2,4)} + {round(paper_co2,4)}", round(total, 4), "kg CO₂e"),
-    ]
-
-    for row_i, (key, desc, formula, inputs, result_val, unit) in enumerate(steps, 4):
+    for row_i, (key, desc, formula_desc, result_val, unit) in enumerate(steps, 4):
         is_total = key == "TOTAL_EVITADO"
         fill = _FILL_TOTAL() if is_total else (_FILL_ALT() if row_i % 2 == 0 else None)
-        for col, v in enumerate([key, desc, formula, inputs, result_val, unit], 1):
+
+        # col 4 = D = text description of refs; col 5 = E = formula/value
+        for col, v in enumerate([key, desc, formula_desc, "", result_val, unit], 1):
             c = ws.cell(row=row_i, column=col, value=v)
             c.font = Font(name="Calibri", size=10, bold=is_total)
             c.border = _THIN()
             c.alignment = Alignment(wrap_text=True, vertical="top")
             if fill:
                 c.fill = fill
-            if col == 5 and isinstance(v, float):
-                c.number_format = "0.000000"
+            if col == 5:
+                if isinstance(v, str) and v.startswith("="):
+                    c.number_format = "0.000000"
+                elif isinstance(v, int) and not isinstance(v, bool):
+                    c.number_format = "0"
 
-    _set_col_widths(ws, [24, 40, 44, 36, 14, 12])
+    _set_col_widths(ws, [26, 42, 42, 1, 14, 12])
     ws.freeze_panes = "A4"
 
 
 # ── Sheet 3: Comparação ───────────────────────────────────────────────────────
 
-def _build_comparison_sheet(ws: "Worksheet", result: Dict[str, Any]):
+def _build_comparison_sheet(
+    ws: "Worksheet",
+    result: Dict[str, Any],
+    vehicle: Dict[str, Any],
+    params: Dict[str, Any],
+    prem_rows: dict[str, int],
+) -> None:
     ws.title = "3. Comparação"
-    comp = result.get("comparison", {})
+
+    fuel_type  = vehicle.get("fuel_type", "gasolina_c")
+    category   = vehicle.get("category", "leve")
+    context    = params.get("context", "pedagio")
+    is_digital = bool(params.get("is_digital", True))
+    is_ev      = fuel_type == "eletrico"
+
+    comp    = result.get("comparison", {})
     without = comp.get("without_tag", {})
-    with_tag = comp.get("with_tag", {})
-    delta = comp.get("delta", {})
+    with_t  = comp.get("with_tag", {})
+    delta   = comp.get("delta", {})
+
+    idle_key  = _idle_key(fuel_type, category)
+    accel_key = _accel_key(fuel_type, category)
+    ef_key    = _ef_scope1_key(fuel_type)
+    ch4_k     = _ch4_key(fuel_type)
+    n2o_k     = _n2o_key(fuel_type)
+    bl_key    = f"baseline_{context}_avg_wait_sec"
+
+    r_bl    = prem_rows[bl_key]
+    r_idle  = prem_rows[idle_key]
+    r_ef    = prem_rows.get(ef_key) if ef_key else None
+    r_ch4   = prem_rows.get(ch4_k) if ch4_k else None
+    r_n2o   = prem_rows.get(n2o_k) if n2o_k else None
+    r_accel = prem_rows.get(accel_key) if accel_key else None
+    r_gch4  = prem_rows["gwp100_ch4"]
+    r_gn2o  = prem_rows["gwp100_n2o"]
+    r_pw    = prem_rows["paper_water_per_ticket"]
+    r_ev_ef = prem_rows["emission_factor_eletrico_kwh"]
+
+    ef_ref  = _pref(r_ef)  if r_ef  else "0"
+    ch4_ref = _pref(r_ch4) if r_ch4 else "0"
+    n2o_ref = _pref(r_n2o) if r_n2o else "0"
+    accel_sfx = f"+{_pref(r_accel)}" if r_accel else ""
+
+    funit = _fuel_unit(fuel_type)
+    R = _SR
+
+    ef_chain = f"({ef_ref}+{ch4_ref}*{_pref(r_gch4)}+{n2o_ref}*{_pref(r_gn2o)})"
+
+    # sem tag fuel: baseline × idle + accel
+    fuel_sem = f"={_pref(r_bl)}*{_pref(r_idle)}{accel_sfx}"
+    # com tag fuel: elapsed × idle (no accel surge)
+    fuel_com = f"={_s2e(R['elapsed'])}*{_pref(r_idle)}"
+
+    co2e1_sem = f"=B4*{ef_chain}" if not is_ev else "=0"
+    co2e1_com = f"=C4*{ef_chain}" if not is_ev else "=0"
+    co2e2_sem = f"=B4*{_pref(r_ev_ef)}" if is_ev else "=0"
+    co2e2_com = f"=C4*{_pref(r_ev_ef)}" if is_ev else "=0"
+
+    # water: paper ticket exists only sem-tag at estacionamento
+    water_sem = f"={_pref(r_pw)}" if context == "estacionamento" else "=0"
+    water_com = "=0"
 
     ws.merge_cells("A1:D1")
-    ws["A1"].value = "Cenário Sem Tag vs. Com Tag — Comparação de Emissões"
+    ws["A1"].value = "Cenário Sem Tag vs. Com Tag — Comparação"
     ws["A1"].font = _FONT_TITLE()
     ws["A1"].alignment = Alignment(horizontal="left")
     ws.row_dimensions[1].height = 28
 
-    _header_row(ws, 2, ["Métrica", "Sem Tag", "Com Tag", "Evitado (delta)"])
+    ws.merge_cells("A2:D2")
+    ws["A2"].value = (
+        "ℹ️  Sem Tag e Com Tag calculados por fórmulas referenciando '1. Premissas' e '2. Passo a Passo'. "
+        "Coluna 'Evitado' = Sem Tag − Com Tag."
+    )
+    ws["A2"].font = Font(name="Calibri", size=9, italic=True, color="1A3A4A")
+    ws["A2"].fill = PatternFill("solid", fgColor="E8F4FD")
+    ws["A2"].alignment = Alignment(wrap_text=True)
+    ws.row_dimensions[2].height = 28
 
-    rows = [
-        ("Tempo na passagem (s)", without.get("time_sec"), with_tag.get("time_sec"), without.get("time_sec", 0) - with_tag.get("time_sec", 0)),
-        ("Combustível consumido", without.get("fuel_amount"), with_tag.get("fuel_amount"), delta.get("fuel_amount")),
-        ("Unidade combustível", without.get("fuel_unit"), with_tag.get("fuel_unit"), "—"),
-        ("CO₂e Escopo 1 (kg)", without.get("co2e_scope1_kg"), with_tag.get("co2e_scope1_kg"), delta.get("co2e_scope1_kg")),
-        ("CO₂ biogênico (kg)", without.get("co2_biogenic_kg"), with_tag.get("co2_biogenic_kg"), delta.get("co2_biogenic_kg")),
-        ("Água (L)", without.get("water_liters"), with_tag.get("water_liters"), delta.get("water_liters")),
-        ("Economia financeira (R$)", without.get("estimated_brl"), with_tag.get("estimated_brl"), delta.get("estimated_brl")),
+    _header_row(ws, 3, ["Métrica", "Sem Tag", "Com Tag", "Evitado"])
+
+    # (label, sem_val, com_val, delta_raw_or_None)
+    # delta_raw=None → use =B{row}-C{row}
+    rows: list[tuple] = [
+        ("Tempo na passagem (s)",
+         f"={_pref(r_bl)}",
+         f"={_s2e(R['elapsed'])}",
+         None),
+
+        (f"Combustível ({funit})",
+         fuel_sem,
+         fuel_com,
+         None),
+
+        ("CO₂e Escopo 1 (kg)",
+         co2e1_sem,
+         co2e1_com,
+         None),
+
+        ("CO₂e Escopo 2 — só EV (kg)",
+         co2e2_sem,
+         co2e2_com,
+         None),
+
+        ("CO₂ biogênico (kg)",
+         without.get("co2_biogenic_kg", 0),
+         with_t.get("co2_biogenic_kg", 0),
+         delta.get("co2_biogenic_kg", 0)),
+
+        ("Água (L) — ticket de papel",
+         water_sem,
+         water_com,
+         None),
+
+        ("Custo estimado (R$) — combustível",
+         f"=B5*{_pref(prem_rows['fuel_price_brl_per_unit'])}",
+         f"=C5*{_pref(prem_rows['fuel_price_brl_per_unit'])}",
+         None),
     ]
 
-    for row_i, (label, v_without, v_with, v_delta) in enumerate(rows, 3):
+    for row_i, (label, sem_val, com_val, delta_raw) in enumerate(rows, 4):
         fill = _FILL_ALT() if row_i % 2 == 0 else None
-        for col, v in enumerate([label, v_without, v_with, v_delta], 1):
+        d_val = delta_raw if delta_raw is not None else f"=B{row_i}-C{row_i}"
+
+        for col, v in enumerate([label, sem_val, com_val, d_val], 1):
             c = ws.cell(row=row_i, column=col, value=v)
             c.font = Font(name="Calibri", size=10, bold=(col == 1))
             c.border = _THIN()
             if fill:
                 c.fill = fill
-            if isinstance(v, float) and col > 1:
-                c.number_format = "0.0000"
+            if col > 1:
+                if isinstance(v, str) and v.startswith("="):
+                    c.number_format = "0.0000"
+                elif isinstance(v, float):
+                    c.number_format = "0.0000"
 
-    _set_col_widths(ws, [32, 18, 18, 18])
+    _set_col_widths(ws, [34, 18, 18, 18])
 
 
 # ── Sheet 4: Sensibilidade ────────────────────────────────────────────────────
 
-def _build_sensitivity_sheet(ws: "Worksheet", result: Dict[str, Any]):
+def _build_sensitivity_sheet(
+    ws: "Worksheet",
+    vehicle: Dict[str, Any],
+    params: Dict[str, Any],
+    prem_rows: dict[str, int],
+) -> None:
     ws.title = "4. Sensibilidade"
-    sensitivity = result.get("sensitivity", {})
-    base_co2e = sensitivity.get("base_co2e_kg", result.get("environmental", {}).get("co2_kg", 0))
-    params = sensitivity.get("parameters", [])
+
+    fuel_type  = vehicle.get("fuel_type", "gasolina_c")
+    category   = vehicle.get("category", "leve")
+    context    = params.get("context", "pedagio")
+    is_digital = bool(params.get("is_digital", True))
+    is_ev      = fuel_type == "eletrico"
+
+    idle_key  = _idle_key(fuel_type, category)
+    accel_key = _accel_key(fuel_type, category)
+    ef_key    = _ef_scope1_key(fuel_type)
+    ch4_k     = _ch4_key(fuel_type)
+    n2o_k     = _n2o_key(fuel_type)
+    bl_key    = f"baseline_{context}_avg_wait_sec"
+
+    r_bl    = prem_rows[bl_key]
+    r_idle  = prem_rows[idle_key]
+    r_ef    = prem_rows.get(ef_key) if ef_key else None
+    r_ch4   = prem_rows.get(ch4_k) if ch4_k else None
+    r_n2o   = prem_rows.get(n2o_k) if n2o_k else None
+    r_accel = prem_rows.get(accel_key) if accel_key else None
+    r_gch4  = prem_rows["gwp100_ch4"]
+    r_gn2o  = prem_rows["gwp100_n2o"]
+    r_paper = prem_rows["paper_co2_per_ticket"]
+    r_ev_ef = prem_rows["emission_factor_eletrico_kwh"]
+
+    ef_ref  = _pref(r_ef)  if r_ef  else "0"
+    ch4_ref = _pref(r_ch4) if r_ch4 else "0"
+    n2o_ref = _pref(r_n2o) if r_n2o else "0"
+    accel_term = f"+{_pref(r_accel)}" if r_accel else ""
+
+    scope2_ef = _pref(r_ev_ef) if is_ev else ""
+    use_paper = context == "estacionamento" and is_digital
+    paper_expr = _pref(r_paper) if use_paper else "0"
+
+    R = _SR
+    elapsed_ref = _s2e(R["elapsed"])
+    time_base   = f"MAX(0,{_pref(r_bl)}-{elapsed_ref})"
+
+    VARS = [
+        ("low_50pct", 0.5),
+        ("low_20pct", 0.8),
+        ("high_20pct", 1.2),
+        ("high_50pct", 1.5),
+    ]
+
+    def _make_formulas(idle_expr, time_expr, ef_expr, ch4_expr, n2o_expr, gch4_expr, gn2o_expr):
+        return [
+            _sens_total(time_expr, idle_expr, accel_term,
+                        ef_expr, ch4_expr, n2o_expr,
+                        gch4_expr, gn2o_expr, scope2_ef, paper_expr)
+        ]
+
+    def _vary(param: str, mult: float) -> str:
+        if param == "idle":
+            return _sens_total(
+                time_base, f"{_pref(r_idle)}*{mult}", accel_term,
+                ef_ref, ch4_ref, n2o_ref,
+                _pref(r_gch4), _pref(r_gn2o), scope2_ef, paper_expr)
+        if param == "baseline":
+            return _sens_total(
+                f"MAX(0,{_pref(r_bl)}*{mult}-{elapsed_ref})", _pref(r_idle), accel_term,
+                ef_ref, ch4_ref, n2o_ref,
+                _pref(r_gch4), _pref(r_gn2o), scope2_ef, paper_expr)
+        if param == "ef" and r_ef:
+            return _sens_total(
+                time_base, _pref(r_idle), accel_term,
+                f"{_pref(r_ef)}*{mult}", ch4_ref, n2o_ref,
+                _pref(r_gch4), _pref(r_gn2o), scope2_ef, paper_expr)
+        if param == "gwp_ch4":
+            return _sens_total(
+                time_base, _pref(r_idle), accel_term,
+                ef_ref, ch4_ref, n2o_ref,
+                f"{_pref(r_gch4)}*{mult}", _pref(r_gn2o), scope2_ef, paper_expr)
+        if param == "gwp_n2o":
+            return _sens_total(
+                time_base, _pref(r_idle), accel_term,
+                ef_ref, ch4_ref, n2o_ref,
+                _pref(r_gch4), f"{_pref(r_gn2o)}*{mult}", scope2_ef, paper_expr)
+        return f"={_s2e(R['total'])}"
+
+    sens_params: list[tuple] = [
+        ("idle",     f"{idle_key} — Taxa idle motor ligado",    True),
+        ("baseline", f"{bl_key} — Tempo médio sem tag",         True),
+    ]
+    if r_ef:
+        sens_params.append(("ef", f"{ef_key} — Fator CO₂ {fuel_type}", False))
+    if r_ch4:
+        sens_params.append(("gwp_ch4", "gwp100_ch4 — GWP100 CH4 (IPCC AR6)", False))
+    if r_n2o:
+        sens_params.append(("gwp_n2o", "gwp100_n2o — GWP100 N2O (IPCC AR6)", False))
 
     ws.merge_cells("A1:F1")
     ws["A1"].value = "Análise de Sensibilidade — Variação ±20% e ±50% nos Parâmetros Principais"
@@ -357,38 +742,42 @@ def _build_sensitivity_sheet(ws: "Worksheet", result: Dict[str, Any]):
     ws.row_dimensions[1].height = 28
 
     ws.merge_cells("A2:F2")
-    ws["A2"].value = f"CO₂e base: {base_co2e} kg | Parâmetros ⚠️ = premissa sem fonte pública oficial"
+    ws["A2"].value = (
+        f"CO₂e base = {_S2}!E{R['total']} kg | "
+        "Cada linha recalcula o total variando apenas aquele parâmetro. "
+        "⚠️ = premissa sem fonte pública — maior incerteza."
+    )
     ws["A2"].font = _FONT_SMALL()
 
-    _header_row(ws, 3, ["Parâmetro", "Valor Base", "−50%", "−20%", "+20%", "+50%"])
-    _header_row(ws, 4, ["", "(kg CO₂e)", "(kg CO₂e)", "(kg CO₂e)", "(kg CO₂e)", "(kg CO₂e)"])
+    _header_row(ws, 3, ["Parâmetro", "Base (kg CO₂e)", "−50%", "−20%", "+20%", "+50%"])
+    _header_row(ws, 4, ["",          "(atual)",         "(kg CO₂e)", "(kg CO₂e)", "(kg CO₂e)", "(kg CO₂e)"])
 
-    for row_i, p in enumerate(params, 5):
-        warn = "⚠️ " if "premissa" in p.get("note", "").lower() or "proxy" in p.get("note", "").lower() else ""
+    for row_i, (param_key, label, warn) in enumerate(sens_params, 5):
         fill = _FILL_WARN() if warn else (_FILL_ALT() if row_i % 2 == 0 else None)
-        vals = [
-            f"{warn}{p.get('label', p.get('key', ''))}",
-            p.get("base", 0),
-            p.get("low_50pct", 0),
-            p.get("low_20pct", 0),
-            p.get("high_20pct", 0),
-            p.get("high_50pct", 0),
+        label_str = ("⚠️ " if warn else "") + label
+
+        row_vals = [
+            label_str,
+            f"={_s2e(R['total'])}",
+            _vary(param_key, 0.5),
+            _vary(param_key, 0.8),
+            _vary(param_key, 1.2),
+            _vary(param_key, 1.5),
         ]
-        for col, v in enumerate(vals, 1):
+
+        for col, v in enumerate(row_vals, 1):
             c = ws.cell(row=row_i, column=col, value=v)
             c.font = Font(name="Calibri", size=10, bold=(col == 1))
             c.border = _THIN()
             if fill:
                 c.fill = fill
-            if isinstance(v, float) and col > 1:
+            if col > 1 and isinstance(v, str) and v.startswith("="):
                 c.number_format = "0.0000"
 
-    # Note
-    note_row = 5 + len(params) + 1
+    note_row = 5 + len(sens_params) + 1
     ws.merge_cells(f"A{note_row}:F{note_row}")
     ws[f"A{note_row}"].value = (
-        "Nota: 'baseline_wait_sec' (tempo médio sem tag) é o parâmetro de maior sensibilidade. "
-        "Não existe dado público brasileiro para validação — ANTT/ABCR/CCR não publicam este dado. "
+        "Nota: baseline_wait_sec é o parâmetro de maior sensibilidade e não tem fonte pública oficial brasileira. "
         "Recomenda-se medição de campo para inventários GHG formais."
     )
     ws[f"A{note_row}"].font = Font(name="Calibri", size=9, italic=True, color="7D6608")
@@ -396,13 +785,15 @@ def _build_sensitivity_sheet(ws: "Worksheet", result: Dict[str, Any]):
     ws[f"A{note_row}"].alignment = Alignment(wrap_text=True)
     ws.row_dimensions[note_row].height = 40
 
-    _set_col_widths(ws, [44, 14, 14, 14, 14, 14])
+    _set_col_widths(ws, [50, 14, 14, 14, 14, 14])
 
 
 # ── Sheet 5: Escala ───────────────────────────────────────────────────────────
 
-def _build_scale_sheet(ws: "Worksheet", co2e_per_passage: float, fleet_size: int = 1):
+def _build_scale_sheet(ws: "Worksheet", fleet_size: int = 1) -> None:
     ws.title = "5. Escala"
+
+    R = _SR
 
     ws.merge_cells("A1:C1")
     ws["A1"].value = "Projeção de Escala — Emissões Evitadas por Período"
@@ -410,46 +801,86 @@ def _build_scale_sheet(ws: "Worksheet", co2e_per_passage: float, fleet_size: int
     ws["A1"].alignment = Alignment(horizontal="left")
     ws.row_dimensions[1].height = 28
 
-    ws.merge_cells("A2:C2")
-    ws["A2"].value = f"Base: {co2e_per_passage} kg CO₂e por passagem | Frota configurável: {fleet_size} veículo(s)"
-    ws["A2"].font = _FONT_SMALL()
-
-    _header_row(ws, 3, ["Escala", "Passagens", "CO₂e Evitado"])
-
-    passages_per_day = 2  # conservador
-    work_days_month = 20
-    months = 12
-    national_daily = 5_000_000  # estimativa ANP
-
-    scenarios = [
-        ("Por passagem", 1, co2e_per_passage, "kg"),
-        (f"Diário (frota {fleet_size}v × {passages_per_day} passagens)", fleet_size * passages_per_day, fleet_size * passages_per_day * co2e_per_passage, "kg"),
-        (f"Mensal ({work_days_month} dias úteis)", fleet_size * passages_per_day * work_days_month, fleet_size * passages_per_day * work_days_month * co2e_per_passage, "kg"),
-        (f"Anual ({months} meses)", fleet_size * passages_per_day * work_days_month * months, fleet_size * passages_per_day * work_days_month * months * co2e_per_passage, "kg"),
-        ("Nacional por dia (est. 5M passagens/dia)", national_daily, national_daily * co2e_per_passage / 1000, "ton"),
-        ("Nacional por ano", national_daily * 365, national_daily * 365 * co2e_per_passage / 1000, "ton"),
+    # Input cells (raw, editable)
+    inputs = [
+        ("Frota (veículos):",          fleet_size, "0"),
+        ("Passagens/dia por veículo:", 2,           "0"),
+        ("Dias úteis/mês:",            20,          "0"),
+        ("CO₂e por passagem (kg):",    f"={_s2e(R['total'])}", "0.000000"),
     ]
 
-    for row_i, (label, passagens, co2e, unit) in enumerate(scenarios, 4):
-        is_national = "Nacional" in label
-        fill = _FILL_TOTAL() if is_national else (_FILL_ALT() if row_i % 2 == 0 else None)
-        for col, v in enumerate([label, passagens, f"{round(co2e, 2):,.2f} {unit}"], 1):
+    for row_i, (label, val, fmt) in enumerate(inputs, 2):
+        c_label = ws.cell(row=row_i, column=1, value=label)
+        c_label.font = Font(name="Calibri", size=10, bold=True)
+        c_label.border = _THIN()
+
+        c_val = ws.cell(row=row_i, column=2, value=val)
+        c_val.font = Font(name="Calibri", size=10)
+        c_val.border = _THIN()
+        c_val.number_format = fmt
+
+    # B2=fleet, B3=passages/day, B4=work_days, B5=co2e_per_passage
+    # Row 6: spacer / header
+    ws.row_dimensions[6].height = 6
+
+    _header_row(ws, 7, ["Escala", "Passagens", "CO₂e Evitado (kg)", "CO₂e Evitado (ton)"])
+
+    scenarios = [
+        ("Por passagem",
+         "=1",
+         f"=$B$5",
+         f"=$B$5/1000"),
+
+        ("Diário (frota × passagens/dia)",
+         "=$B$2*$B$3",
+         f"=$B$2*$B$3*$B$5",
+         f"=$B$2*$B$3*$B$5/1000"),
+
+        ("Mensal (× dias úteis/mês)",
+         "=$B$2*$B$3*$B$4",
+         f"=$B$2*$B$3*$B$4*$B$5",
+         f"=$B$2*$B$3*$B$4*$B$5/1000"),
+
+        ("Anual (× 12 meses)",
+         "=$B$2*$B$3*$B$4*12",
+         f"=$B$2*$B$3*$B$4*12*$B$5",
+         f"=$B$2*$B$3*$B$4*12*$B$5/1000"),
+
+        ("Nacional/dia (est. 5M passagens)",
+         "=5000000",
+         "=5000000*$B$5",
+         "=5000000*$B$5/1000"),
+
+        ("Nacional/ano",
+         "=5000000*365",
+         "=5000000*365*$B$5",
+         "=5000000*365*$B$5/1000"),
+    ]
+
+    for row_i, (label, passagens, co2e_kg, co2e_ton) in enumerate(scenarios, 8):
+        is_nat = "Nacional" in label
+        fill = _FILL_TOTAL() if is_nat else (_FILL_ALT() if row_i % 2 == 0 else None)
+
+        for col, v in enumerate([label, passagens, co2e_kg, co2e_ton], 1):
             c = ws.cell(row=row_i, column=col, value=v)
-            c.font = Font(name="Calibri", size=10, bold=is_national)
+            c.font = Font(name="Calibri", size=10, bold=is_nat)
             c.border = _THIN()
             if fill:
                 c.fill = fill
+            if col > 1 and isinstance(v, str) and v.startswith("="):
+                c.number_format = "#,##0.000000" if col in (3,) else "#,##0.0000" if col == 4 else "#,##0"
 
-    note_row = 4 + len(scenarios) + 1
-    ws.merge_cells(f"A{note_row}:C{note_row}")
+    note_row = 8 + len(scenarios) + 1
+    ws.merge_cells(f"A{note_row}:D{note_row}")
     ws[f"A{note_row}"].value = (
-        "Nota: Volume nacional baseado em estimativa do fluxo diário de pedágios no Brasil. "
-        "Dado real disponível via ANTT/ABCR mediante solicitação."
+        "Nota: volume nacional baseado em estimativa do fluxo diário de pedágios no Brasil. "
+        "Dado real via ANTT/ABCR mediante solicitação. "
+        "Altere B2-B4 para simular diferentes cenários de frota."
     )
     ws[f"A{note_row}"].font = Font(name="Calibri", size=9, italic=True)
     ws.row_dimensions[note_row].height = 32
 
-    _set_col_widths(ws, [52, 20, 28])
+    _set_col_widths(ws, [40, 20, 24, 20])
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -465,23 +896,28 @@ def build_audit_workbook(
         raise RuntimeError("openpyxl não está instalado. Execute: uv add openpyxl")
 
     wb = openpyxl.Workbook()
-    sheets = wb.worksheets
+
+    fuel_price = float(params.get("fuel_price_brl_per_unit") or 0)
+    fuel_price_meta = {
+        "source": params.get("fuel_price_source", "ANP"),
+        "uf": params.get("fuel_price_uf", params.get("uf", "?")),
+        "unit": params.get("fuel_price_unit", "L"),
+    }
 
     ws1 = wb.active
-    _build_premises_sheet(ws1, specs)
+    prem_rows = _build_premises_sheet(ws1, specs, fuel_price=fuel_price, fuel_price_meta=fuel_price_meta)
 
     ws2 = wb.create_sheet()
-    _build_steps_sheet(ws2, result, vehicle, params, specs)
+    _build_steps_sheet(ws2, vehicle, params, prem_rows)
 
     ws3 = wb.create_sheet()
-    _build_comparison_sheet(ws3, result)
+    _build_comparison_sheet(ws3, result, vehicle, params, prem_rows)
 
     ws4 = wb.create_sheet()
-    _build_sensitivity_sheet(ws4, result)
+    _build_sensitivity_sheet(ws4, vehicle, params, prem_rows)
 
     ws5 = wb.create_sheet()
-    co2e = result.get("environmental", {}).get("co2_kg", 0)
-    _build_scale_sheet(ws5, co2e, fleet_size)
+    _build_scale_sheet(ws5, fleet_size)
 
     buffer = io.BytesIO()
     wb.save(buffer)
