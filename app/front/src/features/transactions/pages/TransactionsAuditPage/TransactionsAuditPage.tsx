@@ -263,9 +263,20 @@ export const TransactionsAuditPage = () => {
             variant="outline"
             size="sm"
             className="ml-auto flex items-center gap-1.5"
+            disabled={!selectedTransaction}
+            title={!selectedTransaction ? "Selecione uma passagem primeiro" : undefined}
             onClick={() => {
-              const url = `/api/reports/calculadora.xlsx?plate=DEMO0001&elapsed_time=30&context=pedagio&uf=SP`;
-              window.open(url, "_blank");
+              const t = selectedTransaction;
+              const params = new URLSearchParams({
+                plate: t?.plate ?? "DEMO0001",
+                elapsed_time: String(Math.round(t?.elapsed_time_sec ?? 30)),
+                context: t?.context ?? "pedagio",
+                uf: t?.uf ?? "SP",
+                is_digital: String(t?.is_digital ?? true),
+                ...(t?.id != null && { transaction_id: String(t.id) }),
+                ...(t?.created_at && { passage_date: t.created_at.slice(0, 10) }),
+              });
+              window.open(`/api/reports/calculadora.xlsx?${params.toString()}`, "_blank");
             }}
           >
             <FileSpreadsheet className="h-4 w-4" />
