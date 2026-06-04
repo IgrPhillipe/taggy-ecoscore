@@ -107,3 +107,40 @@ async def get_daily_stats(
         })
 
     return {"items": data}
+
+
+@router.get("/emissions-by-uf")
+async def get_emissions_by_uf(
+    organization_id: int | None = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    organization_id = apply_org_scope_for_gestor(current_user, organization_id)
+
+    query = (
+        select(
+            Transaction.uf,
+            func.coalesce(func.sum(Transaction.co2_avoided_kg), 0).label("co2_total_kg"),
+            func.count().label("transaction_count"),
+        )
+        .where(Transaction.uf.isnot(None))
+        .group_by(Transaction.uf)
+        .order_by(Transaction.uf)
+    )
+
+    if organization_id is not None:
+        query = query.where(Transaction.organization_id == organization_id)
+
+    result = await db.execute(query)
+    rows = result.all()
+
+    return {
+        "items": [
+            {
+                "uf": row.uf,
+                "co2_total_kg": float(row.co2_total_kg),
+                "transaction_count": int(row.transaction_count),
+            }
+            for row in rows
+        ]
+    }

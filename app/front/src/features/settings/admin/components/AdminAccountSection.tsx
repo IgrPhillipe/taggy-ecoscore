@@ -49,13 +49,14 @@ export const AdminAccountSection = () => {
 
   useEffect(() => {
     if (!user) return;
-    const saved = loadAdminAccountSettings(user.email);
-    setEmail(saved.email);
-    setTwoFactorAuth(saved.twoFactorAuth);
+    loadAdminAccountSettings(user.email).then((saved) => {
+      setEmail(saved.email);
+      setTwoFactorAuth(saved.twoFactorAuth);
+    });
   }, [user]);
 
-  const handleSaveAccount = () => {
-    saveAdminAccountSettings({ email, twoFactorAuth });
+  const handleSaveAccount = async () => {
+    await saveAdminAccountSettings({ email, twoFactorAuth });
     toast.success("Configurações da conta salvas!");
   };
 

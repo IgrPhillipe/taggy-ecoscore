@@ -197,7 +197,7 @@ export const DashboardPage = () => {
       </section>
 
       <section className="grid grid-cols-2 gap-6">
-        {isAdmin && <RegionalEmissionsMap />}
+        <RegionalEmissionsMap organizationId={scopedOrgId} />
         {/* TODO: Integração pendente — dados comparativos mockados */}
         <ComparativeBarChart />
       </section>

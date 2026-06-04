@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { createEncryptedStorage } from "@/lib/encrypted-storage";
 import type { CurrentUser, UserRole } from "./types";
 
 type AuthState = {
@@ -29,6 +30,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "taggy-auth",
+      storage: createEncryptedStorage(),
     },
   ),
 );

@@ -1,4 +1,5 @@
 import { api } from "@/lib/http-client";
+import { encrypt, decrypt } from "@/lib/encrypted-storage";
 
 export type TechnicalSpecs = {
   id: number;
@@ -121,22 +122,24 @@ export type AdminAccountSettings = {
 
 const ADMIN_SETTINGS_KEY = "taggy-admin-settings";
 
-export function loadAdminAccountSettings(
+export async function loadAdminAccountSettings(
   fallbackEmail: string,
-): AdminAccountSettings {
+): Promise<AdminAccountSettings> {
   try {
     const raw = localStorage.getItem(ADMIN_SETTINGS_KEY);
-    if (!raw) {
-      return { email: fallbackEmail, twoFactorAuth: false };
-    }
-    return JSON.parse(raw) as AdminAccountSettings;
+    if (!raw) return { email: fallbackEmail, twoFactorAuth: false };
+    const plaintext = await decrypt(raw);
+    return JSON.parse(plaintext) as AdminAccountSettings;
   } catch {
     return { email: fallbackEmail, twoFactorAuth: false };
   }
 }
 
-export function saveAdminAccountSettings(settings: AdminAccountSettings): void {
-  localStorage.setItem(ADMIN_SETTINGS_KEY, JSON.stringify(settings));
+export async function saveAdminAccountSettings(
+  settings: AdminAccountSettings,
+): Promise<void> {
+  const encoded = await encrypt(JSON.stringify(settings));
+  localStorage.setItem(ADMIN_SETTINGS_KEY, encoded);
 }
 
 export type { NotificationSettings } from "@/features/users/api/types";
