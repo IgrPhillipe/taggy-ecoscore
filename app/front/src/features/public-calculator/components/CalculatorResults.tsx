@@ -1,6 +1,17 @@
-import { AlertTriangle, Clock, Coffee, Fuel, Leaf, RotateCcw, Smartphone, TreePine } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { formatKpiCo2, formatKpiCurrency } from "@/features/sustainability/lib/kpi";
+import {
+  AlertTriangle,
+  Clock,
+  Coffee,
+  Fuel,
+  Leaf,
+  RotateCcw,
+  Smartphone,
+  TreePine,
+} from "lucide-react";
+import {
+  formatKpiCo2,
+  formatKpiCurrency,
+} from "@/features/sustainability/lib/kpi";
 import type { PublicCalculatorResponse } from "../api/types";
 
 const FUEL_TYPE_LABELS: Record<string, string> = {
@@ -46,7 +57,9 @@ function MetricCard({
         {icon}
         {label}
       </div>
-      <p className={`text-xl font-bold ${highlight ? "text-emerald-700" : "text-neutral-900"}`}>
+      <p
+        className={`text-xl font-bold ${highlight ? "text-emerald-700" : "text-neutral-900"}`}
+      >
         {monthly}
         <span className="text-xs font-normal text-neutral-400 ml-1">/mês</span>
       </p>
@@ -56,7 +69,16 @@ function MetricCard({
 }
 
 export function CalculatorResults({ result, onReset }: Props) {
-  const { monthly, annual, vehicle_model, fuel_type, category, ludic, vehicle_fallback, fallback_reason } = result;
+  const {
+    monthly,
+    annual,
+    vehicle_model,
+    fuel_type,
+    category,
+    ludic,
+    vehicle_fallback,
+    fallback_reason,
+  } = result;
 
   const vehicleLabel = vehicle_model
     ? `${vehicle_model} · ${FUEL_TYPE_LABELS[fuel_type] ?? fuel_type} · ${CATEGORY_LABELS[category] ?? category}`
@@ -67,13 +89,17 @@ export function CalculatorResults({ result, onReset }: Props) {
       {vehicle_fallback && (
         <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-          <span>{fallback_reason ?? "Estimativa baseada em perfil padrão."}</span>
+          <span>
+            {fallback_reason ?? "Estimativa baseada em perfil padrão."}
+          </span>
         </div>
       )}
 
       <div className="rounded-xl border border-emerald-200 bg-emerald-600 p-5 text-white space-y-1">
         <p className="text-sm font-medium text-emerald-100">
-          {vehicle_fallback ? "Estimativa de economia mensal" : `Economia mensal · ${vehicleLabel}`}
+          {vehicle_fallback
+            ? "Estimativa de economia mensal"
+            : `Economia mensal · ${vehicleLabel}`}
         </p>
         <p className="text-4xl font-bold tracking-tight">
           {formatKpiCurrency(monthly.financial_brl)}
@@ -105,7 +131,7 @@ export function CalculatorResults({ result, onReset }: Props) {
         />
       </div>
 
-      {(ludic.trees_saved || ludic.smartphone_charges || ludic.coffee_filters) ? (
+      {ludic.trees_saved || ludic.smartphone_charges || ludic.coffee_filters ? (
         <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 space-y-3">
           <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">
             O que isso significa por ano?
@@ -114,21 +140,27 @@ export function CalculatorResults({ result, onReset }: Props) {
             {ludic.trees_saved != null && (
               <div className="space-y-1">
                 <TreePine className="mx-auto h-6 w-6 text-emerald-600" />
-                <p className="text-lg font-bold text-neutral-900">{ludic.trees_saved.toFixed(1)}</p>
+                <p className="text-lg font-bold text-neutral-900">
+                  {ludic.trees_saved.toFixed(1)}
+                </p>
                 <p className="text-xs text-neutral-500">árvores/ano</p>
               </div>
             )}
             {ludic.smartphone_charges != null && (
               <div className="space-y-1">
                 <Smartphone className="mx-auto h-6 w-6 text-neutral-600" />
-                <p className="text-lg font-bold text-neutral-900">{ludic.smartphone_charges}</p>
+                <p className="text-lg font-bold text-neutral-900">
+                  {ludic.smartphone_charges}
+                </p>
                 <p className="text-xs text-neutral-500">cargas de celular</p>
               </div>
             )}
             {ludic.coffee_filters != null && (
               <div className="space-y-1">
                 <Coffee className="mx-auto h-6 w-6 text-amber-700" />
-                <p className="text-lg font-bold text-neutral-900">{ludic.coffee_filters}</p>
+                <p className="text-lg font-bold text-neutral-900">
+                  {ludic.coffee_filters}
+                </p>
                 <p className="text-xs text-neutral-500">filtros de café</p>
               </div>
             )}
