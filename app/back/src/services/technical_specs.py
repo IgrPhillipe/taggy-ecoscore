@@ -46,8 +46,10 @@ async def post_technical_specs_update(db: AsyncSession, payload: TechnicalSpecsU
 
         provider = _build_provider(db)
 
-        bundle_atual = await provider.get_technical_specs_bundle()
-        fuel_prices = bundle_atual.fuel_prices_by_uf
+        fuel_rows = await FuelPricesRepository(db).get_all()
+        from src.dto.fuel_price import fuel_rows_to_engine_prices_map
+
+        fuel_prices = fuel_rows_to_engine_prices_map(fuel_rows)
 
         engine_dict = technical_specs_to_engine_dict(
             row=update_specs,

@@ -177,20 +177,46 @@ async def seed_technical_specs(db) -> None:
 
 
 async def seed_fuel_prices(db) -> None:
-    rows = [
-        FuelPriceByUF(uf="SP", price_diesel_s10=6.49, price_gasolina_c=5.89, price_etanol=3.79),
-        FuelPriceByUF(uf="RJ", price_diesel_s10=6.72, price_gasolina_c=6.15, price_etanol=3.95),
-        FuelPriceByUF(uf="MG", price_diesel_s10=6.38, price_gasolina_c=5.75, price_etanol=3.65),
-        FuelPriceByUF(uf="RS", price_diesel_s10=6.29, price_gasolina_c=5.68, price_etanol=3.55),
-        FuelPriceByUF(uf="BA", price_diesel_s10=6.55, price_gasolina_c=5.92, price_etanol=3.82),
-        FuelPriceByUF(uf="PR", price_diesel_s10=6.31, price_gasolina_c=5.71, price_etanol=3.61),
-    ]
-    for row in rows:
-        existing = (await db.execute(select(FuelPriceByUF).where(FuelPriceByUF.uf == row.uf))).first()
-        if not existing:
-            db.add(row)
+    # (diesel_s10, gasolina_c, etanol) — valores de referência ANP para dev/local
+    prices_by_uf: dict[str, tuple[float, float, float]] = {
+        "AC": (6.62, 5.98, 3.88),
+        "AL": (6.48, 5.86, 3.76),
+        "AM": (6.58, 5.94, 3.85),
+        "AP": (6.65, 6.01, 3.90),
+        "BA": (6.55, 5.92, 3.82),
+        "CE": (6.47, 5.84, 3.75),
+        "DF": (6.52, 5.90, 3.80),
+        "ES": (6.44, 5.82, 3.74),
+        "GO": (6.41, 5.79, 3.72),
+        "MA": (6.50, 5.87, 3.77),
+        "MG": (6.38, 5.75, 3.65),
+        "MS": (6.40, 5.78, 3.71),
+        "MT": (6.43, 5.81, 3.73),
+        "PA": (6.56, 5.93, 3.84),
+        "PB": (6.46, 5.85, 3.76),
+        "PE": (6.49, 5.87, 3.78),
+        "PI": (6.51, 5.88, 3.79),
+        "PR": (6.31, 5.71, 3.61),
+        "RJ": (6.72, 6.15, 3.95),
+        "RN": (6.48, 5.86, 3.77),
+        "RO": (6.54, 5.91, 3.81),
+        "RR": (6.60, 5.96, 3.87),
+        "RS": (6.29, 5.68, 3.55),
+        "SC": (6.33, 5.73, 3.63),
+        "SE": (6.47, 5.85, 3.76),
+        "SP": (6.49, 5.89, 3.79),
+        "TO": (6.45, 5.83, 3.74),
+    }
+    repo = FuelPricesRepository(db)
+    for uf, (diesel, gasolina, etanol) in prices_by_uf.items():
+        await repo.upsert_by_uf(
+            uf,
+            price_diesel_s10=diesel,
+            price_gasolina_c=gasolina,
+            price_etanol=etanol,
+        )
     await db.flush()
-    print(f"  fuel_prices: {len(rows)} UFs")
+    print(f"  fuel_prices: {len(prices_by_uf)} UFs")
 
 
 async def seed_organizations(db) -> list[Organization]:

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from src.engine.exceptions import CalcEngineError
+from src.dto.fuel_price import normalize_fuel_price_row
 
 # Fuel types that consume in m³ (not liters)
 _GAS_FUELS = {"gnv"}
@@ -141,14 +142,14 @@ class CalcEngine:
             raise CalcEngineError(
                 f"uf_passagem inválida (esperada sigla de 2 letras): {uf_passagem!r}."
             )
-        row = by_uf.get(uf)
-        if not isinstance(row, dict):
-            # Fallback: média nacional (média simples das UFs disponíveis)
-            available = [v for v in by_uf.values() if isinstance(v, dict)]
-            if not available:
-                raise CalcEngineError(f"Sem preços de combustível para a UF {uf} e sem fallback nacional.")
-            row = {k: sum(r[k] for r in available if k in r) / len(available) for k in available[0]}
-            uf = "NACIONAL"
+        row_raw = by_uf.get(uf)
+        if row_raw is None:
+            raise CalcEngineError(
+                f"Sem preços de combustível cadastrados para a UF {uf}."
+            )
+        row = normalize_fuel_price_row(row_raw)
+        if not row:
+            raise CalcEngineError(f"Preços inválidos para a UF {uf}.")
         if fuel_type not in row:
             # EV and GNV may not have price data; return 0 gracefully
             if fuel_type in _ELECTRIC_FUELS or fuel_type in _GAS_FUELS:

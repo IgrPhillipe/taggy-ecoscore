@@ -37,6 +37,12 @@ const CONTEXT_LABELS: Record<string, string> = {
   estacionamento: "Estacionamento",
 };
 
+type PricingSnapshot = {
+  fuel_price_brl_per_unit?: number;
+  fuel_unit?: string;
+  uf_applied?: string;
+};
+
 const InfoRow = ({ label, value }: { label: string; value: ReactNode }) => (
   <div className="flex justify-between border-b border-neutral-100 py-2 text-sm last:border-0">
     <span className="text-neutral-500">{label}</span>
@@ -55,6 +61,10 @@ function formatDuration(sec: number | null | undefined): string {
 function formatNumber(value: number | null | undefined, digits = 3): string {
   if (value == null || Number.isNaN(value)) return "—";
   return value.toFixed(digits);
+}
+
+function formatFuelPrice(value: number, unit: string): string {
+  return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}/${unit}`;
 }
 
 function getComparisonNumber(
@@ -100,6 +110,7 @@ export function SimulatorResultPanel({ result, transaction }: SimulatorResultPan
   const meta = result.metadata ?? {};
   const comparison = result.comparison;
   const fuelUnit = env.fuel_unit ?? "L";
+  const pricing = meta.pricing_snapshot as PricingSnapshot | undefined;
 
   return (
     <div className="space-y-6">
@@ -153,10 +164,6 @@ export function SimulatorResultPanel({ result, transaction }: SimulatorResultPan
         />
         <InfoRow label="UF" value={meta.uf_passagem ?? transaction.uf} />
         <InfoRow label="Digital" value={transaction.is_digital ? "Sim" : "Não"} />
-        <InfoRow
-          label="Tempo baseline"
-          value={formatDuration(meta.baseline_wait_sec)}
-        />
         <InfoRow
           label="Tempo economizado"
           value={formatDuration(meta.time_saved_sec)}
@@ -259,6 +266,20 @@ export function SimulatorResultPanel({ result, transaction }: SimulatorResultPan
       </SectionCard>
 
       <SectionCard title="Detalhamento financeiro">
+        {pricing?.fuel_price_brl_per_unit != null && (
+          <InfoRow
+            label="Preço do combustível"
+            value={
+              <>
+                {formatFuelPrice(
+                  pricing.fuel_price_brl_per_unit,
+                  pricing.fuel_unit ?? fuelUnit,
+                )}
+                {pricing.uf_applied ? ` (${pricing.uf_applied})` : null}
+              </>
+            }
+          />
+        )}
         <InfoRow
           label="Economia de combustível"
           value={formatKpiCurrency(fin.fuel_savings_brl)}

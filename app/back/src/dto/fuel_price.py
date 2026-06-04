@@ -10,6 +10,17 @@ from src.models.fuel_prices import FuelPriceByUF
 FUEL_PRICES_META_SOURCE = "basedosdados:br_anp_precos_combustiveis"
 FUEL_PRICES_META_AGGREGATION = "avg_by_uf_last_30_days"
 
+BRAZILIAN_UFS = (
+    "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT",
+    "PA", "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO",
+)
+
+_DTO_TO_ENGINE_FUEL_KEYS = {
+    "price_diesel_s10": "diesel_s10",
+    "price_gasolina_c": "gasolina_c",
+    "price_etanol": "etanol",
+}
+
 
 class FuelPriceByUFDTO(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -64,8 +75,29 @@ def fuel_rows_to_engine_prices_map(
         if row.price_etanol is not None:
             inner["etanol"] = float(row.price_etanol)
         if inner:
-            out[row.uf] = inner
+            out[row.uf.strip().upper()] = inner
     return out
+
+
+def normalize_fuel_price_row(raw: Any) -> dict[str, float] | None:
+    """Normaliza linha de preços (engine ou DTO) para fuel_type -> R$/L."""
+    if raw is None:
+        return None
+    if hasattr(raw, "model_dump"):
+        data = raw.model_dump()
+    elif isinstance(raw, dict):
+        data = raw
+    else:
+        return None
+
+    out: dict[str, float] = {}
+    for key, value in data.items():
+        if value is None:
+            continue
+        engine_key = _DTO_TO_ENGINE_FUEL_KEYS.get(key, key)
+        if engine_key in ("diesel_s10", "gasolina_c", "etanol", "diesel_s500", "gnv"):
+            out[engine_key] = float(value)
+    return out or None
 
 
 def _num_or_none(v: Any) -> float | None:

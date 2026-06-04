@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from src.engine.exceptions import CalcEngineError
+from src.dto.fuel_price import BRAZILIAN_UFS, normalize_fuel_price_row
 
 _REQUIRED_FUEL_TYPES = ("diesel_s10", "gasolina_c", "etanol")
 _OPTIONAL_FUEL_TYPES = ("gnv", "eletrico_kwh")
@@ -111,6 +112,28 @@ def validate_engine_specs(specs: dict[str, Any]) -> None:
                     f"ludic_metaphors[{axis}][{i}].{ukey} deve ser > 0."
                 )
 
-    by_uf = specs.get("fuel_prices_by_uf")
+    _validate_fuel_prices_by_uf(specs.get("fuel_prices_by_uf"))
+
+
+def _validate_fuel_prices_by_uf(by_uf: Any) -> None:
     if not isinstance(by_uf, dict) or not by_uf:
         raise CalcEngineError("fuel_prices_by_uf vazio ou em falta.")
+
+    missing_ufs: list[str] = []
+    for uf in BRAZILIAN_UFS:
+        row = normalize_fuel_price_row(by_uf.get(uf))
+        if not row:
+            missing_ufs.append(uf)
+            continue
+        for fuel_type in ("diesel_s10", "gasolina_c", "etanol"):
+            if fuel_type not in row:
+                raise CalcEngineError(
+                    f"fuel_prices_by_uf[{uf}] sem preço para {fuel_type!r}."
+                )
+
+    if missing_ufs:
+        raise CalcEngineError(
+            "fuel_prices_by_uf incompleto: UFs em falta: "
+            + ", ".join(missing_ufs)
+            + "."
+        )
