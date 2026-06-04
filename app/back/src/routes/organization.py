@@ -10,7 +10,7 @@ from src.models.organization import OrganizationPublic
 from src.models.transaction import Transaction
 from src.models.user import User, UserPublic
 from src.models.vehicle import Vehicle
-from src.middleware.dev_auth import get_current_user_dev
+from src.middleware.auth import get_current_user
 from src.repositories.organization_repository import OrganizationRepository
 from src.repositories.transaction_repository import TransactionRepository
 from src.repositories.user_repository import UserRepository

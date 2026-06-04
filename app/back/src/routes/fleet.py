@@ -4,7 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.connection import get_db
 from src.errors import messages as err
-from src.middleware.dev_auth import apply_org_scope_for_gestor, get_current_user_dev
+from src.middleware.auth import get_current_user
+from src.middleware.dev_auth import apply_org_scope_for_gestor
 from src.models.fleet import FleetPublic
 from src.models.user import User, UserPublic
 from src.models.vehicle import VehiclePublic
@@ -31,7 +32,7 @@ async def list_fleets(
     page_size: int = Query(default=20, ge=1, le=100),
     paginate: bool = Query(default=False),
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     org_scope = apply_org_scope_for_gestor(current_user, organization_id)
     repo = FleetRepository(db)
@@ -49,7 +50,7 @@ async def list_fleets(
 async def get_fleet(
     fleet_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     fleet = await FleetRepository(db).get_by_id(fleet_id)
     if not fleet:
@@ -64,7 +65,7 @@ async def get_fleet(
 async def get_fleet_summary(
     fleet_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     fleet = await FleetRepository(db).get_by_id(fleet_id)
     if not fleet:
@@ -81,7 +82,7 @@ async def get_fleet_transactions(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     fleet = await FleetRepository(db).get_by_id(fleet_id)
     if not fleet:
@@ -106,7 +107,7 @@ async def get_fleet_transactions(
 async def create_fleet(
     body: FleetBody,
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     org_scope = apply_org_scope_for_gestor(current_user, body.organization_id)
     if org_scope is not None and body.organization_id != org_scope:
@@ -121,7 +122,7 @@ async def update_fleet(
     fleet_id: int,
     body: FleetUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     fleet = await FleetRepository(db).get_by_id(fleet_id)
     if not fleet:
@@ -138,7 +139,7 @@ async def update_fleet(
 async def delete_fleet(
     fleet_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     fleet = await FleetRepository(db).get_by_id(fleet_id)
     if not fleet:
@@ -154,7 +155,7 @@ async def delete_fleet(
 async def list_fleet_users(
     fleet_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     fleet = await FleetRepository(db).get_by_id(fleet_id)
     if not fleet:
@@ -171,7 +172,7 @@ async def link_fleet_user(
     fleet_id: int,
     user_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     fleet = await FleetRepository(db).get_by_id(fleet_id)
     if not fleet:
@@ -189,7 +190,7 @@ async def unlink_fleet_user(
     fleet_id: int,
     user_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     fleet = await FleetRepository(db).get_by_id(fleet_id)
     if not fleet:
@@ -205,7 +206,7 @@ async def unlink_fleet_user(
 async def list_fleet_vehicles(
     fleet_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     fleet = await FleetRepository(db).get_by_id(fleet_id)
     if not fleet:
@@ -222,7 +223,7 @@ async def link_fleet_vehicle(
     fleet_id: int,
     vehicle_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     fleet = await FleetRepository(db).get_by_id(fleet_id)
     if not fleet:
@@ -242,7 +243,7 @@ async def unlink_fleet_vehicle(
     fleet_id: int,
     vehicle_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     fleet = await FleetRepository(db).get_by_id(fleet_id)
     if not fleet:

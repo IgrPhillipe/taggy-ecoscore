@@ -1,5 +1,8 @@
 """Autenticação por e-mail e senha."""
 
+import os
+
+import jwt
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,12 +21,19 @@ class LoginRequest(BaseModel):
     password: str
 
 
-@router.post("/login", response_model=UserPublic)
+class LoginResponse(BaseModel):
+    token: str
+    user: UserPublic
+
+
+@router.post("/login", response_model=LoginResponse)
 async def login(
     body: LoginRequest,
     db: AsyncSession = Depends(get_db),
-) -> UserPublic:
+) -> LoginResponse:
     user = await UserRepository(db).get_by_email(body.email.strip())
     if user is None or not verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail=err.INVALID_CREDENTIALS)
-    return UserPublic.model_validate(user)
+    secret = os.environ.get("JWT_SECRET", "change-me-in-development")
+    token = jwt.encode({"sub": user.id, "email": user.email}, secret, algorithm="HS256")
+    return LoginResponse(token=token, user=UserPublic.model_validate(user))

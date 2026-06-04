@@ -7,7 +7,8 @@ logger = logging.getLogger(__name__)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.connection import get_db
-from src.middleware.dev_auth import apply_org_scope_for_gestor, get_current_user_dev
+from src.middleware.auth import get_current_user
+from src.middleware.dev_auth import apply_org_scope_for_gestor
 from src.models.user import User
 from src.errors import messages as err
 from src.dto.transactions import (
@@ -52,7 +53,7 @@ async def list_transactions(
     to_date: str | None = Query(default=None),
     paginate: bool = Query(default=False),
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     from datetime import date as date_type
     parsed_from = date_type.fromisoformat(from_date) if from_date else None

@@ -6,7 +6,12 @@ export type LoginCredentials = {
   password: string;
 };
 
-export async function login(credentials: LoginCredentials): Promise<User> {
+export type LoginResponse = {
+  token: string;
+  user: User;
+};
+
+export async function login(credentials: LoginCredentials): Promise<LoginResponse> {
   return api
     .post("/api/auth/login", {
       json: {
@@ -14,5 +19,5 @@ export async function login(credentials: LoginCredentials): Promise<User> {
         password: credentials.password,
       },
     })
-    .json<User>();
+    .json<LoginResponse>();
 }

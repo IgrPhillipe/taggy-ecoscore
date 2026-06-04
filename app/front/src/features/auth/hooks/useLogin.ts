@@ -23,8 +23,8 @@ export const useLogin = (options?: LoginOptions) => {
 
   return useMutation({
     mutationFn: (credentials: LoginCredentials) => login(credentials),
-    onSuccess: (user) => {
-      loginStore(mapUserToCurrentUser(user));
+    onSuccess: ({ token, user }) => {
+      loginStore(mapUserToCurrentUser(user, token));
       const destination =
         options?.redirectTo && options.redirectTo !== "/login"
           ? options.redirectTo

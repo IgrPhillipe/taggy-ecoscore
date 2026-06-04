@@ -8,7 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.connection import get_db
 from src.errors import messages as err
 from src.dto.user import UserUpdate
-from src.middleware.dev_auth import apply_org_scope_for_gestor, get_current_user_dev
+from src.middleware.auth import get_current_user
+from src.middleware.dev_auth import apply_org_scope_for_gestor
 from src.models.user import User, UserPublic, UserRole
 from src.models.vehicle import Vehicle
 from src.repositories.user_repository import UserRepository
@@ -36,7 +37,7 @@ async def get_users(
     linkable_to_organization_id: int | None = None,
     fleet_id: int | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     org_scope = apply_org_scope_for_gestor(current_user, organization_id)
     repo = UserRepository(db)
@@ -75,7 +76,7 @@ async def get_users(
             "total": total,
         }
 
-    if current_user and current_user.role == UserRole.gestor_frota and role == "motorista":
+    if current_user.role == UserRole.gestor_frota and role == "motorista":
         org_drivers = await repo.get_all_filtered(role="motorista", organization_id=org_scope, search=search)
         common = await repo.get_all_filtered(role="motorista", organization_id=None, search=search) if include_common or True else []
         seen = {u.id for u in org_drivers}
@@ -90,12 +91,12 @@ async def get_users(
 async def get_user_by_id(
     user_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ) -> UserPublic:
     user = await UserRepository(db).get_by_id(user_id)
     if user is None:
         raise HTTPException(status_code=404, detail=err.USER_NOT_FOUND)
-    if current_user and current_user.role == UserRole.gestor_frota:
+    if current_user.role == UserRole.gestor_frota:
         if user.organization_id not in (None, current_user.organization_id):
             raise HTTPException(status_code=403, detail=err.ACCESS_DENIED)
     return UserPublic.model_validate(user)
@@ -130,13 +131,13 @@ async def update_user(
     user_id: int,
     payload: UserUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ) -> UserPublic:
     repository = UserRepository(db)
     existing = await repository.get_by_id(user_id)
     if existing is None:
         raise HTTPException(status_code=404, detail=err.USER_NOT_FOUND)
-    if current_user and current_user.role == UserRole.gestor_frota:
+    if current_user.role == UserRole.gestor_frota:
         if existing.organization_id not in (None, current_user.organization_id):
             raise HTTPException(status_code=403, detail=err.ACCESS_DENIED)
 
@@ -163,7 +164,7 @@ async def update_user_vehicles(
     user_id: int,
     body: UserVehiclesUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     user = await UserRepository(db).get_by_id(user_id)
     if user is None:

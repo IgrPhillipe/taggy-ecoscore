@@ -4,7 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.connection import get_db
 from src.dto.vehicle import VehicleIn, VehicleUpdate
 from src.errors import messages as err
-from src.middleware.dev_auth import apply_org_scope_for_gestor, get_current_user_dev
+from src.middleware.auth import get_current_user
+from src.middleware.dev_auth import apply_org_scope_for_gestor
 from src.models.user import User, UserRole
 from src.models.vehicle import VehicleListPublic, VehiclePublic
 from src.repositories.transaction_repository import TransactionRepository
@@ -42,10 +43,10 @@ async def list_vehicles(
     fuel_type: str | None = Query(default=None),
     sem_frota: bool | None = Query(default=None),
     session: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     org_scope = apply_org_scope_for_gestor(current_user, organization_id)
-    if current_user and current_user.role == UserRole.gestor_frota:
+    if current_user.role == UserRole.gestor_frota:
         sem_frota = False
     items, total = await list_vehicles_paginated_svc(
         session, page, page_size, search, org_scope, fleet_id, fuel_type, sem_frota
@@ -57,7 +58,7 @@ async def list_vehicles(
 async def get_vehicle(
     vehicle_id: int,
     session: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     vehicle = await get_vehicle_by_id_svc(session, vehicle_id)
     if not vehicle:
@@ -70,9 +71,9 @@ async def get_vehicle(
 async def create_vehicle(
     vehicle_in: VehicleIn,
     session: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
-    if current_user and current_user.role == UserRole.gestor_frota:
+    if current_user.role == UserRole.gestor_frota:
         if vehicle_in.fleet_id is None and vehicle_in.organization_id != current_user.organization_id:
             raise HTTPException(status_code=403, detail=err.GESTOR_VEHICLE_SCOPE)
     existing_plate = await get_vehicle_by_license_plate_svc(session, vehicle_in.license_plate)
@@ -94,7 +95,7 @@ async def update_vehicle(
     vehicle_id: int,
     vehicle_update: VehicleUpdate,
     session: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     existing = await get_vehicle_by_id_svc(session, vehicle_id)
     if not existing:
@@ -116,7 +117,7 @@ async def update_vehicle(
 async def get_vehicle_summary(
     vehicle_id: int,
     session: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     from sqlalchemy import func, select
     from src.models.transaction import Transaction
@@ -163,7 +164,7 @@ async def list_vehicle_transactions(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
     session: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     vehicle = await get_vehicle_by_id_svc(session, vehicle_id)
     if not vehicle:
@@ -182,7 +183,7 @@ async def list_vehicle_transactions(
 async def delete_vehicle(
     vehicle_id: int,
     session: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     existing = await get_vehicle_by_id_svc(session, vehicle_id)
     if not existing:

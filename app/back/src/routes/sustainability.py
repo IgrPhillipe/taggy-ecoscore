@@ -3,7 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import SQLModel
 
 from src.database.connection import get_db
-from src.middleware.dev_auth import get_current_user_dev, scoped_user_id_for_motorista
+from src.middleware.auth import get_current_user
+from src.middleware.dev_auth import scoped_user_id_for_motorista
 from src.models.user import User
 from src.repositories.technical_specs_repository import TechnicalSpecsRepository
 from src.repositories.transaction_repository import TransactionRepository
@@ -120,7 +121,7 @@ def _context_label(context: str, uf: str | None) -> str:
 async def get_impact_metrics(
     user_id: int = Query(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ) -> ImpactMetricsPublic:
     user_id = scoped_user_id_for_motorista(current_user, user_id) or user_id
     stats = await get_user_stats(db, user_id)
@@ -157,7 +158,7 @@ async def get_impact_metrics(
 async def get_weekly_goal(
     user_id: int = Query(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ) -> WeeklyGoalSummaryPublic:
     user_id = scoped_user_id_for_motorista(current_user, user_id) or user_id
     goal = await get_current_goal_by_user(db, user_id)
@@ -192,7 +193,7 @@ async def get_weekly_goal(
 async def get_passages_summary(
     user_id: int = Query(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ) -> PassagesSummaryPublic:
     user_id = scoped_user_id_for_motorista(current_user, user_id) or user_id
     stats = await get_user_stats(db, user_id)
@@ -213,7 +214,7 @@ async def get_passages(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ) -> PassagesListPublic:
     user_id = scoped_user_id_for_motorista(current_user, user_id) or user_id
     repo = TransactionRepository(db)

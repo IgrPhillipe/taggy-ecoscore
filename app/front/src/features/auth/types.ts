@@ -8,4 +8,5 @@ export type CurrentUser = {
   organization_id?: number | null;
   avatarUrl?: string;
   status?: "active" | "inactive";
+  token: string;
 };

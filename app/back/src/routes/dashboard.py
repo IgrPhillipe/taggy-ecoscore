@@ -5,7 +5,8 @@ from sqlalchemy import cast, func, select, Date
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.connection import get_db
-from src.middleware.dev_auth import apply_org_scope_for_gestor, get_current_user_dev
+from src.middleware.auth import get_current_user
+from src.middleware.dev_auth import apply_org_scope_for_gestor
 from src.models.transaction import Transaction
 from src.models.user import User
 from src.models.vehicle import Vehicle
@@ -18,7 +19,7 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 async def get_dashboard_summary(
     organization_id: int | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     organization_id = apply_org_scope_for_gestor(current_user, organization_id)
 
@@ -72,7 +73,7 @@ async def get_daily_stats(
     days: int = Query(default=30, ge=7, le=90),
     organization_id: int | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_dev),
+    current_user: User = Depends(get_current_user),
 ):
     organization_id = apply_org_scope_for_gestor(current_user, organization_id)
     since = date.today() - timedelta(days=days - 1)

@@ -47,7 +47,7 @@ from src.repositories.technical_specs_repository import TechnicalSpecsRepository
 from src.services.password import hash_password  # noqa: E402
 from src.services.technical_specs import get_all_specs  # noqa: E402
 
-SEED_DEFAULT_PASSWORD = "taggy123"
+SEED_DEFAULT_PASSWORD = "senha@123"
 
 
 def utc_now() -> datetime:
@@ -240,12 +240,12 @@ async def seed_organizations(db) -> list[Organization]:
 async def seed_users(db, orgs: list[Organization]) -> list[User]:
     password_hash = hash_password(SEED_DEFAULT_PASSWORD)
     users_data = [
-        User(name="Admin Sistema", email="admin@taggy.com.br", password_hash=password_hash, role=UserRole.admin, organization_id=None),
-        User(name="Carlos Gestor", email="carlos@logisticaabc.com.br", password_hash=password_hash, role=UserRole.gestor_frota, organization_id=orgs[0].id),
-        User(name="Fernanda Gestora", email="fernanda@frotaexpress.com.br", password_hash=password_hash, role=UserRole.gestor_frota, organization_id=orgs[1].id),
-        User(name="João Motorista", email="joao@logisticaabc.com.br", password_hash=password_hash, role=UserRole.motorista, organization_id=orgs[0].id),
-        User(name="Ana Motorista", email="ana@frotaexpress.com.br", password_hash=password_hash, role=UserRole.motorista, organization_id=orgs[1].id),
-        User(name="Pedro Motorista", email="pedro.comum@taggy.com.br", password_hash=password_hash, role=UserRole.motorista, organization_id=None),
+        User(name="Admin Sistema", email="admin@mail.com", password_hash=password_hash, role=UserRole.admin, organization_id=None),
+        User(name="Carlos Gestor", email="carlos@mail.com", password_hash=password_hash, role=UserRole.gestor_frota, organization_id=orgs[0].id),
+        User(name="Fernanda Gestora", email="fernanda@mail.com", password_hash=password_hash, role=UserRole.gestor_frota, organization_id=orgs[1].id),
+        User(name="João Motorista", email="joao@mail.com", password_hash=password_hash, role=UserRole.motorista, organization_id=orgs[0].id),
+        User(name="Ana Motorista", email="ana@mail.com", password_hash=password_hash, role=UserRole.motorista, organization_id=orgs[1].id),
+        User(name="Pedro Motorista", email="pedro@mail.com", password_hash=password_hash, role=UserRole.motorista, organization_id=None),
     ]
     users = []
     for u in users_data:

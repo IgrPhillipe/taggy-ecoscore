@@ -11,9 +11,9 @@ export const api = ky.create({
   hooks: {
     beforeRequest: [
       ({ request }) => {
-        const userId = useAuthStore.getState().user?.id;
-        if (userId != null) {
-          request.headers.set("X-User-Id", String(userId));
+        const token = useAuthStore.getState().user?.token;
+        if (token) {
+          request.headers.set("Authorization", `Bearer ${token}`);
         }
       },
     ],
