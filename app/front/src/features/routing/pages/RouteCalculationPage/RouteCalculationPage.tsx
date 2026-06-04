@@ -40,7 +40,7 @@ export const RouteCalculationPage = () => {
   const showSearchForm = !showRoutes;
 
   return (
-    <div className="relative -m-4 h-[calc(100dvh-7.5rem)] min-h-[32rem] overflow-hidden md:-m-8">
+    <div className="relative h-full flex-1 overflow-hidden">
       <EcoRouteMap
         className="absolute inset-0 size-full"
         routes={result?.routes}

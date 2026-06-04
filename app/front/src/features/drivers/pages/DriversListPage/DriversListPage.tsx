@@ -15,10 +15,12 @@ import {
   parseAsStringEnum,
   useQueryStates,
 } from "nuqs";
-import { FilterInput } from "@/components/ui/FilterInput";
 import { getToastErrorMessage } from "@/lib/api-error";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
+import { FormField } from "@/components/form/FormField";
+import { useFilterDraft } from "@/hooks/useFilterDraft";
 import {
   Dialog,
   DialogContent,
@@ -128,6 +130,11 @@ const driversSearchParams = {
   fleet: parseAsInteger,
 };
 
+const FILTER_DEFAULTS = {
+  org: undefined as number | undefined,
+  fleet: undefined as number | undefined,
+};
+
 export const DriversListPage = () => {
   const { user } = useCurrentUser();
   const isAdmin = user?.role === "admin";
@@ -155,13 +162,6 @@ export const DriversListPage = () => {
         ? (org ?? undefined)
         : undefined;
 
-  const fleetFilterOrgId =
-    user?.role === "gestor_frota"
-      ? (user.organization_id ?? undefined)
-      : isAdmin
-        ? (org ?? undefined)
-        : undefined;
-
   const { data, isLoading, isError, error } = useGetDrivers({
     page,
     pageSize: PAGE_SIZE,
@@ -173,6 +173,35 @@ export const DriversListPage = () => {
   });
 
   const pageCount = data ? Math.ceil(data.total / PAGE_SIZE) : undefined;
+
+  const {
+    open: filterOpen,
+    setOpen: setFilterOpen,
+    draft,
+    setDraft,
+    apply: applyFilters,
+    clear: clearFilters,
+    activeCount,
+  } = useFilterDraft({
+    applied: {
+      org: org ?? undefined,
+      fleet: fleet ?? undefined,
+    },
+    defaults: FILTER_DEFAULTS,
+    onApply: (values) =>
+      setParams({
+        org: values.org ?? null,
+        fleet: values.fleet ?? null,
+        page: 1,
+      }),
+  });
+
+  const draftFleetOrgId =
+    user?.role === "gestor_frota"
+      ? (user.organization_id ?? undefined)
+      : isAdmin
+        ? (draft.org ?? undefined)
+        : undefined;
 
   const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
     const next = typeof updater === "function" ? updater(pagination) : updater;
@@ -208,42 +237,58 @@ export const DriversListPage = () => {
         </p>
       ) : (
         <>
-          <section className="flex flex-col gap-4 lg:flex-row lg:items-center">
-            <FilterInput
-              placeholder="Buscar por nome ou placa"
-              value={search ?? ""}
-              onChange={(e) =>
-                setParams({ search: e.target.value || null, page: 1 })
+          <section className="flex items-center justify-between gap-2">
+            <FilterSearchRow
+              searchValue={search ?? ""}
+              onDebouncedSearchChange={(value) =>
+                setParams({ search: value || null, page: 1 })
               }
-              className="lg:flex-1"
-            />
-            <div className="flex flex-wrap items-center gap-2">
-              {isAdmin && (
-                <OrganizationsRelationSelect
-                  value={org ?? undefined}
+              placeholder="Buscar por nome ou placa"
+              searchId="driver-search"
+            >
+              <FilterModal
+                open={filterOpen}
+                onOpenChange={setFilterOpen}
+                activeCount={activeCount}
+                onApply={applyFilters}
+                onClear={clearFilters}
+                className="shrink-0"
+              >
+              {isAdmin ? (
+                <FormField id="driver-org" label="Organização">
+                  <OrganizationsRelationSelect
+                    value={draft.org ?? undefined}
+                    onValueChange={(value) =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        org: value ?? undefined,
+                        fleet: undefined,
+                      }))
+                    }
+                    placeholder="Todas as organizações"
+                    emptyLabel="Todas as organizações"
+                    className="w-full"
+                  />
+                </FormField>
+              ) : null}
+              <FormField id="driver-fleet" label="Frota">
+                <FleetsRelationSelect
+                  value={draft.fleet ?? undefined}
                   onValueChange={(value) =>
-                    setParams({ org: value ?? null, fleet: null, page: 1 })
+                    setDraft((prev) => ({ ...prev, fleet: value ?? undefined }))
                   }
-                  placeholder="Todas as organizações"
-                  emptyLabel="Todas as organizações"
-                  className="w-52"
+                  organizationId={draftFleetOrgId}
+                  placeholder="Todas as frotas"
+                  noneLabel="Todas as frotas"
+                  className="w-full"
                 />
-              )}
-              <FleetsRelationSelect
-                value={fleet ?? undefined}
-                onValueChange={(value) =>
-                  setParams({ fleet: value ?? null, page: 1 })
-                }
-                organizationId={fleetFilterOrgId}
-                placeholder="Todas as frotas"
-                noneLabel="Todas as frotas"
-                className="w-44"
-              />
-              <Button onClick={() => setCreateOpen(true)}>
-                <Plus className="mr-1 h-4 w-4" />
-                Cadastrar Motorista
-              </Button>
-            </div>
+              </FormField>
+              </FilterModal>
+            </FilterSearchRow>
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-1 h-4 w-4" />
+              Cadastrar Motorista
+            </Button>
           </section>
 
           <DataTable

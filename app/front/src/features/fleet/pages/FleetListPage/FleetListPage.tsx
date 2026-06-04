@@ -16,15 +16,17 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { getToastErrorMessage } from "@/lib/api-error";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
+import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
+import { FormField } from "@/components/form/FormField";
 import {
   FleetsRelationSelect,
   OrganizationsRelationSelect,
 } from "@/components/form/relation-selects";
 import { Button } from "@/components/ui/button";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
-import { FilterInput } from "@/components/ui/FilterInput";
 import { FilterSelect } from "@/components/ui/FilterSelect";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { useFilterDraft } from "@/hooks/useFilterDraft";
 import { PAGE_SIZE } from "@/constants";
 import { FUEL_TYPE_OPTIONS } from "@/features/dashboard/constants";
 import { useCurrentUser } from "@/features/auth";
@@ -98,6 +100,13 @@ const SEM_FROTA_OPTIONS = [
   { value: "no", label: "Com frota" },
 ];
 
+const FILTER_DEFAULTS = {
+  fuel_type: undefined as string | undefined,
+  org: undefined as number | undefined,
+  fleet: undefined as number | undefined,
+  sem_frota: "all" as "all" | "yes" | "no",
+};
+
 export const FleetListPage = () => {
   const { user } = useCurrentUser();
   const isAdmin = user?.role === "admin";
@@ -107,13 +116,6 @@ export const FleetListPage = () => {
   const [editVehicle, setEditVehicle] = useState<Vehicle | null>(null);
 
   const scopedOrgId =
-    user?.role === "gestor_frota"
-      ? (user.organization_id ?? undefined)
-      : isAdmin
-        ? (org ?? undefined)
-        : undefined;
-
-  const fleetFilterOrgId =
     user?.role === "gestor_frota"
       ? (user.organization_id ?? undefined)
       : isAdmin
@@ -139,6 +141,41 @@ export const FleetListPage = () => {
   });
 
   const pageCount = data ? Math.ceil(data.total / PAGE_SIZE) : undefined;
+
+  const appliedFilters = {
+    fuel_type: fuel_type ?? undefined,
+    org: org ?? undefined,
+    fleet: fleet ?? undefined,
+    sem_frota,
+  };
+
+  const {
+    open: filterOpen,
+    setOpen: setFilterOpen,
+    draft,
+    setDraft,
+    apply: applyFilters,
+    clear: clearFilters,
+    activeCount,
+  } = useFilterDraft({
+    applied: appliedFilters,
+    defaults: FILTER_DEFAULTS,
+    onApply: (values) =>
+      setParams({
+        fuel_type: values.fuel_type ?? null,
+        org: values.org ?? null,
+        fleet: values.fleet ?? null,
+        sem_frota: values.sem_frota,
+        page: 1,
+      }),
+  });
+
+  const draftFleetOrgId =
+    user?.role === "gestor_frota"
+      ? (user.organization_id ?? undefined)
+      : isAdmin
+        ? (draft.org ?? undefined)
+        : undefined;
 
   const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
     const next = typeof updater === "function" ? updater(pagination) : updater;
@@ -178,56 +215,91 @@ export const FleetListPage = () => {
       title="Veículos"
       description="Consulte e gerencie os veículos da frota."
     >
-      <section className="flex flex-col gap-4 lg:flex-row lg:items-center">
-        <FilterInput
+      <section className="flex items-center justify-between gap-2">
+        <FilterSearchRow
+          searchValue={search ?? ""}
+          onDebouncedSearchChange={(value) =>
+            setParams({ search: value || null, page: 1 })
+          }
           placeholder="Buscar por placa, modelo ou TAG"
-          value={search ?? ""}
-          onChange={(e) => setParams({ search: e.target.value, page: 1 })}
-          className="lg:flex-1"
-        />
-        <div className="flex flex-wrap items-center gap-2">
-          <FilterSelect
-            value={fuel_type ?? "all"}
-            onValueChange={(v) => setParams({ fuel_type: v === "all" ? null : v, page: 1 })}
-            options={[{ value: "all", label: "Todos combustíveis" }, ...FUEL_TYPE_OPTIONS]}
-            placeholder="Combustível"
-            className="w-44"
-          />
-          {isAdmin && (
-            <OrganizationsRelationSelect
-              value={org ?? undefined}
-              onValueChange={(value) =>
-                setParams({ org: value ?? null, fleet: null, page: 1 })
-              }
-              placeholder="Todas as organizações"
-              emptyLabel="Todas as organizações"
-              className="w-52"
-            />
-          )}
-          <FleetsRelationSelect
-            value={fleet ?? undefined}
-            onValueChange={(value) =>
-              setParams({ fleet: value ?? null, page: 1 })
-            }
-            organizationId={fleetFilterOrgId}
-            placeholder="Todas as frotas"
-            noneLabel="Todas as frotas"
-            className="w-44"
-          />
-          {isAdmin && (
+          searchId="vehicle-search"
+        >
+          <FilterModal
+            open={filterOpen}
+            onOpenChange={setFilterOpen}
+            activeCount={activeCount}
+            onApply={applyFilters}
+            onClear={clearFilters}
+            className="shrink-0"
+          >
+          <FormField id="vehicle-fuel" label="Combustível">
             <FilterSelect
-              value={sem_frota}
-              onValueChange={(v) => setParams({ sem_frota: v as typeof sem_frota, page: 1 })}
-              options={SEM_FROTA_OPTIONS}
-              placeholder="Sem frota"
-              className="w-36"
+              value={draft.fuel_type ?? "all"}
+              onValueChange={(v) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  fuel_type: v === "all" ? undefined : v,
+                }))
+              }
+              options={[
+                { value: "all", label: "Todos combustíveis" },
+                ...FUEL_TYPE_OPTIONS,
+              ]}
+              placeholder="Combustível"
+              className="w-full"
             />
-          )}
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-1 h-4 w-4" />
-            Cadastrar Veículo
-          </Button>
-        </div>
+          </FormField>
+          {isAdmin ? (
+            <FormField id="vehicle-org" label="Organização">
+              <OrganizationsRelationSelect
+                value={draft.org ?? undefined}
+                onValueChange={(value) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    org: value ?? undefined,
+                    fleet: undefined,
+                  }))
+                }
+                placeholder="Todas as organizações"
+                emptyLabel="Todas as organizações"
+                className="w-full"
+              />
+            </FormField>
+          ) : null}
+          <FormField id="vehicle-fleet" label="Frota">
+            <FleetsRelationSelect
+              value={draft.fleet ?? undefined}
+              onValueChange={(value) =>
+                setDraft((prev) => ({ ...prev, fleet: value ?? undefined }))
+              }
+              organizationId={draftFleetOrgId}
+              placeholder="Todas as frotas"
+              noneLabel="Todas as frotas"
+              className="w-full"
+            />
+          </FormField>
+          {isAdmin ? (
+            <FormField id="vehicle-sem-frota" label="Vínculo com frota">
+              <FilterSelect
+                value={draft.sem_frota}
+                onValueChange={(v) =>
+                  setDraft((prev) => ({
+                    ...prev,
+                    sem_frota: v as typeof draft.sem_frota,
+                  }))
+                }
+                options={SEM_FROTA_OPTIONS}
+                placeholder="Sem frota"
+                className="w-full"
+              />
+            </FormField>
+          ) : null}
+          </FilterModal>
+        </FilterSearchRow>
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="mr-1 h-4 w-4" />
+          Cadastrar Veículo
+        </Button>
       </section>
 
       <DataTable

@@ -17,6 +17,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { getToastErrorMessage } from "@/lib/api-error";
 import { Button } from "@/components/ui/button";
+import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
+import { FormField } from "@/components/form/FormField";
+import { useFilterDraft } from "@/hooks/useFilterDraft";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +28,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -108,6 +110,11 @@ const usersSearchParams = {
   org: parseAsInteger,
 };
 
+const FILTER_DEFAULTS = {
+  role: "all" as "all" | "motorista" | "gestor_frota" | "admin",
+  org: undefined as number | undefined,
+};
+
 export const UsersListPage = () => {
   const { user, isAuthenticated } = useCurrentUser();
   const [{ page, sort, order, search, role, org }, setParams] = useQueryStates(
@@ -138,6 +145,28 @@ export const UsersListPage = () => {
   });
 
   const pageCount = data ? Math.ceil(data.total / PAGE_SIZE) : undefined;
+
+  const {
+    open: filterOpen,
+    setOpen: setFilterOpen,
+    draft,
+    setDraft,
+    apply: applyFilters,
+    clear: clearFilters,
+    activeCount,
+  } = useFilterDraft({
+    applied: {
+      role,
+      org: org ?? undefined,
+    },
+    defaults: FILTER_DEFAULTS,
+    onApply: (values) =>
+      setParams({
+        role: values.role,
+        org: values.org ?? null,
+        page: 1,
+      }),
+  });
 
   const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
     const next = typeof updater === "function" ? updater(pagination) : updater;
@@ -181,46 +210,58 @@ export const UsersListPage = () => {
         </p>
       ) : (
         <>
-          <section className="flex flex-col gap-4 md:flex-row md:items-center">
-            <Input
+          <section className="flex items-center justify-between gap-2">
+            <FilterSearchRow
+              searchValue={search ?? ""}
+              onDebouncedSearchChange={(value) =>
+                setParams({ search: value || null, page: 1 })
+              }
               placeholder="Buscar por nome ou e-mail"
-              value={search ?? ""}
-              onChange={(e) =>
-                setParams({ search: e.target.value || null, page: 1 })
-              }
-              className="md:flex-1"
-            />
-            <Select
-              value={role}
-              onValueChange={(value) =>
-                setParams({ role: value as typeof role, page: 1 })
-              }
+              searchId="user-search"
             >
-              <SelectTrigger
-                className="w-full md:w-44"
-                clearable
-                hasValue={role !== "all"}
-                onClear={() => setParams({ role: "all", page: 1 })}
+              <FilterModal
+                open={filterOpen}
+                onOpenChange={setFilterOpen}
+                activeCount={activeCount}
+                onApply={applyFilters}
+                onClear={clearFilters}
+                className="shrink-0"
               >
-                <SelectValue placeholder="Filtrar por perfil" />
-              </SelectTrigger>
-              <SelectContent>
-                {USER_ROLE_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <OrganizationsRelationSelect
-              value={org ?? undefined}
-              onValueChange={(value) =>
-                setParams({ org: value ?? null, page: 1 })
-              }
-              placeholder="Todas as organizações"
-              emptyLabel="Todas as organizações"
-              className="w-full md:w-52"
-            />
+              <FormField id="user-role" label="Perfil">
+                <Select
+                  value={draft.role}
+                  onValueChange={(value) =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      role: value as typeof draft.role,
+                    }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Filtrar por perfil" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {USER_ROLE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+              <FormField id="user-org" label="Organização">
+                <OrganizationsRelationSelect
+                  value={draft.org ?? undefined}
+                  onValueChange={(value) =>
+                    setDraft((prev) => ({ ...prev, org: value ?? undefined }))
+                  }
+                  placeholder="Todas as organizações"
+                  emptyLabel="Todas as organizações"
+                  className="w-full"
+                />
+              </FormField>
+              </FilterModal>
+            </FilterSearchRow>
             <Button onClick={() => setCreateOpen(true)} className="shrink-0">
               <Plus className="mr-1 h-4 w-4" />
               Novo Usuário

@@ -5,6 +5,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 const UF_OPTIONS = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
@@ -16,19 +17,21 @@ type UfSelectProps = {
   value: string | undefined;
   onValueChange: (value: string | undefined) => void;
   placeholder?: string;
+  className?: string;
 };
 
 export const UfSelect = ({
   value,
   onValueChange,
   placeholder = "UF",
+  className,
 }: UfSelectProps) => (
   <Select
     value={value ?? "all"}
     onValueChange={(v) => onValueChange(v === "all" ? undefined : v)}
   >
     <SelectTrigger
-      className="w-20"
+      className={cn("w-20", className)}
       clearable
       hasValue={value != null}
       onClear={() => onValueChange(undefined)}

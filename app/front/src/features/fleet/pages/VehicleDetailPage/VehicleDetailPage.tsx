@@ -18,8 +18,11 @@ import {
   KPI_ICON_SIZE,
   KPI_TITLES,
 } from "@/features/sustainability/lib/kpi";
-import { TransactionFilters } from "@/components/TransactionFilters/TransactionFilters";
+import { TransactionFiltersForm } from "@/components/TransactionFilters/TransactionFilters";
 import type { TransactionFilterState } from "@/components/TransactionFilters/TransactionFilters";
+import { TRANSACTION_MODAL_FILTER_DEFAULTS } from "@/components/TransactionFilters/TransactionFilters";
+import { FilterModal } from "@/components/FilterModal";
+import { useFilterDraft } from "@/hooks/useFilterDraft";
 import { getVehicle, getVehicleTransactionsFiltered, getVehicleSummary } from "../../api/requests";
 import type { VehicleTransaction } from "../../api/types";
 import { VehicleFormDialog } from "../../components/VehicleFormDialog/VehicleFormDialog";
@@ -121,10 +124,22 @@ export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
     setTxPage(next.pageIndex + 1);
   };
 
-  const handleFiltersChange = (f: TransactionFilterState) => {
-    setTxFilters(f);
-    setTxPage(1);
-  };
+  const {
+    open: filterOpen,
+    setOpen: setFilterOpen,
+    draft: txDraft,
+    setDraft: setTxDraft,
+    apply: applyTxFilters,
+    clear: clearTxFilters,
+    activeCount: txActiveCount,
+  } = useFilterDraft({
+    applied: txFilters,
+    defaults: TRANSACTION_MODAL_FILTER_DEFAULTS,
+    onApply: (values) => {
+      setTxFilters(values);
+      setTxPage(1);
+    },
+  });
 
   return (
     <PageLayout
@@ -210,7 +225,18 @@ export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
 
       <SectionCard title="Passagens">
         <div className="mb-3">
-          <TransactionFilters filters={txFilters} onChange={handleFiltersChange} />
+          <FilterModal
+            open={filterOpen}
+            onOpenChange={setFilterOpen}
+            activeCount={txActiveCount}
+            onApply={applyTxFilters}
+            onClear={clearTxFilters}
+          >
+            <TransactionFiltersForm
+              filters={txDraft}
+              onChange={setTxDraft}
+            />
+          </FilterModal>
         </div>
         <DataTable
           columns={transactionColumns}

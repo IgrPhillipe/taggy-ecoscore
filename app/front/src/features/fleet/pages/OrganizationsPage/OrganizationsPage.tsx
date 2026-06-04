@@ -204,8 +204,9 @@ export const OrganizationsPage = () => {
         <FilterInput
           placeholder="Buscar por nome, CNPJ ou ID"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-md"
+          debounceMs={300}
+          onDebouncedChange={setSearch}
+          className="max-w-md flex-1"
         />
         <Button onClick={() => setCreateOpen(true)}>
           <Plus className="mr-1 h-4 w-4" />

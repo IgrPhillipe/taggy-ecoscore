@@ -5,6 +5,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 const CONTEXT_OPTIONS = [
   { value: "pedagio", label: "Pedágio" },
@@ -15,19 +16,21 @@ type ContextSelectProps = {
   value: string | undefined;
   onValueChange: (value: string | undefined) => void;
   placeholder?: string;
+  className?: string;
 };
 
 export const ContextSelect = ({
   value,
   onValueChange,
   placeholder = "Contexto",
+  className,
 }: ContextSelectProps) => (
   <Select
     value={value ?? "all"}
     onValueChange={(v) => onValueChange(v === "all" ? undefined : v)}
   >
     <SelectTrigger
-      className="w-40"
+      className={cn("w-40", className)}
       clearable
       hasValue={value != null}
       onClear={() => onValueChange(undefined)}

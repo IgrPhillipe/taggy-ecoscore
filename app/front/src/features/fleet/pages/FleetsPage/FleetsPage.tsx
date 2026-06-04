@@ -17,11 +17,14 @@ import {
 import { toast } from "sonner";
 import { getToastErrorMessage } from "@/lib/api-error";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
+import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
+import { FormField } from "@/components/form/FormField";
 import { OrganizationsRelationSelect } from "@/components/form/relation-selects";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { FilterInput } from "@/components/ui/FilterInput";
 import { Button } from "@/components/ui/button";
+import { useFilterDraft } from "@/hooks/useFilterDraft";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +46,10 @@ const fleetsSearchParams = {
   order: parseAsStringEnum(["asc", "desc"] as const).withDefault("asc"),
   search: parseAsString,
   org: parseAsInteger,
+};
+
+const FILTER_DEFAULTS = {
+  org: undefined as number | undefined,
 };
 
 const CreateFleetDialog = ({
@@ -195,6 +202,26 @@ export const FleetsPage = () => {
 
   const pageCount = data ? Math.ceil(data.total / PAGE_SIZE) : undefined;
 
+  const {
+    open: filterOpen,
+    setOpen: setFilterOpen,
+    draft,
+    setDraft,
+    apply: applyFilters,
+    clear: clearFilters,
+    activeCount,
+  } = useFilterDraft({
+    applied: {
+      org: org ?? undefined,
+    },
+    defaults: FILTER_DEFAULTS,
+    onApply: (values) =>
+      setParams({
+        org: values.org ?? null,
+        page: 1,
+      }),
+  });
+
   const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
     const next = typeof updater === "function" ? updater(pagination) : updater;
     setParams({ page: next.pageIndex + 1 });
@@ -214,24 +241,46 @@ export const FleetsPage = () => {
       title="Frotas"
       description="Visualize e gerencie todas as frotas cadastradas."
     >
-      <section className="flex flex-col gap-4 md:flex-row md:items-center">
-        <FilterInput
-          placeholder="Buscar frota por nome ou ID"
-          value={search ?? ""}
-          onChange={(e) =>
-            setParams({ search: e.target.value || null, page: 1 })
-          }
-          className="md:flex-1"
-        />
-        {isAdmin && (
-          <OrganizationsRelationSelect
-            value={org ?? undefined}
-            onValueChange={(value) =>
-              setParams({ org: value ?? null, page: 1 })
+      <section className="flex items-center justify-between gap-2">
+        {isAdmin ? (
+          <FilterSearchRow
+            searchValue={search ?? ""}
+            onDebouncedSearchChange={(value) =>
+              setParams({ search: value || null, page: 1 })
             }
-            placeholder="Todas as organizações"
-            emptyLabel="Todas as organizações"
-            className="w-full md:w-52"
+            placeholder="Buscar frota por nome ou ID"
+            searchId="fleet-search"
+          >
+            <FilterModal
+              open={filterOpen}
+              onOpenChange={setFilterOpen}
+              activeCount={activeCount}
+              onApply={applyFilters}
+              onClear={clearFilters}
+              className="shrink-0"
+            >
+              <FormField id="fleet-org" label="Organização">
+                <OrganizationsRelationSelect
+                  value={draft.org ?? undefined}
+                  onValueChange={(value) =>
+                    setDraft((prev) => ({ ...prev, org: value ?? undefined }))
+                  }
+                  placeholder="Todas as organizações"
+                  emptyLabel="Todas as organizações"
+                  className="w-full"
+                />
+              </FormField>
+            </FilterModal>
+          </FilterSearchRow>
+        ) : (
+          <FilterInput
+            placeholder="Buscar frota por nome ou ID"
+            value={search ?? ""}
+            debounceMs={300}
+            onDebouncedChange={(value) =>
+              setParams({ search: value || null, page: 1 })
+            }
+            className="min-w-0 flex-1"
           />
         )}
         <Button onClick={() => setCreateOpen(true)} className="shrink-0">

@@ -15,7 +15,7 @@ export const PageLayout = ({
   className,
 }: PageLayoutProps) => {
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn("space-y-6 p-4 md:p-8", className)}>
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="page-title text-3xl font-semibold">{title}</h1>

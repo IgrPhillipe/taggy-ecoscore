@@ -1,6 +1,9 @@
 import { Leaf, Fuel, Download, Coins, Tag, Scroll } from "lucide-react";
 import { useState } from "react";
+import type { DateRange } from "react-day-picker";
 
+import { FilterModal } from "@/components/FilterModal";
+import { FormField } from "@/components/form/FormField";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { KpiCard } from "@/features/sustainability/components/MetricCard";
@@ -18,12 +21,25 @@ import { OrganizationsCombobox } from "@/features/fleet/components/Organizations
 import { useDashboardFilters } from "@/features/dashboard/hooks/useDashboardFilters";
 import { useDailyStats } from "@/features/dashboard/hooks/useDailyStats";
 import { useDashboardSummary } from "@/features/dashboard/hooks/useDashboardSummary";
+import { useFilterDraft } from "@/hooks/useFilterDraft";
 import { ComparativeBarChart } from "./components/ComparativeBarChart";
 import { DashboardDateRangePicker } from "./components/DashboardDateRangePicker";
 import { DashboardFuelSelect } from "./components/DashboardFuelSelect";
 import { DailyPassagensChart } from "./components/DailyPassagensChart";
 import { DailyCo2Chart } from "./components/DailyCo2Chart";
 import { RegionalEmissionsMap } from "./components/RegionalEmissionsMap";
+
+type DashboardFilterState = {
+  organizationId: number | undefined;
+  fuelType: string | undefined;
+  dateRange: DateRange | undefined;
+};
+
+const DASHBOARD_FILTER_DEFAULTS: DashboardFilterState = {
+  organizationId: undefined,
+  fuelType: undefined,
+  dateRange: undefined,
+};
 
 export const DashboardPage = () => {
   const { user } = useCurrentUser();
@@ -35,11 +51,42 @@ export const DashboardPage = () => {
   const {
     fuelType,
     dateRange,
-    hasActiveFilters,
     setFuelType,
     setDateRange,
-    clearAllFilters,
   } = useDashboardFilters();
+
+  const appliedFilters: DashboardFilterState = {
+    organizationId,
+    fuelType,
+    dateRange,
+  };
+
+  const {
+    open: filterOpen,
+    setOpen: setFilterOpen,
+    draft,
+    setDraft,
+    apply: applyFilters,
+    clear: clearFilters,
+    activeCount,
+  } = useFilterDraft({
+    applied: appliedFilters,
+    defaults: DASHBOARD_FILTER_DEFAULTS,
+    onApply: (values) => {
+      if (isAdmin) {
+        setOrganizationId(values.organizationId);
+      }
+      setFuelType(values.fuelType);
+      setDateRange(values.dateRange);
+    },
+    onClear: (values) => {
+      if (isAdmin) {
+        setOrganizationId(values.organizationId);
+      }
+      setFuelType(values.fuelType);
+      setDateRange(values.dateRange);
+    },
+  });
 
   const scopedOrgId =
     user?.role === "gestor_frota"
@@ -91,31 +138,41 @@ export const DashboardPage = () => {
       description="Visualize indicadores de emissões, economia e tags ativos com filtros por período e tipo de combustível."
     >
       <section className="flex items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          {isAdmin && (
-            <OrganizationsCombobox
-              value={organizationId}
-              onValueChange={setOrganizationId}
-              placeholder="Todas as organizações"
-            />
-          )}
-          <DashboardFuelSelect value={fuelType} onValueChange={setFuelType} />
-          <DashboardDateRangePicker
-            date={dateRange}
-            onDateChange={setDateRange}
-          />
-          {hasActiveFilters ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground"
-              onClick={clearAllFilters}
-            >
-              Limpar filtros
-            </Button>
+        <FilterModal
+          open={filterOpen}
+          onOpenChange={setFilterOpen}
+          activeCount={activeCount}
+          onApply={applyFilters}
+          onClear={clearFilters}
+        >
+          {isAdmin ? (
+            <FormField id="dashboard-org" label="Organização">
+              <OrganizationsCombobox
+                value={draft.organizationId}
+                onValueChange={(value) =>
+                  setDraft((prev) => ({ ...prev, organizationId: value }))
+                }
+                placeholder="Todas as organizações"
+              />
+            </FormField>
           ) : null}
-        </div>
+          <FormField id="dashboard-fuel" label="Combustível">
+            <DashboardFuelSelect
+              value={draft.fuelType}
+              onValueChange={(value) =>
+                setDraft((prev) => ({ ...prev, fuelType: value }))
+              }
+            />
+          </FormField>
+          <FormField id="dashboard-date-range" label="Período">
+            <DashboardDateRangePicker
+              date={draft.dateRange}
+              onDateChange={(value) =>
+                setDraft((prev) => ({ ...prev, dateRange: value }))
+              }
+            />
+          </FormField>
+        </FilterModal>
 
         <Button type="button" variant="outline">
           <Download className="h-4 w-4" />

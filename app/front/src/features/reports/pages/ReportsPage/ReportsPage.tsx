@@ -15,10 +15,14 @@ import {
 import type { DateRange } from "react-day-picker";
 import { Download } from "lucide-react";
 
+import { FilterModal } from "@/components/FilterModal";
+import { FormField } from "@/components/form/FormField";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { PAGE_SIZE } from "@/constants";
+import { countActiveFilters } from "@/lib/filter-utils";
+import { useFilterDraft } from "@/hooks/useFilterDraft";
 import { DashboardDateRangePicker } from "@/features/dashboard/pages/DashboardPage/components/DashboardDateRangePicker";
 import { DashboardFuelSelect } from "@/features/dashboard/pages/DashboardPage/components/DashboardFuelSelect";
 import { useGetVehicles } from "@/features/fleet/hooks/useGetVehicles";
@@ -85,6 +89,24 @@ export const ReportsPage = () => {
 
   const pageCount = data ? Math.ceil(data.total / PAGE_SIZE) : undefined;
 
+  const appliedActiveCount = useMemo(
+    () => countActiveFilters(appliedFilters, defaultFilters),
+    [appliedFilters],
+  );
+
+  const {
+    open: filterOpen,
+    setOpen: setFilterOpen,
+    draft,
+    setDraft,
+    apply: applyModalFilters,
+    clear: clearModalFilters,
+  } = useFilterDraft({
+    applied: draftFilters,
+    defaults: defaultFilters,
+    onApply: setDraftFilters,
+  });
+
   const handleGenerate = () => {
     setAppliedFilters(draftFilters);
     setParams({ page: 1 });
@@ -125,32 +147,46 @@ export const ReportsPage = () => {
         <h2 className="font-semibold">Gerar relatórios</h2>
 
         <div className="flex items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <DashboardDateRangePicker
-              date={draftFilters.dateRange}
-              onDateChange={(dateRange) =>
-                setDraftFilters((prev) => ({ ...prev, dateRange }))
-              }
-            />
-            <DashboardFuelSelect
-              value={draftFilters.fuelType}
-              onValueChange={(fuelType) =>
-                setDraftFilters((prev) => ({ ...prev, fuelType }))
-              }
-            />
-            <ReportsRegionSelect
-              value={draftFilters.region}
-              onValueChange={(region) =>
-                setDraftFilters((prev) => ({ ...prev, region }))
-              }
-            />
-            <OrganizationsCombobox
-              value={draftFilters.organizationId}
-              onValueChange={(v) =>
-                setDraftFilters((prev) => ({ ...prev, organizationId: v }))
-              }
-            />
-          </div>
+          <FilterModal
+            open={filterOpen}
+            onOpenChange={setFilterOpen}
+            activeCount={appliedActiveCount}
+            onApply={applyModalFilters}
+            onClear={clearModalFilters}
+          >
+            <FormField id="report-date-range" label="Período">
+              <DashboardDateRangePicker
+                date={draft.dateRange}
+                onDateChange={(dateRange) =>
+                  setDraft((prev) => ({ ...prev, dateRange }))
+                }
+              />
+            </FormField>
+            <FormField id="report-fuel" label="Combustível">
+              <DashboardFuelSelect
+                value={draft.fuelType}
+                onValueChange={(fuelType) =>
+                  setDraft((prev) => ({ ...prev, fuelType }))
+                }
+              />
+            </FormField>
+            <FormField id="report-region" label="Região">
+              <ReportsRegionSelect
+                value={draft.region}
+                onValueChange={(region) =>
+                  setDraft((prev) => ({ ...prev, region }))
+                }
+              />
+            </FormField>
+            <FormField id="report-org" label="Organização">
+              <OrganizationsCombobox
+                value={draft.organizationId}
+                onValueChange={(value) =>
+                  setDraft((prev) => ({ ...prev, organizationId: value }))
+                }
+              />
+            </FormField>
+          </FilterModal>
 
           <div className="flex items-center gap-2">
             <Button type="button" onClick={handleGenerate}>

@@ -11,8 +11,13 @@ import { FileSpreadsheet } from "lucide-react";
 import { OrganizationsRelationSelect } from "@/components/form/relation-selects";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { TransactionFilters } from "@/components/TransactionFilters/TransactionFilters";
+import { TransactionFiltersForm } from "@/components/TransactionFilters/TransactionFilters";
 import type { TransactionFilterState } from "@/components/TransactionFilters/TransactionFilters";
+import { TRANSACTION_MODAL_FILTER_DEFAULTS } from "@/components/TransactionFilters/TransactionFilters";
+import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
+import { FormField } from "@/components/form/FormField";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useFilterDraft } from "@/hooks/useFilterDraft";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -127,15 +132,54 @@ const auditSearchParams = {
   org: parseAsInteger,
 };
 
+const AUDIT_FILTER_DEFAULTS = {
+  ...TRANSACTION_MODAL_FILTER_DEFAULTS,
+  org: undefined as number | undefined,
+};
+
+type AuditModalFilterState = typeof AUDIT_FILTER_DEFAULTS;
+
 export const TransactionsAuditPage = () => {
   const { user } = useCurrentUser();
   const isAdmin = user?.role === "admin";
   const [{ page, org }, setParams] = useQueryStates(auditSearchParams, {
     history: "replace",
   });
-  const [filters, setFilters] = useState<TransactionFilterState>({});
+  const [filters, setFilters] = useState<
+    Pick<TransactionFilterState, "context" | "uf" | "dateRange">
+  >({});
+  const [plateSearch, setPlateSearch] = useState("");
+  const debouncedPlate = useDebouncedValue(plateSearch, 300);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
+
+  const appliedAuditFilters: AuditModalFilterState = {
+    context: filters.context,
+    uf: filters.uf,
+    dateRange: filters.dateRange,
+    org: org ?? undefined,
+  };
+
+  const {
+    open: filterOpen,
+    setOpen: setFilterOpen,
+    draft,
+    setDraft,
+    apply: applyFilters,
+    clear: clearFilters,
+    activeCount,
+  } = useFilterDraft({
+    applied: appliedAuditFilters,
+    defaults: AUDIT_FILTER_DEFAULTS,
+    onApply: (values) => {
+      setFilters({
+        context: values.context,
+        uf: values.uf,
+        dateRange: values.dateRange,
+      });
+      setParams({ org: values.org ?? null, page: 1 });
+    },
+  });
 
   const scopedOrgId =
     user?.role === "gestor_frota"
@@ -148,7 +192,7 @@ export const TransactionsAuditPage = () => {
     page,
     pageSize: PAGE_SIZE,
     organizationId: scopedOrgId,
-    plate: filters.plate,
+    plate: debouncedPlate || undefined,
     context: filters.context,
     uf: filters.uf,
     fromDate: filters.dateRange?.from
@@ -171,11 +215,6 @@ export const TransactionsAuditPage = () => {
     setParams({ page: next.pageIndex + 1 });
   };
 
-  const handleFiltersChange = (next: TransactionFilterState) => {
-    setFilters(next);
-    setParams({ page: 1 });
-  };
-
   return (
     <PageLayout
       title="Passagens"
@@ -183,11 +222,42 @@ export const TransactionsAuditPage = () => {
     >
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
-          <TransactionFilters
-            filters={filters}
-            onChange={handleFiltersChange}
-            showPlate
-          />
+          <FilterSearchRow
+            searchValue={plateSearch}
+            onDebouncedSearchChange={setPlateSearch}
+            placeholder="Buscar por placa"
+            searchId="audit-plate-search"
+            className="max-w-md"
+          >
+            <FilterModal
+              open={filterOpen}
+              onOpenChange={setFilterOpen}
+              activeCount={activeCount}
+              onApply={applyFilters}
+              onClear={clearFilters}
+              className="shrink-0"
+            >
+              <TransactionFiltersForm
+                filters={draft}
+                onChange={(txValues) =>
+                  setDraft((prev) => ({ ...prev, ...txValues }))
+                }
+              />
+              {isAdmin ? (
+                <FormField id="audit-org" label="Organização">
+                  <OrganizationsRelationSelect
+                    value={draft.org ?? undefined}
+                    onValueChange={(value) =>
+                      setDraft((prev) => ({ ...prev, org: value ?? undefined }))
+                    }
+                    placeholder="Todas as organizações"
+                    emptyLabel="Todas as organizações"
+                    className="w-full"
+                  />
+                </FormField>
+              ) : null}
+            </FilterModal>
+          </FilterSearchRow>
           <Button
             variant="outline"
             size="sm"
@@ -200,17 +270,6 @@ export const TransactionsAuditPage = () => {
             <FileSpreadsheet className="h-4 w-4" />
             Planilha Auditável
           </Button>
-          {isAdmin && (
-            <OrganizationsRelationSelect
-              value={org ?? undefined}
-              onValueChange={(value) =>
-                setParams({ org: value ?? null, page: 1 })
-              }
-              placeholder="Todas as organizações"
-              emptyLabel="Todas as organizações"
-              className="w-52"
-            />
-          )}
         </div>
       </section>
 

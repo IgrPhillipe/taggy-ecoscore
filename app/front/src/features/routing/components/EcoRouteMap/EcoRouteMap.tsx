@@ -31,7 +31,11 @@ const PARKING_RADIUS_FILL = "parking-radius-fill";
 const PARKING_RADIUS_OUTLINE = "parking-radius-outline";
 
 /** Generate a GeoJSON circle polygon (64 points) around [lng, lat] with radius in metres. */
-function makeCircleGeoJSON(lng: number, lat: number, radiusM: number): GeoJSON.Feature {
+function makeCircleGeoJSON(
+  lng: number,
+  lat: number,
+  radiusM: number,
+): GeoJSON.Feature {
   const points = 64;
   const earthRadius = 6371000;
   const coords: [number, number][] = [];
@@ -56,8 +60,10 @@ function clearAllRouteLayers(map: mapboxgl.Map) {
     if (map.getSource(sourceId)) map.removeSource(sourceId);
   }
   if (map.getLayer(PARKING_RADIUS_FILL)) map.removeLayer(PARKING_RADIUS_FILL);
-  if (map.getLayer(PARKING_RADIUS_OUTLINE)) map.removeLayer(PARKING_RADIUS_OUTLINE);
-  if (map.getSource(PARKING_RADIUS_SOURCE)) map.removeSource(PARKING_RADIUS_SOURCE);
+  if (map.getLayer(PARKING_RADIUS_OUTLINE))
+    map.removeLayer(PARKING_RADIUS_OUTLINE);
+  if (map.getSource(PARKING_RADIUS_SOURCE))
+    map.removeSource(PARKING_RADIUS_SOURCE);
   document.querySelectorAll(".eco-route-marker").forEach((el) => el.remove());
 }
 
@@ -68,7 +74,11 @@ const PLACE_MARKER_STYLES: Record<
   { color: string; label: string; iconSvg: string }
 > = {
   toll: { color: "#dc2626", label: "Pedágio", iconSvg: TOLL_MARKER_ICON },
-  parking: { color: "#2563eb", label: "Estacionamento", iconSvg: PARKING_MARKER_ICON },
+  parking: {
+    color: "#2563eb",
+    label: "Estacionamento",
+    iconSvg: PARKING_MARKER_ICON,
+  },
 };
 
 function addPlaceMarker(
@@ -100,7 +110,10 @@ function addPlaceMarker(
       <span style="color:#666">${escapeMapPopupText(place.vicinity)}</span>
     </div>`,
   );
-  new mapboxgl.Marker(el).setLngLat([place.longitude, place.latitude]).setPopup(popup).addTo(map);
+  new mapboxgl.Marker(el)
+    .setLngLat([place.longitude, place.latitude])
+    .setPopup(popup)
+    .addTo(map);
 }
 
 function addEndpointMarker(
@@ -200,7 +213,8 @@ export const EcoRouteMap = ({
 
       drawOrder.forEach((route) => {
         const isSelected = route.route_index === selectedRouteIndex;
-        const color = ROUTE_COLORS[route.route_index % ROUTE_COLORS.length] ?? "#72C215";
+        const color =
+          ROUTE_COLORS[route.route_index % ROUTE_COLORS.length] ?? "#72C215";
 
         map.addSource(`route-${route.route_index}`, {
           type: "geojson",
@@ -220,10 +234,15 @@ export const EcoRouteMap = ({
       });
 
       // Markers for selected route only
-      const selected = routes.find((r) => r.route_index === selectedRouteIndex) ?? routes[0];
+      const selected =
+        routes.find((r) => r.route_index === selectedRouteIndex) ?? routes[0];
       if (selected) {
-        selected.toll_places_on_route.forEach((p) => addPlaceMarker(map, p, "toll"));
-        selected.parking_places_on_route.forEach((p) => addPlaceMarker(map, p, "parking"));
+        selected.toll_places_on_route.forEach((p) =>
+          addPlaceMarker(map, p, "toll"),
+        );
+        selected.parking_places_on_route.forEach((p) =>
+          addPlaceMarker(map, p, "parking"),
+        );
       }
 
       if (originCoords && originLabel) {
@@ -250,26 +269,41 @@ export const EcoRouteMap = ({
           id: PARKING_RADIUS_OUTLINE,
           type: "line",
           source: PARKING_RADIUS_SOURCE,
-          paint: { "line-color": "#2563eb", "line-width": 1.5, "line-dasharray": [4, 3], "line-opacity": 0.5 },
+          paint: {
+            "line-color": "#2563eb",
+            "line-width": 1.5,
+            "line-dasharray": [4, 3],
+            "line-opacity": 0.5,
+          },
         });
       }
 
       // Fit bounds
-      const coords = selected?.geometry.coordinates as [number, number][] | undefined;
+      const coords = selected?.geometry.coordinates as
+        | [number, number][]
+        | undefined;
       if (coords && coords.length > 0) {
         const bounds = coords.reduce(
           (b, c) => b.extend(c),
           new mapboxgl.LngLatBounds(coords[0], coords[0]),
         );
         map.fitBounds(bounds, {
-          padding: { top: 48, bottom: 48, left: 48, right: routes.length > 0 ? 340 : 48 },
+          padding: {
+            top: 48,
+            bottom: 48,
+            left: 48,
+            right: routes.length > 0 ? 340 : 48,
+          },
           maxZoom: 14,
           duration: 800,
         });
       } else if (originCoords && destinationCoords) {
-        map.fitBounds(new mapboxgl.LngLatBounds(originCoords, destinationCoords), {
-          padding: { top: 48, bottom: 48, left: 48, right: 48 },
-        });
+        map.fitBounds(
+          new mapboxgl.LngLatBounds(originCoords, destinationCoords),
+          {
+            padding: { top: 48, bottom: 48, left: 48, right: 48 },
+          },
+        );
       }
     };
 

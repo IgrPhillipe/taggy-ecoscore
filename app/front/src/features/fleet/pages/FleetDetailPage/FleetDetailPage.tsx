@@ -9,8 +9,10 @@ import { getToastErrorMessage } from "@/lib/api-error";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { FilterModal } from "@/components/FilterModal";
 import { FilterInput } from "@/components/ui/FilterInput";
 import { Button } from "@/components/ui/button";
+import { useFilterDraft } from "@/hooks/useFilterDraft";
 import {
   Dialog,
   DialogContent,
@@ -29,8 +31,9 @@ import {
   KPI_ICON_SIZE,
   KPI_TITLES,
 } from "@/features/sustainability/lib/kpi";
-import { TransactionFilters } from "@/components/TransactionFilters/TransactionFilters";
+import { TransactionFiltersForm } from "@/components/TransactionFilters/TransactionFilters";
 import type { TransactionFilterState } from "@/components/TransactionFilters/TransactionFilters";
+import { TRANSACTION_MODAL_FILTER_DEFAULTS } from "@/components/TransactionFilters/TransactionFilters";
 import {
   UsersRelationSelect,
   VehiclesRelationSelect,
@@ -253,6 +256,23 @@ export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) =>
     return fleetUsers.filter((u) => u.name.toLowerCase().includes(q));
   }, [fleetUsers, driverSearch]);
 
+  const {
+    open: txFilterOpen,
+    setOpen: setTxFilterOpen,
+    draft: txDraft,
+    setDraft: setTxDraft,
+    apply: applyTxFilters,
+    clear: clearTxFilters,
+    activeCount: txActiveCount,
+  } = useFilterDraft({
+    applied: txFilters,
+    defaults: TRANSACTION_MODAL_FILTER_DEFAULTS,
+    onApply: (values) => {
+      setTxFilters(values);
+      setTxPage(1);
+    },
+  });
+
   const fleetUserIds = fleetUsers.map((u) => u.id);
   const fleetVehicleIds = fleetVehicles.map((v) => v.id);
 
@@ -287,8 +307,9 @@ export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) =>
             <FilterInput
               placeholder="Buscar por placa ou modelo"
               value={vehicleSearch}
-              onChange={(e) => setVehicleSearch(e.target.value)}
-              className="max-w-xs"
+              debounceMs={300}
+              onDebouncedChange={setVehicleSearch}
+              className="max-w-xs flex-1"
             />
             <Button size="sm" onClick={() => setLinkVehicleOpen(true)}>
               <Link2 className="mr-1 h-3 w-3" />
@@ -307,8 +328,9 @@ export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) =>
             <FilterInput
               placeholder="Buscar por nome"
               value={driverSearch}
-              onChange={(e) => setDriverSearch(e.target.value)}
-              className="max-w-xs"
+              debounceMs={300}
+              onDebouncedChange={setDriverSearch}
+              className="max-w-xs flex-1"
             />
             <Button size="sm" onClick={() => setLinkUserOpen(true)}>
               <Link2 className="mr-1 h-3 w-3" />
@@ -324,7 +346,18 @@ export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) =>
 
         <TabsContent value="passagens">
           <div className="mb-3">
-            <TransactionFilters filters={txFilters} onChange={(f) => { setTxFilters(f); setTxPage(1); }} />
+            <FilterModal
+              open={txFilterOpen}
+              onOpenChange={setTxFilterOpen}
+              activeCount={txActiveCount}
+              onApply={applyTxFilters}
+              onClear={clearTxFilters}
+            >
+              <TransactionFiltersForm
+                filters={txDraft}
+                onChange={setTxDraft}
+              />
+            </FilterModal>
           </div>
           <DataTable
             columns={transactionColumns}

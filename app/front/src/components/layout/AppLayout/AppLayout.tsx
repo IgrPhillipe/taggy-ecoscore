@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Sidebar } from "../Sidebar";
 import { Header } from "../Header";
 import { Footer } from "../Footer";
-import { useWebsocketNotification } from "@/hooks/useWebsocketNotification"
+import { useWebsocketNotification } from "@/hooks/useWebsocketNotification";
 
 type AppLayoutProps = {
   children: ReactNode;
@@ -18,9 +18,7 @@ export const AppLayout = ({ children, userId = null }: AppLayoutProps) => {
       <Sidebar mobileOpen={mobileOpen} onMobileOpenChange={setMobileOpen} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 overflow-y-auto bg-neutral-50 p-4 md:p-8">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto bg-neutral-50">{children}</main>
         <Footer />
       </div>
     </div>

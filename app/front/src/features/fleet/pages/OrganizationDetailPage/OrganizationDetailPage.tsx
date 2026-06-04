@@ -235,8 +235,9 @@ export const OrganizationDetailPage = ({
           <FilterInput
             placeholder="Buscar por nome ou e-mail"
             value={userSearch}
-            onChange={(e) => setUserSearch(e.target.value)}
-            className="max-w-xs"
+            debounceMs={300}
+            onDebouncedChange={setUserSearch}
+            className="max-w-xs flex-1"
           />
           <Button size="sm" onClick={() => setLinkUserOpen(true)}>
             <Link2 className="mr-1 h-3 w-3" />

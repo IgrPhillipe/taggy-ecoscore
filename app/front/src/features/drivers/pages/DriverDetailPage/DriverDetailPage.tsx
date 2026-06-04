@@ -22,8 +22,12 @@ import {
   KPI_ICON_SIZE,
   KPI_TITLES,
 } from "@/features/sustainability/lib/kpi";
-import { TransactionFilters } from "@/components/TransactionFilters/TransactionFilters";
+import { TransactionFiltersForm } from "@/components/TransactionFilters/TransactionFilters";
 import type { TransactionFilterState } from "@/components/TransactionFilters/TransactionFilters";
+import { TRANSACTION_MODAL_FILTER_DEFAULTS } from "@/components/TransactionFilters/TransactionFilters";
+import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useFilterDraft } from "@/hooks/useFilterDraft";
 import { api } from "@/lib/http-client";
 
 type DriverDetailPageProps = {
@@ -87,7 +91,11 @@ const roleLabels: Record<string, string> = {
 export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
   const navigate = useNavigate();
   const [txPage, setTxPage] = useState(1);
-  const [txFilters, setTxFilters] = useState<TransactionFilterState>({});
+  const [txFilters, setTxFilters] = useState<
+    Pick<TransactionFilterState, "context" | "uf" | "dateRange">
+  >({});
+  const [plateSearch, setPlateSearch] = useState("");
+  const debouncedPlate = useDebouncedValue(plateSearch, 300);
   const [editOpen, setEditOpen] = useState(false);
 
   const { data: driver, isLoading: driverLoading } = useQuery({
@@ -101,7 +109,7 @@ export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
   });
 
   const filters = {
-    plate: txFilters.plate,
+    plate: debouncedPlate || undefined,
     context: txFilters.context,
     uf: txFilters.uf,
     fromDate: txFilters.dateRange?.from ? format(txFilters.dateRange.from, "yyyy-MM-dd") : undefined,
@@ -123,10 +131,22 @@ export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
     setTxPage(next.pageIndex + 1);
   };
 
-  const handleFiltersChange = (f: TransactionFilterState) => {
-    setTxFilters(f);
-    setTxPage(1);
-  };
+  const {
+    open: filterOpen,
+    setOpen: setFilterOpen,
+    draft: txDraft,
+    setDraft: setTxDraft,
+    apply: applyTxFilters,
+    clear: clearTxFilters,
+    activeCount: txActiveCount,
+  } = useFilterDraft({
+    applied: txFilters,
+    defaults: TRANSACTION_MODAL_FILTER_DEFAULTS,
+    onApply: (values) => {
+      setTxFilters(values);
+      setTxPage(1);
+    },
+  });
 
   return (
     <PageLayout
@@ -192,11 +212,27 @@ export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
 
       <SectionCard title="Passagens">
         <div className="mb-3">
-          <TransactionFilters
-            filters={txFilters}
-            onChange={handleFiltersChange}
-            showPlate
-          />
+          <FilterSearchRow
+            searchValue={plateSearch}
+            onDebouncedSearchChange={setPlateSearch}
+            placeholder="Buscar por placa"
+            searchId="driver-tx-plate-search"
+            className="max-w-md"
+          >
+            <FilterModal
+              open={filterOpen}
+              onOpenChange={setFilterOpen}
+              activeCount={txActiveCount}
+              onApply={applyTxFilters}
+              onClear={clearTxFilters}
+              className="shrink-0"
+            >
+              <TransactionFiltersForm
+                filters={txDraft}
+                onChange={setTxDraft}
+              />
+            </FilterModal>
+          </FilterSearchRow>
         </div>
         <DataTable
           columns={transactionColumns}
