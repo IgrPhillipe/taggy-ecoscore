@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Leaf } from "lucide-react";
 import { calculatePublic } from "../api/requests";
 import type { PublicCalculatorRequest, PublicCalculatorResponse } from "../api/types";
 import { CalculatorForm } from "../components/CalculatorForm";
@@ -24,19 +23,16 @@ export function PublicCalculatorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white flex flex-col items-center justify-start px-4 pt-10 pb-16">
+    <div className="flex flex-col items-center justify-start px-4 py-10 pb-16">
       <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 mx-auto">
-            <Leaf className="h-6 w-6 text-emerald-600" />
-          </div>
+        <div className="space-y-2 text-center">
           <h1 className="text-2xl font-bold text-neutral-900">Vale a pena ter tag?</h1>
-          <p className="text-neutral-500 text-sm">
+          <p className="text-sm text-neutral-500">
             Veja quanto você economizaria em combustível e CO₂ com a Taggy.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-neutral-100 bg-white shadow-sm p-6">
+        <div className="rounded-2xl border border-neutral-100 bg-white p-6 shadow-sm">
           {result && !mutation.isPending ? (
             <CalculatorResults result={result} onReset={handleReset} />
           ) : (

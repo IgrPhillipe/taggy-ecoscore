@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Car, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlateInput } from "@/components/ui/PlateInput";
 import type { PublicCalculatorRequest } from "../api/types";
@@ -47,44 +48,44 @@ export function CalculatorForm({ onSubmit, isLoading }: Props) {
         </p>
       </div>
 
-      <div className="space-y-3">
-        <Label className="flex items-center justify-between text-sm font-medium">
-          <span>Pedágios por mês</span>
-          <span className="text-lg font-bold text-emerald-600">{pedagio}×</span>
+      <div className="space-y-2">
+        <Label htmlFor="pedagio" className="text-sm font-medium">
+          Pedágios por mês
         </Label>
-        <input
-          type="range"
+        <Input
+          id="pedagio"
+          type="number"
           min={1}
           max={60}
           value={pedagio}
-          onChange={(e) => setPedagio(Number(e.target.value))}
-          className="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+          clearable={false}
+          onChange={(e) => {
+            const next = Number(e.target.value);
+            if (Number.isNaN(next)) return;
+            setPedagio(Math.min(60, Math.max(1, next)));
+          }}
+          required
         />
-        <div className="flex justify-between text-xs text-neutral-400">
-          <span>1×</span>
-          <span>30×</span>
-          <span>60×</span>
-        </div>
       </div>
 
-      <div className="space-y-3">
-        <Label className="flex items-center justify-between text-sm font-medium">
-          <span>Estacionamentos por mês <span className="text-neutral-400 font-normal">(opcional)</span></span>
-          <span className="text-lg font-bold text-emerald-600">{estac}×</span>
+      <div className="space-y-2">
+        <Label htmlFor="estac" className="text-sm font-medium">
+          Estacionamentos por mês{" "}
+          <span className="font-normal text-neutral-400">(opcional)</span>
         </Label>
-        <input
-          type="range"
+        <Input
+          id="estac"
+          type="number"
           min={0}
           max={30}
           value={estac}
-          onChange={(e) => setEstac(Number(e.target.value))}
-          className="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+          clearable={false}
+          onChange={(e) => {
+            const next = Number(e.target.value);
+            if (Number.isNaN(next)) return;
+            setEstac(Math.min(30, Math.max(0, next)));
+          }}
         />
-        <div className="flex justify-between text-xs text-neutral-400">
-          <span>0×</span>
-          <span>15×</span>
-          <span>30×</span>
-        </div>
       </div>
 
       <div className="space-y-2">

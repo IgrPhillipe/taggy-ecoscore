@@ -1,4 +1,4 @@
-import { AlertTriangle, Clock, Coins, Fuel, Leaf, RotateCcw, TreePine } from "lucide-react";
+import { AlertTriangle, Clock, Coffee, Fuel, Leaf, RotateCcw, Smartphone, TreePine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatKpiCo2, formatKpiCurrency } from "@/features/sustainability/lib/kpi";
 import type { PublicCalculatorResponse } from "../api/types";
@@ -113,21 +113,21 @@ export function CalculatorResults({ result, onReset }: Props) {
           <div className="grid grid-cols-3 gap-3 text-center">
             {ludic.trees_saved != null && (
               <div className="space-y-1">
-                <p className="text-2xl">🌳</p>
+                <TreePine className="mx-auto h-6 w-6 text-emerald-600" />
                 <p className="text-lg font-bold text-neutral-900">{ludic.trees_saved.toFixed(1)}</p>
                 <p className="text-xs text-neutral-500">árvores/ano</p>
               </div>
             )}
             {ludic.smartphone_charges != null && (
               <div className="space-y-1">
-                <p className="text-2xl">📱</p>
+                <Smartphone className="mx-auto h-6 w-6 text-neutral-600" />
                 <p className="text-lg font-bold text-neutral-900">{ludic.smartphone_charges}</p>
                 <p className="text-xs text-neutral-500">cargas de celular</p>
               </div>
             )}
             {ludic.coffee_filters != null && (
               <div className="space-y-1">
-                <p className="text-2xl">☕</p>
+                <Coffee className="mx-auto h-6 w-6 text-amber-700" />
                 <p className="text-lg font-bold text-neutral-900">{ludic.coffee_filters}</p>
                 <p className="text-xs text-neutral-500">filtros de café</p>
               </div>
@@ -142,7 +142,7 @@ export function CalculatorResults({ result, onReset }: Props) {
         rel="noopener noreferrer"
         className="block w-full text-center rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 transition-colors"
       >
-        Quero minha Taggy →
+        Quero minha Taggy
       </a>
 
       <button
