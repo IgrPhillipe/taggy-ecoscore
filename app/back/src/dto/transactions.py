@@ -24,7 +24,6 @@ class ProcessTransactionBody(BaseModel):
     id_tag: str | None = None  # Quando fornecido + placa nova → auto-cadastro do veículo
 
     plate: str = Field(min_length=1, max_length=10)
-    elapsed_time: int = Field(ge=0)
     context: Literal["pedagio", "estacionamento"]
     uf: str = Field(
         min_length=2,

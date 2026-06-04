@@ -25,7 +25,6 @@ class TransactionOrchestrator:
         }
 
         return self.engine.process_transaction(
-            real_time_sec=int(webhook_payload["elapsed_time"]),
             vehicle_data=vehicle_data,
             context=context,
             uf_passagem=uf_passagem,

@@ -343,8 +343,14 @@ def technical_specs_to_engine_dict(
         },
         "ludic_metaphors": ludic_metaphors,
         "baselines": {
-            "pedagio": {"avg_wait_sec": int(row.baseline_pedagio_avg_wait_sec)},
-            "estacionamento": {"avg_wait_sec": int(row.baseline_estacionamento_avg_wait_sec)},
+            "pedagio": {
+                "avg_wait_sec": int(row.baseline_pedagio_avg_wait_sec),
+                "with_tag_avg_sec": int(row.elapsed_pedagio_avg_sec),
+            },
+            "estacionamento": {
+                "avg_wait_sec": int(row.baseline_estacionamento_avg_wait_sec),
+                "with_tag_avg_sec": int(row.elapsed_estacionamento_avg_sec),
+            },
         },
         "maint_costs": {
             "leve": float(row.maint_cost_leve),

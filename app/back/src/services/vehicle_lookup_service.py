@@ -130,7 +130,8 @@ def _resolve_fuel(fuel_raw: str, year: Optional[int]) -> tuple[str, bool]:
         if key in normalised:
             return ft, is_flex
 
-    logger.warning("combustivel desconhecido da apibrasil: %r — usando gasolina_c como fallback", fuel_raw)
+    logger.warning(
+        "combustivel desconhecido da apibrasil: %r — usando gasolina_c como fallback", fuel_raw)
     return "gasolina_c", False
 
 
@@ -222,7 +223,8 @@ async def lookup_vehicle(plate: str) -> Optional[VehicleResolution]:
     """
     token = os.environ.get("APIBRASIL_TOKEN")
     if not token:
-        raise RuntimeError("APIBRASIL_TOKEN não configurada. Defina a variável de ambiente.")
+        raise RuntimeError(
+            "APIBRASIL_TOKEN não configurada. Defina a variável de ambiente.")
 
     normalised = _normalise_plate(plate)
 
@@ -230,7 +232,8 @@ async def lookup_vehicle(plate: str) -> Optional[VehicleResolution]:
         try:
             resp = await client.post(
                 _APIBRASIL_URL,
-                json={"tipo": "fipe", "placa": normalised.lower(), "homolog": False},
+                json={"tipo": "fipe", "placa": normalised.lower(),
+                      "homolog": True},
                 headers={
                     "Authorization": f"Bearer {token}",
                     "Content-Type": "application/json",
@@ -238,17 +241,20 @@ async def lookup_vehicle(plate: str) -> Optional[VehicleResolution]:
             )
             resp.raise_for_status()
         except httpx.HTTPStatusError as e:
-            logger.warning("apibrasil.io returned %s for plate %s", e.response.status_code, normalised)
+            logger.warning("apibrasil.io returned %s for plate %s",
+                           e.response.status_code, normalised)
             return None
         except httpx.RequestError as e:
-            logger.warning("apibrasil.io request failed for plate %s: %s", normalised, e)
+            logger.warning(
+                "apibrasil.io request failed for plate %s: %s", normalised, e)
             raise
 
     body = resp.json()
 
     # Verificar erro explícito da apibrasil
     if body.get("error") is True:
-        logger.warning("apibrasil.io error for plate %s: %s", normalised, body.get("message"))
+        logger.warning("apibrasil.io error for plate %s: %s",
+                       normalised, body.get("message"))
         return None
 
     outer_data = body.get("data") or {}
@@ -276,16 +282,19 @@ async def lookup_vehicle(plate: str) -> Optional[VehicleResolution]:
 
     if principal:
         try:
-            ano_fabricacao = int(str(principal.get("anoFabricacao") or "")[:4]) if principal.get("anoFabricacao") else None
+            ano_fabricacao = int(str(principal.get("anoFabricacao") or "")[
+                                 :4]) if principal.get("anoFabricacao") else None
         except (ValueError, TypeError):
             ano_fabricacao = None
         try:
-            ano_modelo = int(str(principal.get("anoModelo") or "")[:4]) if principal.get("anoModelo") else None
+            ano_modelo = int(str(principal.get("anoModelo") or "")[
+                             :4]) if principal.get("anoModelo") else None
         except (ValueError, TypeError):
             ano_modelo = None
         fipe_raw_valor = principal.get("valor")
         try:
-            fipe_valor = float(fipe_raw_valor) if fipe_raw_valor is not None else None
+            fipe_valor = float(
+                fipe_raw_valor) if fipe_raw_valor is not None else None
         except (ValueError, TypeError):
             fipe_valor = None
         fipe_codigo = principal.get("codigoFipe") or None

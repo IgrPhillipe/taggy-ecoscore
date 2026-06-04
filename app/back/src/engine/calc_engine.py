@@ -10,6 +10,7 @@ _GAS_FUELS = {"gnv"}
 _ELECTRIC_FUELS = {"eletrico"}
 
 
+
 class CalcEngine:
     def __init__(self, technical_specs: Dict[str, Any]):
         self.specs = technical_specs
@@ -131,7 +132,12 @@ class CalcEngine:
             )
         row = by_uf.get(uf)
         if not isinstance(row, dict):
-            raise CalcEngineError(f"Sem preços de combustível para a UF {uf}.")
+            # Fallback: média nacional (média simples das UFs disponíveis)
+            available = [v for v in by_uf.values() if isinstance(v, dict)]
+            if not available:
+                raise CalcEngineError(f"Sem preços de combustível para a UF {uf} e sem fallback nacional.")
+            row = {k: sum(r[k] for r in available if k in r) / len(available) for k in available[0]}
+            uf = "NACIONAL"
         if fuel_type not in row:
             # EV and GNV may not have price data; return 0 gracefully
             if fuel_type in _ELECTRIC_FUELS or fuel_type in _GAS_FUELS:
@@ -355,7 +361,6 @@ class CalcEngine:
 
     def process_transaction(
         self,
-        real_time_sec: int,
         vehicle_data: Dict[str, Any],
         context: str,
         uf_passagem: str,
@@ -363,8 +368,6 @@ class CalcEngine:
         is_digital: bool = True,
         payback: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        if real_time_sec < 0:
-            raise CalcEngineError("real_time_sec não pode ser negativo.")
         baselines = self.specs["baselines"]
         if context not in baselines:
             raise CalcEngineError(f"context desconhecido: {context!r}.")
@@ -375,6 +378,8 @@ class CalcEngine:
         fuel_type = vehicle_data["fuel_type"]
         category = vehicle_data["category"]
         baseline_time = int(baselines[context]["avg_wait_sec"])
+        _fallback = {"pedagio": 15, "estacionamento": 30}
+        real_time_sec = int(baselines[context].get("with_tag_avg_sec", _fallback.get(context, 15)))
         time_saved = max(0, baseline_time - real_time_sec)
 
         # Combustível economizado (pure time-based — accel_surge não é mais usado)

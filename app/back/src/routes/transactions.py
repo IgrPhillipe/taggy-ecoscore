@@ -199,26 +199,27 @@ async def process_transaction(
             if patch:
                 await vehicle_repo.update(existing.id, VehicleUpdate(**patch))
                 logger.info("Enriquecidos campos FIPE para veículo id=%s placa=%s: %s", existing.id, body.plate, list(patch.keys()))
-        elif body.id_tag and body.user_id:
+        elif body.user_id:
             # Veículo novo: cria com todos os dados disponíveis
+            plate_upper = body.plate.strip().upper()
+            effective_id_tag = body.id_tag or f"AUTO_{plate_upper}"
             new_vehicle = await create_vehicle_svc(
                 db,
                 VehicleIn(
-                    id_tag=body.id_tag,
+                    id_tag=effective_id_tag,
                     user_id=body.user_id,
                     organization_id=body.organization_id,
-                    license_plate=body.plate.strip().upper(),
+                    license_plate=plate_upper,
                     model=vehicle_dict.get("model") or "",
                     fuel_type=vehicle_dict["fuel_type"],
                     category=vehicle_dict["category"],
                     **{k: v for k, v in extra_fields.items() if v is not None},
                 ),
             )
-            logger.info("Veículo auto-cadastrado: id=%s placa=%s via apibrasil", new_vehicle.id, body.plate)
+            logger.info("Veículo auto-cadastrado: id=%s placa=%s id_tag=%s", new_vehicle.id, plate_upper, effective_id_tag)
 
     payload_dict: dict[str, Any] = {
         "plate": body.plate.strip().upper(),
-        "elapsed_time": body.elapsed_time,
         "context": body.context,
         "uf_passagem": body.uf.strip().upper(),
         "is_digital": body.is_digital,
@@ -244,7 +245,7 @@ async def process_transaction(
         plate=body.plate.strip().upper(),
         context=body.context,
         uf=body.uf.strip().upper(),
-        elapsed_time_sec=float(body.elapsed_time),
+        elapsed_time_sec=None,
         is_digital=body.is_digital,
         co2_avoided_kg=env.get("co2_kg"),
         fuel_saved_liters=env.get("fuel_liters"),

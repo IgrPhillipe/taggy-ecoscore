@@ -1,5 +1,10 @@
 import { api } from "@/lib/http-client";
-import type { GetTransactionsParams, GetTransactionsResponse } from "./types";
+import type {
+  GetTransactionsParams,
+  GetTransactionsResponse,
+  ProcessTransactionBody,
+  ProcessTransactionResult,
+} from "./types";
 
 export async function getTransactions(
   params: GetTransactionsParams = {},
@@ -21,4 +26,10 @@ export async function getTransactions(
       },
     })
     .json<GetTransactionsResponse>();
+}
+
+export async function processTransaction(
+  body: ProcessTransactionBody,
+): Promise<ProcessTransactionResult> {
+  return api.post("/api/transactions/process", { json: body }).json<ProcessTransactionResult>();
 }

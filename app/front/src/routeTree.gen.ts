@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
+import { Route as SimuladorRouteImport } from './routes/simulador'
 import { Route as RotaRouteImport } from './routes/rota'
 import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as PassagensAuditoriaRouteImport } from './routes/passagens-auditoria'
@@ -37,6 +38,11 @@ import { Route as UsuariosEditarIdRouteImport } from './routes/usuarios/editar.$
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SimuladorRoute = SimuladorRouteImport.update({
+  id: '/simulador',
+  path: '/simulador',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RotaRoute = RotaRouteImport.update({
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/passagens-auditoria': typeof PassagensAuditoriaRoute
   '/relatorios': typeof RelatoriosRoute
   '/rota': typeof RotaRoute
+  '/simulador': typeof SimuladorRoute
   '/users': typeof UsersRoute
   '/frota/$id': typeof FrotaIdRoute
   '/frotas/$fleetId': typeof FrotasFleetIdRoute
@@ -191,6 +198,7 @@ export interface FileRoutesByTo {
   '/passagens-auditoria': typeof PassagensAuditoriaRoute
   '/relatorios': typeof RelatoriosRoute
   '/rota': typeof RotaRoute
+  '/simulador': typeof SimuladorRoute
   '/users': typeof UsersRoute
   '/frota/$id': typeof FrotaIdRoute
   '/frotas/$fleetId': typeof FrotasFleetIdRoute
@@ -218,6 +226,7 @@ export interface FileRoutesById {
   '/passagens-auditoria': typeof PassagensAuditoriaRoute
   '/relatorios': typeof RelatoriosRoute
   '/rota': typeof RotaRoute
+  '/simulador': typeof SimuladorRoute
   '/users': typeof UsersRoute
   '/frota/$id': typeof FrotaIdRoute
   '/frotas/$fleetId': typeof FrotasFleetIdRoute
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
     | '/passagens-auditoria'
     | '/relatorios'
     | '/rota'
+    | '/simulador'
     | '/users'
     | '/frota/$id'
     | '/frotas/$fleetId'
@@ -272,6 +282,7 @@ export interface FileRouteTypes {
     | '/passagens-auditoria'
     | '/relatorios'
     | '/rota'
+    | '/simulador'
     | '/users'
     | '/frota/$id'
     | '/frotas/$fleetId'
@@ -298,6 +309,7 @@ export interface FileRouteTypes {
     | '/passagens-auditoria'
     | '/relatorios'
     | '/rota'
+    | '/simulador'
     | '/users'
     | '/frota/$id'
     | '/frotas/$fleetId'
@@ -325,6 +337,7 @@ export interface RootRouteChildren {
   PassagensAuditoriaRoute: typeof PassagensAuditoriaRoute
   RelatoriosRoute: typeof RelatoriosRoute
   RotaRoute: typeof RotaRoute
+  SimuladorRoute: typeof SimuladorRoute
   UsersRoute: typeof UsersRoute
   FrotaIdRoute: typeof FrotaIdRoute
   FrotasFleetIdRoute: typeof FrotasFleetIdRoute
@@ -349,6 +362,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/simulador': {
+      id: '/simulador'
+      path: '/simulador'
+      fullPath: '/simulador'
+      preLoaderRoute: typeof SimuladorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rota': {
@@ -525,6 +545,7 @@ const rootRouteChildren: RootRouteChildren = {
   PassagensAuditoriaRoute: PassagensAuditoriaRoute,
   RelatoriosRoute: RelatoriosRoute,
   RotaRoute: RotaRoute,
+  SimuladorRoute: SimuladorRoute,
   UsersRoute: UsersRoute,
   FrotaIdRoute: FrotaIdRoute,
   FrotasFleetIdRoute: FrotasFleetIdRoute,

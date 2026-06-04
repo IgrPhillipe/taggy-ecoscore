@@ -221,7 +221,7 @@ def _build_steps_sheet(ws: "Worksheet", result: Dict[str, Any], vehicle: Dict[st
     category = vehicle.get("category", "leve")
     context = params.get("context", "pedagio")
     baseline = baselines.get(context, {}).get("avg_wait_sec", 180)
-    elapsed = params.get("elapsed_time", 0)
+    elapsed = params.get("elapsed_time", baselines.get(context, {}).get("with_tag_avg_sec", 15))
     time_saved = max(0, baseline - elapsed)
 
     if fuel_type in ("eletrico",):
