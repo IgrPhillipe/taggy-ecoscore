@@ -7,7 +7,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { queryClient } from "@/lib/query-client";
 import { requireAuth } from "@/lib/route-guard";
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/calcular"];
 
 export const Route = createRootRoute({
   beforeLoad: ({ location }) => {
