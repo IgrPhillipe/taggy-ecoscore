@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useAuthStore } from "@/features/auth/auth-store";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Tag, Ticket } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import { SectionCard } from "@/features/sustainability/components/MetricCard";
 import { getToastErrorMessage } from "@/lib/api-error";
 import { processTransaction } from "../../api/requests";
@@ -153,15 +154,47 @@ export function TransactionSimulatorPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-4">
-              <Label htmlFor="is_digital" className="cursor-pointer">
-                Transação digital (tag)
-              </Label>
-              <Switch
-                id="is_digital"
-                checked={form.is_digital}
-                onCheckedChange={(checked) => set("is_digital", checked)}
-              />
+            <div
+              className={cn(
+                "rounded-xl border-2 p-4 transition-colors",
+                form.is_digital
+                  ? "border-success/40 bg-success/10"
+                  : "border-destructive/40 bg-destructive/5",
+              )}
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span
+                    className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-full",
+                      form.is_digital
+                        ? "bg-success/20 text-success"
+                        : "bg-destructive/15 text-destructive",
+                    )}
+                  >
+                    {form.is_digital ? (
+                      <Tag className="h-5 w-5" />
+                    ) : (
+                      <Ticket className="h-5 w-5" />
+                    )}
+                  </span>
+                  <div>
+                    <Label htmlFor="is_digital" className="cursor-pointer text-sm font-semibold">
+                      {form.is_digital ? "Com tag (digital)" : "Sem tag (manual)"}
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      {form.is_digital
+                        ? "Passagem automática — menor tempo e emissão"
+                        : "Fila e ticket — cenário de referência"}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="is_digital"
+                  checked={form.is_digital}
+                  onCheckedChange={(checked) => set("is_digital", checked)}
+                />
+              </div>
             </div>
 
             <Separator />

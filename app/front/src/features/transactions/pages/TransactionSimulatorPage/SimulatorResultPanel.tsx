@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TagComparisonCards } from "@/features/transactions/components/TagComparisonCards";
 import { KpiCard, SectionCard } from "@/features/sustainability/components/MetricCard";
 import {
   formatKpiCo2,
@@ -164,44 +165,55 @@ export function SimulatorResultPanel({ result, transaction }: SimulatorResultPan
 
       {comparison && (
         <SectionCard title="Comparação com / sem tag">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Métrica</TableHead>
-                <TableHead>Sem tag</TableHead>
-                <TableHead>Com tag</TableHead>
-                <TableHead>Economia</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {COMPARISON_ROWS.map(({ key, label }) => (
-                <TableRow key={key}>
-                  <TableCell className="font-medium">{label}</TableCell>
-                  <TableCell>
-                    {formatComparisonValue(
-                      key,
-                      getComparisonNumber(comparison.without_tag, key),
-                      comparison.without_tag?.fuel_unit ?? fuelUnit,
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {formatComparisonValue(
-                      key,
-                      getComparisonNumber(comparison.with_tag, key),
-                      comparison.with_tag?.fuel_unit ?? fuelUnit,
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium text-[#419812]">
-                    {formatComparisonValue(
-                      key,
-                      getComparisonNumber(comparison.delta, key),
-                      comparison.delta?.fuel_unit ?? fuelUnit,
-                    )}
-                  </TableCell>
+          <TagComparisonCards
+            withoutTag={comparison.without_tag}
+            withTag={comparison.with_tag}
+            delta={comparison.delta}
+            fuelUnit={fuelUnit}
+          />
+          <details className="mt-4 group">
+            <summary className="cursor-pointer text-xs font-medium uppercase tracking-wider text-muted-foreground hover:text-foreground">
+              Ver tabela detalhada
+            </summary>
+            <Table className="mt-3">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Métrica</TableHead>
+                  <TableHead className="text-destructive">Sem tag</TableHead>
+                  <TableHead className="text-success">Com tag</TableHead>
+                  <TableHead>Economia</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {COMPARISON_ROWS.map(({ key, label }) => (
+                  <TableRow key={key}>
+                    <TableCell className="font-medium">{label}</TableCell>
+                    <TableCell>
+                      {formatComparisonValue(
+                        key,
+                        getComparisonNumber(comparison.without_tag, key),
+                        comparison.without_tag?.fuel_unit ?? fuelUnit,
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {formatComparisonValue(
+                        key,
+                        getComparisonNumber(comparison.with_tag, key),
+                        comparison.with_tag?.fuel_unit ?? fuelUnit,
+                      )}
+                    </TableCell>
+                    <TableCell className="font-medium text-success">
+                      {formatComparisonValue(
+                        key,
+                        getComparisonNumber(comparison.delta, key),
+                        comparison.delta?.fuel_unit ?? fuelUnit,
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </details>
         </SectionCard>
       )}
 

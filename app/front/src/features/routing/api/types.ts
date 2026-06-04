@@ -14,6 +14,8 @@ export type RouteAlternative = {
   geometry: GeoJSON.LineString;
   carbon_estimate_kg: number;
   benchmark_carbon_kg: number;
+  carbon_with_tag_kg: number;
+  carbon_without_tag_kg: number;
   carbon_saved_kg: number;
   carbon_saved_pct: number;
   fuel_estimate_liters: number;

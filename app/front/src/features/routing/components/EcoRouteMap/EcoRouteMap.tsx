@@ -4,6 +4,11 @@ import { MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BRAZIL_CENTER } from "@/components/map";
 import "mapbox-gl/dist/mapbox-gl.css";
+import {
+  escapeMapPopupText,
+  PARKING_MARKER_ICON,
+  TOLL_MARKER_ICON,
+} from "../../lib/map-place-markers";
 import type { PlaceRef, RouteAlternative } from "../../api/types";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
@@ -16,6 +21,8 @@ type EcoRouteMapProps = {
   selectedRouteIndex?: number;
   originCoords?: [number, number];
   destinationCoords?: [number, number];
+  originLabel?: string;
+  destinationLabel?: string;
 };
 
 const PARKING_RADIUS_M = 2000;
@@ -54,7 +61,22 @@ function clearAllRouteLayers(map: mapboxgl.Map) {
   document.querySelectorAll(".eco-route-marker").forEach((el) => el.remove());
 }
 
-function addPlaceMarker(map: mapboxgl.Map, place: PlaceRef, color: string, label: string, emoji: string) {
+type PlaceMarkerKind = "toll" | "parking";
+
+const PLACE_MARKER_STYLES: Record<
+  PlaceMarkerKind,
+  { color: string; label: string; iconSvg: string }
+> = {
+  toll: { color: "#dc2626", label: "Pedágio", iconSvg: TOLL_MARKER_ICON },
+  parking: { color: "#2563eb", label: "Estacionamento", iconSvg: PARKING_MARKER_ICON },
+};
+
+function addPlaceMarker(
+  map: mapboxgl.Map,
+  place: PlaceRef,
+  kind: PlaceMarkerKind,
+) {
+  const { color, label, iconSvg } = PLACE_MARKER_STYLES[kind];
   const el = document.createElement("div");
   el.className = "eco-route-marker";
   el.style.cssText = [
@@ -66,20 +88,43 @@ function addPlaceMarker(map: mapboxgl.Map, place: PlaceRef, color: string, label
     "display:flex",
     "align-items:center",
     "justify-content:center",
-    "font-size:13px",
-    "width:26px",
-    "height:26px",
+    "width:28px",
+    "height:28px",
   ].join(";");
-  el.textContent = emoji;
+  el.innerHTML = iconSvg;
   el.title = `${label}: ${place.name}`;
   const popup = new mapboxgl.Popup({ offset: 14, closeButton: false }).setHTML(
     `<div style="font-size:12px;max-width:180px;line-height:1.4">
-      <b>${emoji} ${label}</b><br/>
-      ${place.name}<br/>
-      <span style="color:#666">${place.vicinity}</span>
+      <b>${escapeMapPopupText(label)}</b><br/>
+      ${escapeMapPopupText(place.name)}<br/>
+      <span style="color:#666">${escapeMapPopupText(place.vicinity)}</span>
     </div>`,
   );
   new mapboxgl.Marker(el).setLngLat([place.longitude, place.latitude]).setPopup(popup).addTo(map);
+}
+
+function addEndpointMarker(
+  map: mapboxgl.Map,
+  coords: [number, number],
+  color: string,
+  label: string,
+) {
+  const el = document.createElement("div");
+  el.className = "eco-route-marker eco-route-endpoint";
+  el.style.cssText = [
+    `background:${color}`,
+    "border:2px solid white",
+    "border-radius:50%",
+    "box-shadow:0 2px 6px rgba(0,0,0,0.35)",
+    "width:14px",
+    "height:14px",
+  ].join(";");
+  const popup = new mapboxgl.Popup({ offset: 12, closeButton: false }).setHTML(
+    `<div style="font-size:12px;max-width:220px;line-height:1.4">
+      <b>${escapeMapPopupText(label)}</b>
+    </div>`,
+  );
+  new mapboxgl.Marker(el).setLngLat(coords).setPopup(popup).addTo(map);
 }
 
 export const EcoRouteMap = ({
@@ -88,6 +133,8 @@ export const EcoRouteMap = ({
   selectedRouteIndex = 0,
   originCoords,
   destinationCoords,
+  originLabel,
+  destinationLabel,
 }: EcoRouteMapProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -104,18 +151,30 @@ export const EcoRouteMap = ({
       center: BRAZIL_CENTER,
       zoom: 4,
     });
-    map.addControl(new mapboxgl.NavigationControl(), "top-right");
+    map.addControl(new mapboxgl.NavigationControl(), "bottom-left");
 
     map.once("load", () => {
       mapRef.current = map;
-      // Run any draw that was queued before map was ready
+      map.resize();
+      requestAnimationFrame(() => map.resize());
       if (pendingDrawRef.current) {
         pendingDrawRef.current();
         pendingDrawRef.current = null;
       }
     });
 
+    const container = containerRef.current;
+    const resizeObserver =
+      container &&
+      new ResizeObserver(() => {
+        map.resize();
+      });
+    if (resizeObserver && container) {
+      resizeObserver.observe(container);
+    }
+
     return () => {
+      resizeObserver?.disconnect();
       map.remove();
       mapRef.current = null;
     };
@@ -163,10 +222,15 @@ export const EcoRouteMap = ({
       // Markers for selected route only
       const selected = routes.find((r) => r.route_index === selectedRouteIndex) ?? routes[0];
       if (selected) {
-        selected.toll_places_on_route.forEach((p) => addPlaceMarker(map, p, "#dc2626", "Pedágio", "🚧"));
-        selected.parking_places_on_route.forEach((p) =>
-          addPlaceMarker(map, p, "#2563eb", "Estacionamento", "🅿️"),
-        );
+        selected.toll_places_on_route.forEach((p) => addPlaceMarker(map, p, "toll"));
+        selected.parking_places_on_route.forEach((p) => addPlaceMarker(map, p, "parking"));
+      }
+
+      if (originCoords && originLabel) {
+        addEndpointMarker(map, originCoords, "#16a34a", originLabel);
+      }
+      if (destinationCoords && destinationLabel) {
+        addEndpointMarker(map, destinationCoords, "#2563eb", destinationLabel);
       }
 
       // Parking search radius circle around destination
@@ -197,9 +261,15 @@ export const EcoRouteMap = ({
           (b, c) => b.extend(c),
           new mapboxgl.LngLatBounds(coords[0], coords[0]),
         );
-        map.fitBounds(bounds, { padding: 60, maxZoom: 14, duration: 800 });
+        map.fitBounds(bounds, {
+          padding: { top: 48, bottom: 48, left: 48, right: routes.length > 0 ? 340 : 48 },
+          maxZoom: 14,
+          duration: 800,
+        });
       } else if (originCoords && destinationCoords) {
-        map.fitBounds(new mapboxgl.LngLatBounds(originCoords, destinationCoords), { padding: 80 });
+        map.fitBounds(new mapboxgl.LngLatBounds(originCoords, destinationCoords), {
+          padding: { top: 48, bottom: 48, left: 48, right: 48 },
+        });
       }
     };
 
@@ -227,5 +297,10 @@ export const EcoRouteMap = ({
     );
   }
 
-  return <div ref={containerRef} className={cn("overflow-hidden", className)} />;
+  return (
+    <div
+      ref={containerRef}
+      className={cn("size-full min-h-[200px] overflow-hidden", className)}
+    />
+  );
 };

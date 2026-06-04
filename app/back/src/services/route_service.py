@@ -172,10 +172,95 @@ def _point_near_dest(
     return math.sqrt(dlat * dlat + dlng * dlng) <= threshold_deg
 
 
-# CO2 penalty per toll stop: idle + acceleration ~0.15 kg CO2e
-_TOLL_CO2_PENALTY_KG = 0.15
-# Time penalty per toll stop: ~2.5 min average queue + transaction
+# Time penalty per toll stop (queue + transaction) for duration estimate
 _TOLL_TIME_PENALTY_MIN = 2.5
+
+# Fallback idle CO2 when CalcEngine unavailable (~0.15 kg per 180s at pedágio)
+_FALLBACK_PED_BASELINE_SEC = 180
+_FALLBACK_PED_ELAPSED_SEC = 15
+_FALLBACK_PARK_BASELINE_SEC = 120
+_FALLBACK_PARK_ELAPSED_SEC = 30
+_FALLBACK_CO2_PER_PED_BASELINE = 0.15
+
+
+def _idle_co2_kg(
+    wait_sec: int,
+    category: str,
+    fuel_type: str,
+    engine: CalcEngine | None,
+) -> float:
+    """CO₂e from idling for wait_sec at a toll/parking (full wait, not time saved)."""
+    if wait_sec <= 0:
+        return 0.0
+    if engine:
+        fuel = engine.calculate_avoided_idle_fuel(wait_sec, category, fuel_type)
+        return round(engine.calculate_co2e_from_fuel(fuel, fuel_type)["co2e_total_kg"], 4)
+    # Proxy aligned with legacy per-toll penalty
+    return round((wait_sec / _FALLBACK_PED_BASELINE_SEC) * _FALLBACK_CO2_PER_PED_BASELINE, 4)
+
+
+def _baseline_times(engine: CalcEngine | None) -> dict[str, int]:
+    if engine:
+        baselines = engine.specs["baselines"]
+        return {
+            "pedagio_baseline": int(baselines["pedagio"]["avg_wait_sec"]),
+            "pedagio_elapsed": int(
+                baselines["pedagio"].get("with_tag_avg_sec", _FALLBACK_PED_ELAPSED_SEC)
+            ),
+            "estacionamento_baseline": int(baselines["estacionamento"]["avg_wait_sec"]),
+            "estacionamento_elapsed": int(
+                baselines["estacionamento"].get(
+                    "with_tag_avg_sec", _FALLBACK_PARK_ELAPSED_SEC
+                )
+            ),
+        }
+    return {
+        "pedagio_baseline": _FALLBACK_PED_BASELINE_SEC,
+        "pedagio_elapsed": _FALLBACK_PED_ELAPSED_SEC,
+        "estacionamento_baseline": _FALLBACK_PARK_BASELINE_SEC,
+        "estacionamento_elapsed": _FALLBACK_PARK_ELAPSED_SEC,
+    }
+
+
+def _route_carbon_scenarios(
+    driving_co2_kg: float,
+    toll_count: int,
+    parking_count: int,
+    category: str,
+    fuel_type: str,
+    engine: CalcEngine | None,
+) -> tuple[float, float, float, float]:
+    """
+    Returns (with_tag_kg, without_tag_kg, saved_kg, saved_pct).
+    Sem tag: idle nos tempos baseline + papel nos pedágios.
+    Com tag: idle nos tempos com tag (passagem rápida).
+    """
+    times = _baseline_times(engine)
+    per_toll_without = _idle_co2_kg(
+        times["pedagio_baseline"], category, fuel_type, engine
+    )
+    per_toll_with = _idle_co2_kg(times["pedagio_elapsed"], category, fuel_type, engine)
+    per_park_without = _idle_co2_kg(
+        times["estacionamento_baseline"], category, fuel_type, engine
+    )
+    per_park_with = _idle_co2_kg(
+        times["estacionamento_elapsed"], category, fuel_type, engine
+    )
+
+    stops_without = toll_count * per_toll_without + parking_count * per_park_without
+    stops_with = toll_count * per_toll_with + parking_count * per_park_with
+
+    paper_kg = 0.0
+    if engine and toll_count > 0:
+        paper_kg = round(
+            engine.calculate_paper_and_water_savings(True)["co2"] * toll_count, 4
+        )
+
+    without_tag = round(driving_co2_kg + stops_without + paper_kg, 4)
+    with_tag = round(driving_co2_kg + stops_with, 4)
+    saved = round(max(without_tag - with_tag, 0), 4)
+    saved_pct = round((saved / without_tag * 100) if without_tag > 0 else 0.0, 1)
+    return with_tag, without_tag, saved, saved_pct
 
 
 def _calc_co2(
@@ -230,6 +315,7 @@ async def suggest_routes(
     vehicle = next((v for v in vehicles if v.user_id == user_id), None)
 
     fuel_type = vehicle.fuel_type if vehicle else "gasolina_c"
+    vehicle_category = vehicle.category if vehicle else "leve"
     autonomy_km = vehicle.average_autonomy_km if vehicle and vehicle.average_autonomy_km else _DEFAULT_AUTONOMY_KM
 
     # Build CalcEngine — try to load real specs, fall back to benchmark-only
@@ -278,7 +364,6 @@ async def suggest_routes(
             }
             carbon_kg = round(distance_km * _factors.get(fuel_type, 0.21), 4)
 
-        benchmark_kg = round(distance_km * _BENCHMARK_KG_PER_KM, 4)
         fuel_liters = round(distance_km / autonomy_km, 3) if autonomy_km > 0 else 0
 
         # Taggy proximity
@@ -324,14 +409,19 @@ async def suggest_routes(
                         )
                     )
 
-        # Apply toll penalties to CO2 and time
         toll_count = len(toll_refs)
+        parking_count = len(parking_refs)
         if toll_count > 0:
-            carbon_kg = round(carbon_kg + toll_count * _TOLL_CO2_PENALTY_KG, 4)
             duration_min = round(duration_min + toll_count * _TOLL_TIME_PENALTY_MIN, 1)
 
-        carbon_saved = round(max(benchmark_kg - carbon_kg, 0), 4)
-        carbon_saved_pct = round((carbon_saved / benchmark_kg * 100) if benchmark_kg > 0 else 0, 1)
+        with_tag_kg, without_tag_kg, carbon_saved, carbon_saved_pct = _route_carbon_scenarios(
+            driving_co2_kg=carbon_kg,
+            toll_count=toll_count,
+            parking_count=parking_count,
+            category=vehicle_category,
+            fuel_type=fuel_type,
+            engine=engine,
+        )
 
         alternatives.append(
             RouteAlternative(
@@ -339,8 +429,10 @@ async def suggest_routes(
                 distance_km=distance_km,
                 duration_min=duration_min,
                 geometry=geometry,
-                carbon_estimate_kg=carbon_kg,
-                benchmark_carbon_kg=benchmark_kg,
+                carbon_estimate_kg=with_tag_kg,
+                benchmark_carbon_kg=without_tag_kg,
+                carbon_with_tag_kg=with_tag_kg,
+                carbon_without_tag_kg=without_tag_kg,
                 carbon_saved_kg=carbon_saved,
                 carbon_saved_pct=carbon_saved_pct,
                 fuel_estimate_liters=fuel_liters,

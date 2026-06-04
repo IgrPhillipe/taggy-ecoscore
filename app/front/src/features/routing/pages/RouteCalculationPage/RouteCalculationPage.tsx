@@ -1,101 +1,92 @@
-import { useState } from "react";
-import { RouteBottomPanel } from "../../components/RouteBottomPanel";
 import { DestinationSearchPanel } from "../../components/DestinationSearchPanel";
 import { RouteAlternativesPanel } from "../../components/RouteAlternativesPanel";
 import { EcoRouteMap } from "../../components/EcoRouteMap";
-import { useSuggestRoute } from "../../hooks/useSuggestRoute";
-import type { RouteSuggestResponse } from "../../api/types";
-
-type RouteStep = "search" | "results";
-type GeoCoords = { lat: number; lng: number };
+import { RouteSidePanel } from "../../components/RouteSidePanel";
+import { useRoutePageState } from "../../hooks/useRoutePageState";
 
 export const RouteCalculationPage = () => {
-  const [step, setStep] = useState<RouteStep>("search");
-  const [origin, setOrigin] = useState<string | GeoCoords>("");
-  const [destination, setDestination] = useState<string | GeoCoords>("");
-  const [result, setResult] = useState<RouteSuggestResponse | null>(null);
-  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
-  const [validationError, setValidationError] = useState<string>();
-
-  const suggestRoute = useSuggestRoute();
-
-  const handleSearch = () => {
-    const destFilled =
-      typeof destination !== "string" || destination.trim().length > 0;
-    const originFilled =
-      typeof origin !== "string" || origin.trim().length > 0;
-
-    if (!destFilled || !originFilled) {
-      setValidationError("Preencha a origem e o destino para continuar.");
-      return;
-    }
-
-    setValidationError(undefined);
-    suggestRoute.mutate(
-      { origin, destination: typeof destination === "string" ? destination.trim() : destination },
-      {
-        onSuccess: (data) => {
-          setResult(data);
-          setSelectedRouteIndex(0);
-          setStep("results");
-        },
-        onError: () => {
-          setValidationError("Não foi possível calcular a rota. Tente novamente.");
-        },
-      },
-    );
-  };
-
-  const handleEditDestination = () => {
-    setStep("search");
-    setResult(null);
-    suggestRoute.reset();
-  };
+  const {
+    origin,
+    destination,
+    originInput,
+    destinationInput,
+    routeIndex,
+    result,
+    validationError,
+    suggestRoute,
+    setOriginStop,
+    setDestinationStop,
+    handleOriginInputChange,
+    handleDestinationInputChange,
+    handleUseCurrentLocation,
+    handleSearch,
+    selectRouteIndex,
+    handleEditStops,
+  } = useRoutePageState();
 
   const originCoords: [number, number] | undefined = result
     ? [result.origin_coords[0], result.origin_coords[1]]
-    : undefined;
+    : origin
+      ? [origin.lng, origin.lat]
+      : undefined;
 
   const destinationCoords: [number, number] | undefined = result
     ? [result.destination_coords[0], result.destination_coords[1]]
-    : undefined;
+    : destination
+      ? [destination.lng, destination.lat]
+      : undefined;
+
+  const showRoutes = Boolean(result?.routes.length);
+  const showSearchForm = !showRoutes;
 
   return (
-    <div className="-m-4 flex min-h-[calc(100dvh-4rem)] flex-col md:-m-8">
-      <RouteBottomPanel>
-        {step === "search" ? (
-          <DestinationSearchPanel
-            origin={origin}
-            onOriginChange={(value) => {
-              setOrigin(value);
-              if (validationError) setValidationError(undefined);
-            }}
-            destination={destination}
-            onDestinationChange={(value) => {
-              setDestination(value);
-              if (validationError) setValidationError(undefined);
-            }}
-            onSearch={handleSearch}
-            isLoading={suggestRoute.isPending}
-            errorMessage={validationError}
-          />
-        ) : result ? (
-          <RouteAlternativesPanel
-            result={result}
-            selectedRouteIndex={selectedRouteIndex}
-            onSelectRoute={setSelectedRouteIndex}
-            onEditDestination={handleEditDestination}
-          />
-        ) : null}
-      </RouteBottomPanel>
-
+    <div className="relative -m-4 h-[calc(100dvh-7.5rem)] min-h-[32rem] overflow-hidden md:-m-8">
       <EcoRouteMap
-        className="min-h-0 flex-1"
+        className="absolute inset-0 size-full"
         routes={result?.routes}
-        selectedRouteIndex={selectedRouteIndex}
+        selectedRouteIndex={routeIndex}
         originCoords={originCoords}
         destinationCoords={destinationCoords}
+        originLabel={origin?.label}
+        destinationLabel={destination?.label}
       />
+
+      <aside className="pointer-events-none absolute inset-y-3 right-3 z-20 flex max-h-[calc(100%-1.5rem)] w-[min(100%-1.5rem,20rem)] flex-col gap-3 sm:w-80">
+        {showSearchForm ? (
+          <RouteSidePanel className="shrink-0 overflow-visible">
+            <DestinationSearchPanel
+              compact
+              origin={origin}
+              destination={destination}
+              originInput={originInput}
+              destinationInput={destinationInput}
+              onOriginInputChange={handleOriginInputChange}
+              onDestinationInputChange={handleDestinationInputChange}
+              onOriginSelect={setOriginStop}
+              onDestinationSelect={setDestinationStop}
+              onOriginClear={() => setOriginStop(null)}
+              onDestinationClear={() => setDestinationStop(null)}
+              onUseCurrentLocation={handleUseCurrentLocation}
+              onSearch={handleSearch}
+              isLoading={suggestRoute.isPending}
+              errorMessage={validationError}
+            />
+          </RouteSidePanel>
+        ) : null}
+
+        {showRoutes && result ? (
+          <RouteSidePanel className="min-h-0 flex-1 overflow-hidden">
+            <RouteAlternativesPanel
+              result={result}
+              originLabel={origin?.label}
+              destinationLabel={destination?.label}
+              selectedRouteIndex={routeIndex}
+              onSelectRoute={selectRouteIndex}
+              onEditStops={handleEditStops}
+            />
+          </RouteSidePanel>
+        ) : null}
+      </aside>
     </div>
   );
 };

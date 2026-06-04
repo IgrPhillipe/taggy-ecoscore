@@ -15,8 +15,10 @@ class RouteAlternative(BaseModel):
     distance_km: float
     duration_min: float
     geometry: dict  # GeoJSON LineString
-    carbon_estimate_kg: float
-    benchmark_carbon_kg: float
+    carbon_estimate_kg: float  # alias: com tag (Taggy)
+    benchmark_carbon_kg: float  # alias: sem tag
+    carbon_with_tag_kg: float
+    carbon_without_tag_kg: float
     carbon_saved_kg: float
     carbon_saved_pct: float
     fuel_estimate_liters: float

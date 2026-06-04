@@ -45,10 +45,13 @@ function makeRoute(
   carbonFactor: number,
   congestion: "low" | "moderate" | "heavy",
 ): RouteAlternative {
-  const benchmarkCarbonKg = Number((distanceKm * 0.21).toFixed(2));
-  const carbonEstimateKg = Number((distanceKm * carbonFactor).toFixed(2));
-  const carbonSavedKg = Number(Math.max(benchmarkCarbonKg - carbonEstimateKg, 0).toFixed(2));
-  const carbonSavedPct = Math.round((carbonSavedKg / benchmarkCarbonKg) * 100);
+  const drivingKg = Number((distanceKm * carbonFactor).toFixed(2));
+  const withoutTagKg = Number((drivingKg * 1.12).toFixed(2));
+  const withTagKg = drivingKg;
+  const carbonSavedKg = Number(Math.max(withoutTagKg - withTagKg, 0).toFixed(2));
+  const carbonSavedPct = withoutTagKg > 0
+    ? Math.round((carbonSavedKg / withoutTagKg) * 100)
+    : 0;
   const fuelEstimateLiters = Number((distanceKm / 12).toFixed(2));
 
   return {
@@ -63,8 +66,10 @@ function makeRoute(
         [destLng, destLat],
       ],
     },
-    carbon_estimate_kg: carbonEstimateKg,
-    benchmark_carbon_kg: benchmarkCarbonKg,
+    carbon_estimate_kg: withTagKg,
+    benchmark_carbon_kg: withoutTagKg,
+    carbon_with_tag_kg: withTagKg,
+    carbon_without_tag_kg: withoutTagKg,
     carbon_saved_kg: carbonSavedKg,
     carbon_saved_pct: carbonSavedPct,
     fuel_estimate_liters: fuelEstimateLiters,

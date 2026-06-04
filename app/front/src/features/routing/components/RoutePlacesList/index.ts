@@ -1,0 +1,1 @@
+export { RoutePlacesList } from "./RoutePlacesList";

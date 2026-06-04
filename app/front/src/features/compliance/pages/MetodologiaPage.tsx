@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 import { AlertTriangle, Download, ExternalLink } from "lucide-react"
 import { PageLayout } from "@/components/layout/PageLayout"
+import { PageSectionHeader } from "@/components/layout/PageSectionHeader"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -298,6 +299,31 @@ export const MetodologiaPage = () => {
       description="Documentação do cálculo de CO₂e evitado em pedágios e estacionamentos. Parâmetros, fontes e limitações declarados explicitamente."
     >
       <div className="space-y-6">
+        <div className="rounded border border-neutral-300 bg-muted/20 p-4 md:hidden">
+          <PageSectionHeader
+            variant="section"
+            title="Navegação rápida"
+            description="Seções desta página"
+          />
+          <nav className="mt-3 flex flex-wrap gap-2 text-xs">
+            {[
+              ["#problema", "Problema"],
+              ["#formula", "Fórmula"],
+              ["#fluxo", "Fluxo"],
+              ["#parametros", "Parâmetros"],
+              ["#limitacoes", "Limitações"],
+            ].map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                className="rounded-full border border-border bg-background px-3 py-1 font-medium text-foreground hover:bg-muted"
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+        </div>
+
         <Card id="problema">
           <CardHeader>
             <CardTitle>1. O problema</CardTitle>
@@ -648,7 +674,7 @@ export const MetodologiaPage = () => {
                 href={ref.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-start gap-3 rounded border border-neutral-300 bg-white p-4 transition-colors hover:bg-muted/50"
+                className="flex items-start gap-3 rounded border border-neutral-300 bg-card p-4 transition-colors hover:bg-muted/50"
               >
                 <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <div>
