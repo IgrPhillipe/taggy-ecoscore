@@ -18,6 +18,7 @@ import { Route as PassagensRouteImport } from './routes/passagens'
 import { Route as MetodologiaRouteImport } from './routes/metodologia'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ImpactoRouteImport } from './routes/impacto'
+import { Route as CalcularRouteImport } from './routes/calcular'
 import { Route as AjudaRouteImport } from './routes/ajuda'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsuariosIndexRouteImport } from './routes/usuarios/index'
@@ -78,6 +79,11 @@ const LoginRoute = LoginRouteImport.update({
 const ImpactoRoute = ImpactoRouteImport.update({
   id: '/impacto',
   path: '/impacto',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalcularRoute = CalcularRouteImport.update({
+  id: '/calcular',
+  path: '/calcular',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AjudaRoute = AjudaRouteImport.update({
@@ -164,6 +170,7 @@ const UsuariosEditarIdRoute = UsuariosEditarIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ajuda': typeof AjudaRoute
+  '/calcular': typeof CalcularRoute
   '/impacto': typeof ImpactoRoute
   '/login': typeof LoginRoute
   '/metodologia': typeof MetodologiaRoute
@@ -191,6 +198,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ajuda': typeof AjudaRoute
+  '/calcular': typeof CalcularRoute
   '/impacto': typeof ImpactoRoute
   '/login': typeof LoginRoute
   '/metodologia': typeof MetodologiaRoute
@@ -219,6 +227,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/ajuda': typeof AjudaRoute
+  '/calcular': typeof CalcularRoute
   '/impacto': typeof ImpactoRoute
   '/login': typeof LoginRoute
   '/metodologia': typeof MetodologiaRoute
@@ -248,6 +257,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/ajuda'
+    | '/calcular'
     | '/impacto'
     | '/login'
     | '/metodologia'
@@ -275,6 +285,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/ajuda'
+    | '/calcular'
     | '/impacto'
     | '/login'
     | '/metodologia'
@@ -302,6 +313,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/ajuda'
+    | '/calcular'
     | '/impacto'
     | '/login'
     | '/metodologia'
@@ -330,6 +342,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AjudaRoute: typeof AjudaRoute
+  CalcularRoute: typeof CalcularRoute
   ImpactoRoute: typeof ImpactoRoute
   LoginRoute: typeof LoginRoute
   MetodologiaRoute: typeof MetodologiaRoute
@@ -418,6 +431,13 @@ declare module '@tanstack/react-router' {
       path: '/impacto'
       fullPath: '/impacto'
       preLoaderRoute: typeof ImpactoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calcular': {
+      id: '/calcular'
+      path: '/calcular'
+      fullPath: '/calcular'
+      preLoaderRoute: typeof CalcularRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ajuda': {
@@ -538,6 +558,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AjudaRoute: AjudaRoute,
+  CalcularRoute: CalcularRoute,
   ImpactoRoute: ImpactoRoute,
   LoginRoute: LoginRoute,
   MetodologiaRoute: MetodologiaRoute,
