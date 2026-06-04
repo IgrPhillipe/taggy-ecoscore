@@ -21,6 +21,7 @@ class ProcessTransactionBody(BaseModel):
     user_id: int | None = None
     vehicle_id: int | None = None
     organization_id: int | None = None
+    id_tag: str | None = None  # Quando fornecido + placa nova → auto-cadastro do veículo
 
     plate: str = Field(min_length=1, max_length=10)
     elapsed_time: int = Field(ge=0)

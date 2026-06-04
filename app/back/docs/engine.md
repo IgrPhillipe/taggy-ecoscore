@@ -4,7 +4,7 @@
 
 ```mermaid
 flowchart TD
-    A["🔍 Placa"] -->|brasil.io RENAVAM| B["Veículo\ncombustível · categoria"]
+    A["🔍 Placa"] -->|apibrasil.io| B["Veículo\ncombustível · categoria"]
     C["context · uf · is_digital"] --> D
 
     B --> D["⚙️ CalcEngine"]
@@ -52,7 +52,7 @@ Emissões evitadas = Emissões (cenário sem tag) − Emissões (cenário com ta
 
 | Campo | Tipo | Descrição |
 |---|---|---|
-| `plate` | `str` | Placa do veículo (resolve automaticamente via brasil.io/DENATRAN) |
+| `plate` | `str` | Placa do veículo (resolve automaticamente via apibrasil.io) |
 | `elapsed_time` | `int (s)` | Tempo real da passagem com tag |
 | `context` | `"pedagio" \| "estacionamento"` | Tipo de passagem |
 | `uf` | `str (2 letras)` | Estado — usado para preço do combustível |
@@ -256,5 +256,5 @@ A API valida os valores e aplica o blend automaticamente no próximo cálculo.
 | ANP Lei 14.993/2024 | https://www.anp.gov.br | Blend gasolina: E27 → E30 (em vigor desde ago/2025) |
 | CNPE Resolução 2024 | https://www.gov.br/mdic | Blend diesel: B14 → B15 (em vigor desde ago/2025) |
 | U.S. DOE Fact #861 | https://www.energy.gov/eere/vehicles/fact-861 | Idle rate proxy |
-| brasil.io RENAVAM | https://brasil.io/dataset/veiculos/ | Plate lookup → fuel_type, category |
+| apibrasil.io | https://apibrasil.io | Plate lookup → fuel_type, category, FIPE value (requer APIBRASIL_TOKEN) |
 | ONS/FGV 2023-2025 | Aba "Fatores Variáveis" GHG Protocol Tool | Fator SIN elétrico |

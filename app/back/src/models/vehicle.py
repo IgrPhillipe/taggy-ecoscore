@@ -28,6 +28,11 @@ class Vehicle(SQLModel, table=True):
     fuel_type: str
     category: str = Field(default="leve")
     average_autonomy_km: float | None = Field(default=None)
+    uf_emplacamento: str | None = Field(default=None)
+    ano_fabricacao: int | None = Field(default=None)
+    ano_modelo: int | None = Field(default=None)
+    fipe_valor: float | None = Field(default=None)
+    fipe_codigo: str | None = Field(default=None)
 
 
 class VehiclePublic(SQLModel):
@@ -45,6 +50,11 @@ class VehiclePublic(SQLModel):
     fuel_type: str
     category: str
     average_autonomy_km: float | None = None
+    uf_emplacamento: str | None = None
+    ano_fabricacao: int | None = None
+    ano_modelo: int | None = None
+    fipe_valor: float | None = None
+    fipe_codigo: str | None = None
 
     @model_validator(mode="after")
     def set_plate_alias(self) -> "VehiclePublic":

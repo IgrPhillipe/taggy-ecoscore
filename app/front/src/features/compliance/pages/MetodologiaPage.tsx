@@ -286,9 +286,9 @@ export const MetodologiaPage = () => {
       url: "https://www.energy.gov/eere/vehicles/fact-861-february-23-2015-idle-fuel-consumption-selected-gasoline-and-diesel-vehicles",
     },
     {
-      name: "brasil.io — RENAVAM/DENATRAN",
-      desc: "Lookup de placa → tipo de combustível e categoria do veículo",
-      url: "https://brasil.io/dataset/veiculos/",
+      name: "apibrasil.io — Consulta Veicular",
+      desc: "Lookup de placa → tipo de combustível, categoria, dados FIPE e DETRAN",
+      url: "https://apibrasil.io",
     },
   ]
 
@@ -413,7 +413,7 @@ export const MetodologiaPage = () => {
                 <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
                   <div className="rounded border border-border bg-background p-3">
                     <p className="text-xs font-semibold">Placa</p>
-                    <p className="mt-1 text-xs text-muted-foreground">↓ brasil.io RENAVAM</p>
+                    <p className="mt-1 text-xs text-muted-foreground">↓ apibrasil.io</p>
                     <p className="mt-1 font-mono text-xs text-foreground">combustível · categoria</p>
                   </div>
                   <div className="rounded border border-border bg-background p-3">

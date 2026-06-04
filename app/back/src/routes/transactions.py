@@ -1,6 +1,9 @@
+import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.connection import get_db
@@ -28,6 +31,9 @@ from src.services.transactions import (
 )
 from src.services.user_stats import upsert_user_stats_from_transaction
 from src.services.vehicle_lookup_service import resolve_vehicle_from_plate
+from src.repositories.vehicle_repository import VehicleRepository
+from src.services.vehicles import create_vehicle as create_vehicle_svc
+from src.dto.vehicle import VehicleIn, VehicleUpdate
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
@@ -181,6 +187,34 @@ async def process_transaction(
             )
         vehicle_dict = lookup["vehicle"]
         vehicle_resolution = lookup["resolution"]
+        extra_fields: dict = lookup.get("extra") or {}
+
+        # Auto-cadastro / enriquecimento do veículo com dados FIPE/DETRAN
+        vehicle_repo = VehicleRepository(db)
+        existing = await vehicle_repo.get_by_license_plate(body.plate)
+
+        if existing:
+            # Veículo já cadastrado: enriquece campos FIPE sem sobrescrever dados manuais
+            patch: dict = {k: v for k, v in extra_fields.items() if v is not None and getattr(existing, k, None) is None}
+            if patch:
+                await vehicle_repo.update(existing.id, VehicleUpdate(**patch))
+                logger.info("Enriquecidos campos FIPE para veículo id=%s placa=%s: %s", existing.id, body.plate, list(patch.keys()))
+        elif body.id_tag and body.user_id:
+            # Veículo novo: cria com todos os dados disponíveis
+            new_vehicle = await create_vehicle_svc(
+                db,
+                VehicleIn(
+                    id_tag=body.id_tag,
+                    user_id=body.user_id,
+                    organization_id=body.organization_id,
+                    license_plate=body.plate.strip().upper(),
+                    model=vehicle_dict.get("model") or "",
+                    fuel_type=vehicle_dict["fuel_type"],
+                    category=vehicle_dict["category"],
+                    **{k: v for k, v in extra_fields.items() if v is not None},
+                ),
+            )
+            logger.info("Veículo auto-cadastrado: id=%s placa=%s via apibrasil", new_vehicle.id, body.plate)
 
     payload_dict: dict[str, Any] = {
         "plate": body.plate.strip().upper(),
