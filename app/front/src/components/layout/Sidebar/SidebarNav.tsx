@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { LucideIcon } from "lucide-react";
-import { APP_NAV_ITEMS, filterNavItemsByRole } from "@/constants/nav";
+import { getNavCategoriesForRole } from "@/constants/nav";
 import { useCurrentUser } from "@/features/auth";
 import { cn } from "@/lib/utils";
 import { PersonaSwitcherPopover } from "./PersonaSwitcherPopover";
@@ -45,20 +45,29 @@ type SidebarNavProps = {
 
 export const SidebarNav = ({ onLinkClick }: SidebarNavProps) => {
   const { user } = useCurrentUser();
-  const navItems = filterNavItemsByRole(APP_NAV_ITEMS, user?.role);
+  const navCategories = getNavCategoriesForRole(user?.role);
 
   return (
     <nav className="flex flex-1 flex-col justify-between overflow-y-auto px-2 py-2">
-      <div className="flex flex-col gap-1">
-        {navItems.map((item) => (
-          <SidebarLink
-            key={item.to}
-            to={item.to}
-            label={item.label}
-            icon={item.icon}
-            exact={item.exact}
-            onLinkClick={onLinkClick}
-          />
+      <div className="flex flex-col gap-4">
+        {navCategories.map((category) => (
+          <div key={category.id}>
+            <p className="metric-label mb-1 px-3 text-[10px] text-neutral-400">
+              {category.label}
+            </p>
+            <div className="flex flex-col gap-1">
+              {category.items.map((item) => (
+                <SidebarLink
+                  key={item.to}
+                  to={item.to}
+                  label={item.label}
+                  icon={item.icon}
+                  exact={item.exact}
+                  onLinkClick={onLinkClick}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
       <div className="border-t pt-2">
