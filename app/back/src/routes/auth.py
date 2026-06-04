@@ -35,5 +35,9 @@ async def login(
     if user is None or not verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail=err.INVALID_CREDENTIALS)
     secret = os.environ.get("JWT_SECRET", "change-me-in-development")
-    token = jwt.encode({"sub": user.id, "email": user.email}, secret, algorithm="HS256")
+    token = jwt.encode(
+        {"sub": str(user.id), "email": user.email},
+        secret,
+        algorithm="HS256",
+    )
     return LoginResponse(token=token, user=UserPublic.model_validate(user))
