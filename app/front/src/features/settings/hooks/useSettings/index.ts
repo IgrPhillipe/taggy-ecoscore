@@ -5,4 +5,6 @@ export {
   useSyncFuelPrices,
   useSyncEmissionFactors,
   useUpdateFuelPrice,
+  useGetTaggyPlacesSummary,
+  useSyncTaggyPlaces,
 } from "./useSettings";

@@ -1,12 +1,17 @@
 import { api } from "@/lib/http-client";
 import { mockSuggestRoute, resolveWithMock } from "@/mocks";
-import type { RouteEstimate, RouteSuggestRequest } from "./types";
+import type { RouteSuggestRequest, RouteSuggestResponse } from "./types";
 
 export const suggestRoute = async (
   payload: RouteSuggestRequest,
-): Promise<RouteEstimate> => {
+): Promise<RouteSuggestResponse> => {
   return resolveWithMock(
-    () => api.post("routes/suggest", { json: payload }).json<RouteEstimate>(),
-    () => mockSuggestRoute(payload.destination),
+    async () => {
+      const response = await api
+        .post("/api/routes/suggest", { json: payload })
+        .json<{ data: RouteSuggestResponse }>();
+      return response.data;
+    },
+    () => mockSuggestRoute(typeof payload.destination === "string" ? payload.destination : "destino"),
   );
 };

@@ -82,7 +82,13 @@ export const APP_NAV_ITEMS: NavItem[] = [
     roles: ["admin"],
   },
   { to: "/impacto", label: "Meu Impacto", icon: Home, exact: true, roles: ["motorista"] },
-  { to: "/rota", label: "Calcular Rota", icon: Map, roles: ["motorista"] },
+  {
+    to: "/rota",
+    label: "Calcular Rota",
+    icon: Map,
+    exact: true,
+    roles: ["admin", "gestor_frota", "motorista"],
+  },
   { to: "/passagens", label: "Minhas Passagens", icon: Ticket, exact: true, roles: ["motorista"] },
   { to: "/metodologia", label: "Metodologia", icon: BookOpen, exact: true },
 ];

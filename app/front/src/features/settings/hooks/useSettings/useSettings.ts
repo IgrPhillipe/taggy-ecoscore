@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getFuelPrices,
+  getTaggyPlacesSummary,
   getTechnicalSpecsBundle,
   syncEmissionFactors,
   syncFuelPrices,
+  syncTaggyPlaces,
   updateFuelPrice,
   updateTechnicalSpecs,
   type FuelPriceByUF,
@@ -55,6 +57,24 @@ export const useSyncFuelPrices = () => {
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: settingsQueryKeys.fuelPrices(),
+      });
+    },
+  });
+};
+
+export const useGetTaggyPlacesSummary = () =>
+  useQuery({
+    queryKey: settingsQueryKeys.taggyPlaces(),
+    queryFn: getTaggyPlacesSummary,
+  });
+
+export const useSyncTaggyPlaces = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: syncTaggyPlaces,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: settingsQueryKeys.taggyPlaces(),
       });
     },
   });

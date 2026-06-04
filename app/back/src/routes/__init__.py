@@ -8,7 +8,9 @@ from src.routes.goals import router as goals_router
 from src.routes.health import router as health_router
 from src.routes.notifications import router as notifications_router
 from src.routes.reports import router as reports_router
+from src.routes.routes import router as routes_router
 from src.routes.sustainability import router as sustainability_router
+from src.routes.taggy_places import router as taggy_places_router
 from src.routes.organization import router as organization_router
 from src.routes.technical_specs import router as technical_specs_router
 from src.routes.transactions import router as transactions_router
@@ -33,3 +35,5 @@ router.include_router(goals_router)
 router.include_router(notifications_router)
 router.include_router(sustainability_router)
 router.include_router(reports_router)
+router.include_router(routes_router)
+router.include_router(taggy_places_router)

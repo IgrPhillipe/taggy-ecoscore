@@ -13,7 +13,7 @@ export const RouteBottomPanel = ({
   return (
     <div
       className={cn(
-        "shrink-0 rounded-t-2xl border-t border-border bg-white p-4 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] pb-[max(1rem,env(safe-area-inset-bottom))]",
+        "shrink-0 rounded-b-2xl border-b border-border bg-white p-4 shadow-[0_4px_24px_rgba(0,0,0,0.08)]",
         className,
       )}
     >

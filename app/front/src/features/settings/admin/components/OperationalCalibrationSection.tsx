@@ -14,9 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   useGetFuelPrices,
+  useGetTaggyPlacesSummary,
   useGetTechnicalSpecs,
   useSyncEmissionFactors,
   useSyncFuelPrices,
+  useSyncTaggyPlaces,
   useUpdateFuelPrice,
   useUpdateTechnicalSpecs,
 } from "../../hooks/useSettings";
@@ -62,6 +64,8 @@ export const OperationalCalibrationSection = () => {
   const { mutateAsync: syncMctiAsync, isPending: isSyncingMcti } =
     useSyncEmissionFactors();
   const { mutateAsync: updateFuelPriceAsync } = useUpdateFuelPrice();
+  const { data: taggyPlaces, isLoading: isLoadingTaggy } = useGetTaggyPlacesSummary();
+  const { mutateAsync: syncTaggyAsync, isPending: isSyncingTaggy } = useSyncTaggyPlaces();
 
   const [isSavingFuelPrices, setIsSavingFuelPrices] = useState(false);
 
@@ -446,6 +450,66 @@ export const OperationalCalibrationSection = () => {
               ? "Salvando..."
               : "Salvar preços de combustível"}
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Dados Taggy</CardTitle>
+            <CardDescription>
+              Pedágios e estacionamentos da rede Taggy. Usados na rota ecológica.
+            </CardDescription>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isSyncingTaggy}
+            onClick={() => {
+              toast.promise(syncTaggyAsync(), {
+                loading: "Sincronizando dados Taggy...",
+                success: (d) =>
+                  `Sincronizado: ${d.tolls_synced} pedágios, ${d.parking_synced} estacionamentos`,
+                error: "Erro ao sincronizar dados Taggy",
+              });
+            }}
+          >
+            <RefreshCw className={cn("h-4 w-4", isSyncingTaggy && "animate-spin")} />
+            {isSyncingTaggy ? "Sincronizando..." : "Sincronizar Taggy"}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {isLoadingTaggy ? (
+            <p className="text-sm text-muted-foreground">Carregando...</p>
+          ) : taggyPlaces ? (
+            <div className="flex flex-col gap-1.5 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Pedágios cadastrados</span>
+                <span className="font-semibold">{taggyPlaces.toll_count}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Estacionamentos cadastrados</span>
+                <span className="font-semibold">{taggyPlaces.parking_count}</span>
+              </div>
+              {taggyPlaces.last_synced_at && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Última sincronização</span>
+                  <span className="font-medium text-foreground">
+                    {new Date(taggyPlaces.last_synced_at).toLocaleString("pt-BR")}
+                  </span>
+                </div>
+              )}
+              {!taggyPlaces.toll_count && !taggyPlaces.parking_count && (
+                <p className="text-muted-foreground italic">
+                  Nenhum dado. Clique em Sincronizar Taggy para importar.
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">
+              Nenhum dado. Clique em Sincronizar Taggy para importar.
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

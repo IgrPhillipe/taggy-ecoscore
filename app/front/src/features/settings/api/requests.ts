@@ -80,6 +80,30 @@ export async function syncEmissionFactors(): Promise<{
     .json();
 }
 
+export type TaggyPlacesSummary = {
+  toll_count: number;
+  parking_count: number;
+  last_synced_at: string | null;
+};
+
+export async function getTaggyPlacesSummary(): Promise<TaggyPlacesSummary> {
+  const response = await api
+    .get("/api/taggy-places/")
+    .json<{ data: TaggyPlacesSummary }>();
+  return response.data;
+}
+
+export async function syncTaggyPlaces(): Promise<{
+  tolls_synced: number;
+  parking_synced: number;
+  synced_at: string;
+}> {
+  const response = await api
+    .post("/api/taggy-places/sync")
+    .json<{ data: { tolls_synced: number; parking_synced: number; synced_at: string } }>();
+  return response.data;
+}
+
 export async function updateFuelPrice(
   uf: string,
   payload: Partial<FuelPriceByUF>,

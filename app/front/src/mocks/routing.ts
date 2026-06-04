@@ -1,13 +1,15 @@
+import type { RouteSuggestResponse, RouteAlternative } from "@/features/routing/api/types";
+
 const MOCK_DESTINATIONS: Record<
   string,
-  { distanceKm: number; durationMin: number }
+  { distanceKm: number; durationMin: number; lat: number; lng: number }
 > = {
-  "são paulo": { distanceKm: 45, durationMin: 55 },
-  "rio de janeiro": { distanceKm: 430, durationMin: 360 },
-  "belo horizonte": { distanceKm: 440, durationMin: 330 },
-  "curitiba": { distanceKm: 410, durationMin: 300 },
-  "brasília": { distanceKm: 15, durationMin: 25 },
-  campinas: { distanceKm: 95, durationMin: 75 },
+  "são paulo": { distanceKm: 45, durationMin: 55, lat: -23.55, lng: -46.63 },
+  "rio de janeiro": { distanceKm: 430, durationMin: 360, lat: -22.9, lng: -43.17 },
+  "belo horizonte": { distanceKm: 440, durationMin: 330, lat: -19.92, lng: -43.94 },
+  "curitiba": { distanceKm: 410, durationMin: 300, lat: -25.42, lng: -49.27 },
+  "brasília": { distanceKm: 15, durationMin: 25, lat: -15.78, lng: -47.93 },
+  campinas: { distanceKm: 95, durationMin: 75, lat: -22.91, lng: -47.06 },
 };
 
 function hashDestination(destination: string): number {
@@ -22,40 +24,102 @@ function hashDestination(destination: string): number {
 function resolveRouteMetrics(destination: string) {
   const normalized = destination.trim().toLowerCase();
   const known = MOCK_DESTINATIONS[normalized];
-
   if (known) return known;
-
   const hash = hashDestination(normalized);
   return {
     distanceKm: 20 + (hash % 180),
     durationMin: 15 + (hash % 240),
+    lat: -23.0 + (hash % 10) * 0.1,
+    lng: -46.0 - (hash % 10) * 0.1,
   };
 }
 
-import type { RouteEstimate } from "@/features/routing/api/types";
+function makeRoute(
+  index: number,
+  distanceKm: number,
+  durationMin: number,
+  originLng: number,
+  originLat: number,
+  destLng: number,
+  destLat: number,
+  carbonFactor: number,
+  congestion: "low" | "moderate" | "heavy",
+): RouteAlternative {
+  const benchmarkCarbonKg = Number((distanceKm * 0.21).toFixed(2));
+  const carbonEstimateKg = Number((distanceKm * carbonFactor).toFixed(2));
+  const carbonSavedKg = Number(Math.max(benchmarkCarbonKg - carbonEstimateKg, 0).toFixed(2));
+  const carbonSavedPct = Math.round((carbonSavedKg / benchmarkCarbonKg) * 100);
+  const fuelEstimateLiters = Number((distanceKm / 12).toFixed(2));
+
+  return {
+    route_index: index,
+    distance_km: distanceKm,
+    duration_min: durationMin,
+    geometry: {
+      type: "LineString",
+      coordinates: [
+        [originLng, originLat],
+        [(originLng + destLng) / 2, (originLat + destLat) / 2],
+        [destLng, destLat],
+      ],
+    },
+    carbon_estimate_kg: carbonEstimateKg,
+    benchmark_carbon_kg: benchmarkCarbonKg,
+    carbon_saved_kg: carbonSavedKg,
+    carbon_saved_pct: carbonSavedPct,
+    fuel_estimate_liters: fuelEstimateLiters,
+    congestion_level: congestion,
+    toll_places_on_route: [],
+    parking_places_on_route: [],
+  };
+}
 
 export async function mockSuggestRoute(
   destination: string,
-): Promise<RouteEstimate> {
-  await new Promise((resolve) => setTimeout(resolve, 600));
+): Promise<RouteSuggestResponse> {
+  await new Promise((resolve) => setTimeout(resolve, 700));
 
-  const { distanceKm, durationMin } = resolveRouteMetrics(destination);
-  const benchmarkCarbonKg = Number((distanceKm * 0.21).toFixed(1));
-  const carbonEstimateKg = Number((distanceKm * 0.14).toFixed(1));
-  const carbonSavedKg = Number(
-    (benchmarkCarbonKg - carbonEstimateKg).toFixed(1),
-  );
-  const carbonSavedPct = Math.round((carbonSavedKg / benchmarkCarbonKg) * 100);
-  const fuelSavedLiters = Number((distanceKm * 0.035).toFixed(1));
+  const { distanceKm, durationMin, lat: destLat, lng: destLng } =
+    resolveRouteMetrics(destination);
+
+  const originLng = -47.9;
+  const originLat = -15.8;
+
+  const routes: RouteAlternative[] = [
+    makeRoute(0, distanceKm, durationMin, originLng, originLat, destLng, destLat, 0.14, "low"),
+    makeRoute(
+      1,
+      Math.round(distanceKm * 1.12),
+      Math.round(durationMin * 0.92),
+      originLng,
+      originLat,
+      destLng,
+      destLat,
+      0.14,
+      "moderate",
+    ),
+  ];
+
+  if (distanceKm > 50) {
+    routes.push(
+      makeRoute(
+        2,
+        Math.round(distanceKm * 1.25),
+        Math.round(durationMin * 1.1),
+        originLng,
+        originLat,
+        destLng,
+        destLat,
+        0.21,
+        "heavy",
+      ),
+    );
+  }
 
   return {
-    destination: destination.trim(),
-    distanceKm,
-    durationMin,
-    carbonEstimateKg,
-    benchmarkCarbonKg,
-    carbonSavedKg,
-    carbonSavedPct,
-    fuelSavedLiters,
+    routes,
+    vehicle_fuel_type: "gasolina_c",
+    origin_coords: [originLng, originLat],
+    destination_coords: [destLng, destLat],
   };
 }
