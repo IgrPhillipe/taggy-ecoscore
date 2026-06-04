@@ -6,7 +6,7 @@ export const PERSONA_MOCKS: { persona: CurrentUser; label: string }[] = [
     persona: {
       id: 1,
       name: "Admin Sistema",
-      email: "admin@mail.com",
+      email: "admin@taggy.com.br",
       role: "admin",
       organization_id: null,
       status: "active",
@@ -18,7 +18,7 @@ export const PERSONA_MOCKS: { persona: CurrentUser; label: string }[] = [
     persona: {
       id: 2,
       name: "Carlos Gestor",
-      email: "carlos@mail.com",
+      email: "carlos@taggy.com.br",
       role: "gestor_frota",
       organization_id: 1,
       status: "active",
@@ -30,7 +30,7 @@ export const PERSONA_MOCKS: { persona: CurrentUser; label: string }[] = [
     persona: {
       id: 3,
       name: "Fernanda Gestora",
-      email: "fernanda@mail.com",
+      email: "fernanda@taggy.com.br",
       role: "gestor_frota",
       organization_id: 2,
       status: "active",
@@ -42,7 +42,7 @@ export const PERSONA_MOCKS: { persona: CurrentUser; label: string }[] = [
     persona: {
       id: 4,
       name: "João Motorista",
-      email: "joao@mail.com",
+      email: "joao@taggy.com.br",
       role: "motorista",
       organization_id: 1,
       status: "active",
@@ -54,7 +54,7 @@ export const PERSONA_MOCKS: { persona: CurrentUser; label: string }[] = [
     persona: {
       id: 6,
       name: "Pedro Motorista",
-      email: "pedro@mail.com",
+      email: "pedro@taggy.com.br",
       role: "motorista",
       organization_id: null,
       status: "active",

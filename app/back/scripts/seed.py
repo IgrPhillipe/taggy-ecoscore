@@ -8,6 +8,7 @@ Uso:
 """
 
 from __future__ import annotations
+from src.models.fleet import Fleet, FleetUser
 
 import argparse
 import asyncio
@@ -28,7 +29,6 @@ from sqlmodel import select  # noqa: E402
 
 from src.database.connection import AsyncSessionLocal  # noqa: E402
 from src.models.fuel_prices import FuelPriceByUF  # noqa: E402
-from src.models.fleet import Fleet, FleetUser
 from src.models.organization import Organization  # noqa: E402
 from src.models.technical_specs import default_ludic_metaphor_units  # noqa: E402
 from src.models.transaction import Transaction  # noqa: E402
@@ -88,13 +88,18 @@ _TECHNICAL_SPECS_VALUES = {
     # ── Fatores CO₂ fóssil BASE (kg CO₂/L ou m³) ──
     # Gasolina C: gasolina A pura (FGV GHG Protocol, BEN 2023, linha 103)
     # O engine aplica o blend (1 − E30 = 70%) para calcular a fração fóssil comercial.
-    "emission_factor_diesel_s10": 2.631,   # diesel puro; blend B15 aplicado no engine → 2.236 kg/L
-    "emission_factor_gasolina_c": 2.239,   # gasolina A pura; blend E30 aplicado no engine → 1.567 kg/L
+    # diesel puro; blend B15 aplicado no engine → 2.236 kg/L
+    "emission_factor_diesel_s10": 2.631,
+    # gasolina A pura; blend E30 aplicado no engine → 1.567 kg/L
+    "emission_factor_gasolina_c": 2.239,
     # Etanol: CO₂ é biogênico — armazenamos o valor biogênico para reportar separado do Escopo 1.
     # CO₂e Escopo 1 do etanol vem apenas de CH4/N2O (muito pequeno).
-    "emission_factor_etanol": 1.510,       # FGV linha 117 — biogênico; NÃO entra no Escopo 1
-    "emission_factor_gnv": 1.999,          # FGV linha 105, BEN 2023 (kg CO₂/m³)
-    "emission_factor_eletrico_kwh": 0.046, # SIN média 2023-2025, FGV Aba Fatores Variáveis (kg CO₂/kWh) — calculado: 2023=0.039, 2024=0.055, 2025=0.046
+    # FGV linha 117 — biogênico; NÃO entra no Escopo 1
+    "emission_factor_etanol": 1.510,
+    # FGV linha 105, BEN 2023 (kg CO₂/m³)
+    "emission_factor_gnv": 1.999,
+    # SIN média 2023-2025, FGV Aba Fatores Variáveis (kg CO₂/kWh) — calculado: 2023=0.039, 2024=0.055, 2025=0.046
+    "emission_factor_eletrico_kwh": 0.046,
 
     # ── Fatores CH4 (kg CH4/L ou m³) — FGV GHG Protocol, BEN 2023 ──
     "ch4_factor_gasolina_c": 0.000556,     # linha 103; blend E30 aplicado no engine
@@ -113,15 +118,21 @@ _TECHNICAL_SPECS_VALUES = {
     "gwp100_n2o": 273.0,
 
     # ── Percentuais de biocombustível (ANP/CNPE vigentes) ──
-    "blend_etanol_pct": 0.30,             # E30: Lei 14.993/2024 — em vigor desde ago/2025
-    "blend_biodiesel_pct": 0.15,          # B15: Resolução CNPE — em vigor desde ago/2025
+    # E30: Lei 14.993/2024 — em vigor desde ago/2025
+    "blend_etanol_pct": 0.30,
+    # B15: Resolução CNPE — em vigor desde ago/2025
+    "blend_biodiesel_pct": 0.15,
 
     # ── Taxas de consumo em idle ──
     # Fonte: U.S. DOE Fact #861 (2015) — proxy; sem equivalente CETESB/INMETRO público
-    "idle_rate_leve": 0.00028,            # 1.0 L/h para veículos leves (frota brasileira média)
-    "idle_rate_pesado": 0.00069,          # 2.5 L/h para caminhões médios (VW Delivery, MB Atego)
-    "idle_rate_gnv": 0.00014,             # 0.50 m³/h — derivado por conversão energética
-    "idle_rate_eletrico": 0.00028,        # 1.0 kWh/h — estimativa; sem fonte disponível
+    # 1.0 L/h para veículos leves (frota brasileira média)
+    "idle_rate_leve": 0.00028,
+    # 2.5 L/h para caminhões médios (VW Delivery, MB Atego)
+    "idle_rate_pesado": 0.00069,
+    # 0.50 m³/h — derivado por conversão energética
+    "idle_rate_gnv": 0.00014,
+    # 1.0 kWh/h — estimativa; sem fonte disponível
+    "idle_rate_eletrico": 0.00028,
 
     # ── Impacto do ticket de papel — Ecoinvent 3.9 (papel térmico 80g/m²) ──
     "paper_co2_per_ticket": 0.012,        # kg CO₂ por ticket térmico
@@ -240,12 +251,18 @@ async def seed_organizations(db) -> list[Organization]:
 async def seed_users(db, orgs: list[Organization]) -> list[User]:
     password_hash = hash_password(SEED_DEFAULT_PASSWORD)
     users_data = [
-        User(name="Admin Sistema", email="admin@mail.com", password_hash=password_hash, role=UserRole.admin, organization_id=None),
-        User(name="Carlos Gestor", email="carlos@mail.com", password_hash=password_hash, role=UserRole.gestor_frota, organization_id=orgs[0].id),
-        User(name="Fernanda Gestora", email="fernanda@mail.com", password_hash=password_hash, role=UserRole.gestor_frota, organization_id=orgs[1].id),
-        User(name="João Motorista", email="joao@mail.com", password_hash=password_hash, role=UserRole.motorista, organization_id=orgs[0].id),
-        User(name="Ana Motorista", email="ana@mail.com", password_hash=password_hash, role=UserRole.motorista, organization_id=orgs[1].id),
-        User(name="Pedro Motorista", email="pedro@mail.com", password_hash=password_hash, role=UserRole.motorista, organization_id=None),
+        User(name="Admin Sistema", email="admin@taggy.com.br",
+             password_hash=password_hash, role=UserRole.admin, organization_id=None),
+        User(name="Carlos Gestor", email="carlos@taggy.com.br", password_hash=password_hash,
+             role=UserRole.gestor_frota, organization_id=orgs[0].id),
+        User(name="Fernanda Gestora", email="fernanda@taggy.com.br",
+             password_hash=password_hash, role=UserRole.gestor_frota, organization_id=orgs[1].id),
+        User(name="João Motorista", email="joao@taggy.com.br", password_hash=password_hash,
+             role=UserRole.motorista, organization_id=orgs[0].id),
+        User(name="Ana Motorista", email="ana@taggy.com.br", password_hash=password_hash,
+             role=UserRole.motorista, organization_id=orgs[1].id),
+        User(name="Pedro Motorista", email="pedro@taggy.com.br",
+             password_hash=password_hash, role=UserRole.motorista, organization_id=None),
     ]
     users = []
     for u in users_data:
@@ -291,7 +308,7 @@ async def seed_fleets(db, orgs: list[Organization]) -> list[Fleet]:
 async def seed_vehicles(
     db, users: list[User], orgs: list[Organization], fleets: list[Fleet]
 ) -> list[Vehicle]:
-    pedro = next(u for u in users if u.email == "pedro.comum@taggy.com.br")
+    pedro = next(u for u in users if u.email == "pedro@taggy.com.br")
     vehicles_data = [
         Vehicle(
             id_tag="TAG-001-ABC",
@@ -413,7 +430,8 @@ def _build_parameters_snapshot(
         },
     }
     engine_specs = _engine_specs_for_calc(specs)
-    result = TransactionOrchestrator(CalcEngine(engine_specs)).handle_tag_event(payload_dict)
+    result = TransactionOrchestrator(CalcEngine(
+        engine_specs)).handle_tag_event(payload_dict)
     return {
         "payload": payload_dict,
         "emission_factors": specs.get("emission_factors"),
@@ -573,7 +591,8 @@ async def seed_user_stats(db, users: list[User]) -> None:
             co2_total_kg=sum((t.co2_avoided_kg or 0) for t in txs),
             fuel_total_liters=sum((t.fuel_saved_liters or 0) for t in txs),
             water_total_liters=sum((t.water_saved_liters or 0) for t in txs),
-            financial_total_brl=sum((t.financial_savings_brl or 0) for t in txs),
+            financial_total_brl=sum(
+                (t.financial_savings_brl or 0) for t in txs),
             transactions_count=len(txs),
         )
         db.add(stats)
@@ -643,7 +662,8 @@ async def seed_all(reset: bool = False):
 
 async def _main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--reset", action="store_true", help="Limpa dados antes de inserir")
+    parser.add_argument("--reset", action="store_true",
+                        help="Limpa dados antes de inserir")
     args = parser.parse_args()
     await seed_all(reset=args.reset)
 
