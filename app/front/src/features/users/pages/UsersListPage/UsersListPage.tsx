@@ -17,18 +17,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { getToastErrorMessage } from "@/lib/api-error";
 import { Button } from "@/components/ui/button";
-import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
 import { FormField } from "@/components/form/FormField";
 import { useFilterDraft } from "@/hooks/useFilterDraft";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -38,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { OrganizationsRelationSelect } from "@/components/form/relation-selects";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
+import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { PAGE_SIZE } from "@/constants";
@@ -295,40 +287,14 @@ export const UsersListPage = () => {
         onClose={() => setCreateOpen(false)}
       />
 
-      <Dialog
+      <DeleteConfirmDialog
         open={userToDelete != null}
-        onOpenChange={(open) => !open && setUserToDelete(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Excluir usuário</DialogTitle>
-            <DialogDescription>
-              Tem certeza que deseja excluir{" "}
-              <strong>{userToDelete?.name}</strong>? Esta ação não pode ser
-              desfeita.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setUserToDelete(null)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={isDeleting}
-              onClick={handleConfirmDelete}
-            >
-              <ButtonLoadingContent loading={isDeleting}>
-                Excluir
-              </ButtonLoadingContent>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onClose={() => setUserToDelete(null)}
+        title="Excluir usuário"
+        entityName={userToDelete?.name}
+        isPending={isDeleting}
+        onConfirm={handleConfirmDelete}
+      />
     </PageLayout>
   );
 };

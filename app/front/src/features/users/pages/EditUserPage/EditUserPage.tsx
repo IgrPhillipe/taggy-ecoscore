@@ -6,14 +6,7 @@ import { Trash } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { ControlledInput } from "@/components/form/ControlledInput";
 import { ControlledSelect } from "@/components/form/ControlledSelect";
 import { FormActions } from "@/components/form/FormActions";
@@ -193,35 +186,14 @@ export const EditUserPage = () => {
         </div>
       </section>
 
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Excluir usuário</DialogTitle>
-            <DialogDescription>
-              Tem certeza que deseja excluir <strong>{user.name}</strong>?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowDeleteDialog(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={isDeleting}
-              onClick={handleDelete}
-            >
-              <ButtonLoadingContent loading={isDeleting}>
-                Excluir
-              </ButtonLoadingContent>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteConfirmDialog
+        open={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        title="Excluir usuário"
+        entityName={user.name}
+        isPending={isDeleting}
+        onConfirm={handleDelete}
+      />
     </PageLayout>
   );
 };

@@ -4,11 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
+import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -145,24 +144,14 @@ export const UserFormDialog = ({ open, onClose, user }: UserFormDialogProps) => 
       </Dialog>
 
       {!isCreate && (
-        <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Excluir usuário</DialogTitle>
-              <DialogDescription>
-                Tem certeza que deseja excluir <strong>{user.name}</strong>? Esta ação não pode ser desfeita.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setConfirmDelete(false)}>Cancelar</Button>
-              <Button variant="destructive" disabled={isDeleting} onClick={handleDelete}>
-                <ButtonLoadingContent loading={isDeleting}>
-                  Excluir
-                </ButtonLoadingContent>
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <DeleteConfirmDialog
+          open={confirmDelete}
+          onClose={() => setConfirmDelete(false)}
+          title="Excluir usuário"
+          entityName={user.name}
+          isPending={isDeleting}
+          onConfirm={handleDelete}
+        />
       )}
     </>
   );

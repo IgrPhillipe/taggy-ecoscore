@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Pencil, Plus, Trash } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
+import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { FilterInput } from "@/components/ui/FilterInput";
@@ -24,6 +25,7 @@ export const OrganizationsPage = () => {
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Organization | null>(null);
+  const [orgToDelete, setOrgToDelete] = useState<Organization | null>(null);
 
   const { data: orgs = [], isLoading } = useQuery({
     queryKey: organizationKeys.list(),
@@ -90,7 +92,7 @@ export const OrganizationsPage = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => deleteMutation.mutate(row.original.id)}
+              onClick={() => setOrgToDelete(row.original)}
               aria-label="Excluir organização"
             >
               <Trash className="h-3 w-3" />
@@ -146,6 +148,20 @@ export const OrganizationsPage = () => {
           }
         />
       )}
+
+      <DeleteConfirmDialog
+        open={orgToDelete != null}
+        onClose={() => setOrgToDelete(null)}
+        title="Excluir organização"
+        entityName={orgToDelete?.name}
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (!orgToDelete) return;
+          deleteMutation.mutate(orgToDelete.id, {
+            onSuccess: () => setOrgToDelete(null),
+          });
+        }}
+      />
     </PageLayout>
   );
 };

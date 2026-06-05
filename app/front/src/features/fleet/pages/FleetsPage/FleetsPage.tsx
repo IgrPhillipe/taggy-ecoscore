@@ -14,6 +14,7 @@ import {
   useQueryStates,
 } from "nuqs";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
+import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
 import { FormField } from "@/components/form/FormField";
 import { OrganizationsRelationSelect } from "@/components/form/relation-selects";
@@ -160,6 +161,7 @@ export const FleetsPage = () => {
   );
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Fleet | null>(null);
+  const [fleetToDelete, setFleetToDelete] = useState<Fleet | null>(null);
 
   const createMutation = useCreateFleet();
   const updateMutation = useUpdateFleet();
@@ -275,7 +277,7 @@ export const FleetsPage = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => deleteMutation.mutate(row.original.id)}
+              onClick={() => setFleetToDelete(row.original)}
               aria-label="Excluir frota"
             >
               <Trash className="h-3 w-3" />
@@ -394,6 +396,20 @@ export const FleetsPage = () => {
           }
         />
       )}
+
+      <DeleteConfirmDialog
+        open={fleetToDelete != null}
+        onClose={() => setFleetToDelete(null)}
+        title="Excluir frota"
+        entityName={fleetToDelete?.name}
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (!fleetToDelete) return;
+          deleteMutation.mutate(fleetToDelete.id, {
+            onSuccess: () => setFleetToDelete(null),
+          });
+        }}
+      />
     </PageLayout>
   );
 };

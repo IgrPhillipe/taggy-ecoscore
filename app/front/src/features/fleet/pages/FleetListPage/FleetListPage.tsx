@@ -13,8 +13,8 @@ import {
   useQueryStates,
 } from "nuqs";
 import { useState } from "react";
-import { toast } from "sonner";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
+import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
 import { FormField } from "@/components/form/FormField";
 import {
@@ -39,16 +39,12 @@ import { buildVehicleListExportUrl } from "@/features/reports/lib/export-urls";
 const VehicleActions = ({
   vehicle,
   onEdit,
+  onDelete,
 }: {
   vehicle: Vehicle;
   onEdit: (v: Vehicle) => void;
+  onDelete: (v: Vehicle) => void;
 }) => {
-  const { mutate: deleteVehicleMutation } = useDeleteVehicle();
-  const handleDelete = () => {
-    deleteVehicleMutation(vehicle.id, {
-      onSuccess: () => toast.success("Veículo removido."),
-    });
-  };
   return (
     <div className="flex items-center gap-2">
       <ActionHintPopover label="Ver detalhes do veículo">
@@ -68,7 +64,7 @@ const VehicleActions = ({
         </Button>
       </ActionHintPopover>
       <ActionHintPopover label="Excluir veículo">
-        <Button type="button" variant="outline" size="sm" onClick={handleDelete} aria-label="Excluir veículo">
+        <Button type="button" variant="outline" size="sm" onClick={() => onDelete(vehicle)} aria-label="Excluir veículo">
           <Trash className="h-4 w-4" />
         </Button>
       </ActionHintPopover>
@@ -107,6 +103,8 @@ export const FleetListPage = () => {
     useQueryStates(fleetSearchParams, { history: "replace" });
   const [createOpen, setCreateOpen] = useState(false);
   const [editVehicle, setEditVehicle] = useState<Vehicle | null>(null);
+  const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
+  const { mutate: deleteVehicle, isPending: isDeletingVehicle } = useDeleteVehicle();
 
   const scopedOrgId =
     user?.role === "gestor_frota"
@@ -198,7 +196,11 @@ export const FleetListPage = () => {
       header: "AÇÕES",
       enableSorting: false,
       cell: ({ row }) => (
-        <VehicleActions vehicle={row.original} onEdit={setEditVehicle} />
+        <VehicleActions
+          vehicle={row.original}
+          onEdit={setEditVehicle}
+          onDelete={setVehicleToDelete}
+        />
       ),
     },
   ];
@@ -326,6 +328,20 @@ export const FleetListPage = () => {
         open={!!editVehicle}
         onClose={() => setEditVehicle(null)}
         vehicle={editVehicle ?? undefined}
+      />
+
+      <DeleteConfirmDialog
+        open={vehicleToDelete != null}
+        onClose={() => setVehicleToDelete(null)}
+        title="Excluir veículo"
+        entityName={vehicleToDelete?.license_plate}
+        isPending={isDeletingVehicle}
+        onConfirm={() => {
+          if (!vehicleToDelete) return;
+          deleteVehicle(vehicleToDelete.id, {
+            onSuccess: () => setVehicleToDelete(null),
+          });
+        }}
       />
     </PageLayout>
   );

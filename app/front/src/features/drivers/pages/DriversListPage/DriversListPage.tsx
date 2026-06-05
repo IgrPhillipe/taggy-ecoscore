@@ -18,18 +18,10 @@ import {
 import { getToastErrorMessage } from "@/lib/api-error";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
+import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
 import { FormField } from "@/components/form/FormField";
 import { useFilterDraft } from "@/hooks/useFilterDraft";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
 import {
   FleetsRelationSelect,
@@ -326,40 +318,14 @@ export const DriversListPage = () => {
 
       <DriverCreateDialog open={createOpen} onClose={() => setCreateOpen(false)} />
 
-      <Dialog
+      <DeleteConfirmDialog
         open={driverToDelete != null}
-        onOpenChange={(open) => !open && setDriverToDelete(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Excluir motorista</DialogTitle>
-            <DialogDescription>
-              Tem certeza que deseja excluir{" "}
-              <strong>{driverToDelete?.name}</strong>? Esta ação não pode ser
-              desfeita.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDriverToDelete(null)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={isDeleting}
-              onClick={handleConfirmDelete}
-            >
-              <ButtonLoadingContent loading={isDeleting}>
-                Excluir
-              </ButtonLoadingContent>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onClose={() => setDriverToDelete(null)}
+        title="Excluir motorista"
+        entityName={driverToDelete?.name}
+        isPending={isDeleting}
+        onConfirm={handleConfirmDelete}
+      />
     </PageLayout>
   );
 };
