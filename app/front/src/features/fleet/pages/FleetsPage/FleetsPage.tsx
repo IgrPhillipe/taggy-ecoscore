@@ -1,4 +1,3 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type {
   ColumnDef,
@@ -14,8 +13,6 @@ import {
   parseAsStringEnum,
   useQueryStates,
 } from "nuqs";
-import { toast } from "sonner";
-import { getToastErrorMessage } from "@/lib/api-error";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
 import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
 import { FormField } from "@/components/form/FormField";
@@ -36,9 +33,9 @@ import { Label } from "@/components/ui/label";
 import { PAGE_SIZE } from "@/constants";
 import { useCurrentUser } from "@/features/auth";
 import { OrganizationsCombobox } from "../../components/OrganizationsCombobox/OrganizationsCombobox";
-import { createFleet } from "../../api/requests";
 import type { Fleet } from "../../api/types";
 import { useGetFleetsFiltered } from "../../hooks/useGetFleetsFiltered";
+import { useCreateFleet } from "../../hooks/useFleetMutations";
 import { ExportButton } from "@/features/reports/components/ExportButton";
 import { buildFleetListExportUrl } from "@/features/reports/lib/export-urls";
 
@@ -65,29 +62,26 @@ const CreateFleetDialog = ({
   defaultOrganizationId?: number;
   isAdmin: boolean;
 }) => {
-  const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [organizationId, setOrganizationId] = useState<number | undefined>(
     defaultOrganizationId,
   );
+  const { mutate: createFleetMutation, isPending } = useCreateFleet();
 
-  const mutation = useMutation({
-    mutationFn: () => {
-      const orgId = isAdmin ? organizationId : defaultOrganizationId;
-      if (orgId == null) throw new Error("Organização é obrigatória.");
-      return createFleet({ name, organization_id: orgId });
-    },
-    onSuccess: () => {
-      toast.success("Frota criada com sucesso.");
-      queryClient.invalidateQueries({ queryKey: ["fleets"] });
-      setName("");
-      onClose();
-    },
-    onError: (error) =>
-      toast.error(
-        getToastErrorMessage(error, { fallback: "Erro ao criar frota." }),
-      ),
-  });
+  const handleSave = () => {
+    const orgId = isAdmin ? organizationId : defaultOrganizationId;
+    if (orgId == null) return;
+
+    createFleetMutation(
+      { name, organization_id: orgId },
+      {
+        onSuccess: () => {
+          setName("");
+          onClose();
+        },
+      },
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -120,14 +114,14 @@ const CreateFleetDialog = ({
               Cancelar
             </Button>
             <Button
-              onClick={() => mutation.mutate()}
+              onClick={handleSave}
               disabled={
                 !name.trim() ||
-                mutation.isPending ||
+                isPending ||
                 (isAdmin && organizationId == null)
               }
             >
-              {mutation.isPending ? "Salvando…" : "Salvar"}
+              {isPending ? "Salvando…" : "Salvar"}
             </Button>
           </div>
         </div>

@@ -1,11 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
 import { Car, Coins, Fuel, Leaf, Link2, Scroll, Ticket, Unlink, Users } from "lucide-react";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import { getToastErrorMessage } from "@/lib/api-error";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageBackLink, PageLayout } from "@/components/layout/PageLayout";
@@ -44,11 +42,14 @@ import {
   getFleetTransactions,
   getFleetUsers,
   getFleetVehicles,
-  linkFleetUser,
-  linkFleetVehicle,
-  unlinkFleetUser,
-  unlinkFleetVehicle,
 } from "../../api/requests";
+import { fleetKeys } from "../../api/fleet-query-keys";
+import {
+  useLinkFleetUser,
+  useLinkFleetVehicle,
+  useUnlinkFleetUser,
+  useUnlinkFleetVehicle,
+} from "../../hooks/useFleetMutations";
 import type { VehicleTransaction } from "../../api/types";
 import type { Vehicle } from "../../schemas/vehicle-schema";
 import { ExportButton } from "@/features/reports/components/ExportButton";
@@ -150,7 +151,6 @@ const baseTransactionColumns: ColumnDef<VehicleTransaction>[] = [
 ];
 
 export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) => {
-  const queryClient = useQueryClient();
   const [vehicleSearch, setVehicleSearch] = useState("");
   const [driverSearch, setDriverSearch] = useState("");
   const [txPage, setTxPage] = useState(1);
@@ -176,17 +176,17 @@ export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) =>
   );
 
   const { data: summary } = useQuery({
-    queryKey: ["fleets", fleetId, "summary"],
+    queryKey: fleetKeys.summary(fleetId),
     queryFn: () => getFleetSummary(fleetId),
   });
 
   const { data: fleetVehicles = [], isLoading: vehiclesLoading } = useQuery({
-    queryKey: ["fleets", fleetId, "vehicles"],
+    queryKey: fleetKeys.vehicles(fleetId),
     queryFn: () => getFleetVehicles(fleetId),
   });
 
   const { data: fleetUsers = [], isLoading: usersLoading } = useQuery({
-    queryKey: ["fleets", fleetId, "users"],
+    queryKey: fleetKeys.users(fleetId),
     queryFn: () => getFleetUsers(fleetId),
   });
 
@@ -198,7 +198,7 @@ export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) =>
   };
 
   const { data: txData, isLoading: txLoading } = useQuery({
-    queryKey: ["fleets", fleetId, "transactions", txPage, txApiFilters],
+    queryKey: fleetKeys.transactions(fleetId, txPage, txApiFilters),
     queryFn: () => getFleetTransactions(fleetId, txPage, PAGE_SIZE, txApiFilters),
   });
 
@@ -209,55 +209,10 @@ export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) =>
     setTxPage(next.pageIndex + 1);
   };
 
-  const invalidateFleet = () => {
-    queryClient.invalidateQueries({ queryKey: ["fleets", fleetId] });
-  };
-
-  const unlinkVehicleMutation = useMutation({
-    mutationFn: (vehicleId: number) => unlinkFleetVehicle(fleetId, vehicleId),
-    onSuccess: () => { toast.success("Veículo desvinculado."); invalidateFleet(); },
-    onError: (error) =>
-      toast.error(
-        getToastErrorMessage(error, { fallback: "Erro ao desvincular veículo." }),
-      ),
-  });
-
-  const linkVehicleMutation = useMutation({
-    mutationFn: (vehicleId: number) => linkFleetVehicle(fleetId, vehicleId),
-    onSuccess: () => {
-      toast.success("Veículo vinculado.");
-      invalidateFleet();
-      setLinkVehicleOpen(false);
-      setSelectedLinkVehicleId(undefined);
-    },
-    onError: (error) =>
-      toast.error(
-        getToastErrorMessage(error, { fallback: "Erro ao vincular veículo." }),
-      ),
-  });
-
-  const unlinkUserMutation = useMutation({
-    mutationFn: (userId: number) => unlinkFleetUser(fleetId, userId),
-    onSuccess: () => { toast.success("Usuário desvinculado."); invalidateFleet(); },
-    onError: (error) =>
-      toast.error(
-        getToastErrorMessage(error, { fallback: "Erro ao desvincular usuário." }),
-      ),
-  });
-
-  const linkUserMutation = useMutation({
-    mutationFn: (userId: number) => linkFleetUser(fleetId, userId),
-    onSuccess: () => {
-      toast.success("Usuário vinculado.");
-      invalidateFleet();
-      setLinkUserOpen(false);
-      setSelectedLinkUserId(undefined);
-    },
-    onError: (error) =>
-      toast.error(
-        getToastErrorMessage(error, { fallback: "Erro ao vincular usuário." }),
-      ),
-  });
+  const unlinkVehicleMutation = useUnlinkFleetVehicle(fleetId);
+  const linkVehicleMutation = useLinkFleetVehicle(fleetId);
+  const unlinkUserMutation = useUnlinkFleetUser(fleetId);
+  const linkUserMutation = useLinkFleetUser(fleetId);
 
   const filteredVehicles = useMemo(() => {
     if (!vehicleSearch.trim()) return fleetVehicles;
@@ -418,7 +373,12 @@ export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) =>
               disabled={selectedLinkVehicleId == null || linkVehicleMutation.isPending}
               onClick={() => {
                 if (selectedLinkVehicleId != null) {
-                  linkVehicleMutation.mutate(selectedLinkVehicleId);
+                  linkVehicleMutation.mutate(selectedLinkVehicleId, {
+                    onSuccess: () => {
+                      setLinkVehicleOpen(false);
+                      setSelectedLinkVehicleId(undefined);
+                    },
+                  });
                 }
               }}
             >
@@ -456,7 +416,12 @@ export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) =>
               disabled={selectedLinkUserId == null || linkUserMutation.isPending}
               onClick={() => {
                 if (selectedLinkUserId != null) {
-                  linkUserMutation.mutate(selectedLinkUserId);
+                  linkUserMutation.mutate(selectedLinkUserId, {
+                    onSuccess: () => {
+                      setLinkUserOpen(false);
+                      setSelectedLinkUserId(undefined);
+                    },
+                  });
                 }
               }}
             >

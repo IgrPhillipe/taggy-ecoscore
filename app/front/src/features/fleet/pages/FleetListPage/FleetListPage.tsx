@@ -14,7 +14,6 @@ import {
 } from "nuqs";
 import { useState } from "react";
 import { toast } from "sonner";
-import { getToastErrorMessage } from "@/lib/api-error";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
 import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
 import { FormField } from "@/components/form/FormField";
@@ -31,9 +30,7 @@ import { PAGE_SIZE } from "@/constants";
 import { FUEL_TYPE_OPTIONS } from "@/features/dashboard/constants";
 import { useCurrentUser } from "@/features/auth";
 import { useGetVehicles } from "../../hooks/useGetVehicles";
-import { deleteVehicle } from "../../api/requests";
-import { useQueryClient } from "@tanstack/react-query";
-import { vehicleKeys } from "../../api/query-keys";
+import { useDeleteVehicle } from "../../hooks/useDeleteVehicle";
 import type { Vehicle } from "../../schemas/vehicle-schema";
 import { VehicleFormDialog } from "../../components/VehicleFormDialog/VehicleFormDialog";
 import { ExportButton } from "@/features/reports/components/ExportButton";
@@ -46,17 +43,11 @@ const VehicleActions = ({
   vehicle: Vehicle;
   onEdit: (v: Vehicle) => void;
 }) => {
-  const queryClient = useQueryClient();
-  const handleDelete = async () => {
-    try {
-      await deleteVehicle(vehicle.id);
-      queryClient.invalidateQueries({ queryKey: vehicleKeys.lists() });
-      toast.success("Veículo removido.");
-    } catch (error) {
-      toast.error(
-        getToastErrorMessage(error, { fallback: "Erro ao remover veículo." }),
-      );
-    }
+  const { mutate: deleteVehicleMutation } = useDeleteVehicle();
+  const handleDelete = () => {
+    deleteVehicleMutation(vehicle.id, {
+      onSuccess: () => toast.success("Veículo removido."),
+    });
   };
   return (
     <div className="flex items-center gap-2">

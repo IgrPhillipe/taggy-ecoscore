@@ -1,37 +1,38 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Pencil, Plus, Trash } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import { getToastErrorMessage } from "@/lib/api-error";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { FilterInput } from "@/components/ui/FilterInput";
 import { Button } from "@/components/ui/button";
 import type { ColumnDef } from "@tanstack/react-table";
-import {
-  createOrganization,
-  deleteOrganization,
-  getOrganizations,
-  updateOrganization,
-} from "../../api/requests";
+import { getOrganizations } from "../../api/requests";
+import { organizationKeys } from "../../api/organization-query-keys";
 import type { Organization } from "../../api/types";
 import {
   OrgFormDialog,
-  type OrgFormData,
 } from "../../components/OrgFormDialog";
+import {
+  useCreateOrganization,
+  useDeleteOrganization,
+  useUpdateOrganization,
+} from "../../hooks/useOrganizationMutations";
 
 export const OrganizationsPage = () => {
-  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Organization | null>(null);
 
   const { data: orgs = [], isLoading } = useQuery({
-    queryKey: ["organizations"],
+    queryKey: organizationKeys.list(),
     queryFn: getOrganizations,
   });
+
+  const createMutation = useCreateOrganization();
+  const updateMutation = useUpdateOrganization();
+  const deleteMutation = useDeleteOrganization();
 
   const filtered = useMemo(() => {
     if (!search.trim()) return orgs;
@@ -43,51 +44,6 @@ export const OrganizationsPage = () => {
         String(o.id).includes(q),
     );
   }, [orgs, search]);
-
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ["organizations"] });
-
-  const createMutation = useMutation({
-    mutationFn: (data: OrgFormData) =>
-      createOrganization({ name: data.name, cnpj: data.cnpj || undefined }),
-    onSuccess: () => {
-      toast.success("Organização criada.");
-      invalidate();
-    },
-    onError: (error) =>
-      toast.error(
-        getToastErrorMessage(error, { fallback: "Erro ao criar organização." }),
-      ),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: OrgFormData }) =>
-      updateOrganization(id, { name: data.name, cnpj: data.cnpj || undefined }),
-    onSuccess: () => {
-      toast.success("Organização atualizada.");
-      invalidate();
-    },
-    onError: (error) =>
-      toast.error(
-        getToastErrorMessage(error, {
-          fallback: "Erro ao atualizar organização.",
-        }),
-      ),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => deleteOrganization(id),
-    onSuccess: () => {
-      toast.success("Organização removida.");
-      invalidate();
-    },
-    onError: (error) =>
-      toast.error(
-        getToastErrorMessage(error, {
-          fallback: "Erro ao remover organização.",
-        }),
-      ),
-  });
 
   const columns: ColumnDef<Organization>[] = [
     entityIdColumn<Organization>(),
@@ -169,7 +125,9 @@ export const OrganizationsPage = () => {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         title="Nova Organização"
-        onSubmit={(data) => createMutation.mutate(data)}
+        onSubmit={(data) =>
+          createMutation.mutate(data, { onSuccess: () => setCreateOpen(false) })
+        }
       />
 
       {editTarget && (
@@ -179,7 +137,10 @@ export const OrganizationsPage = () => {
           title="Editar Organização"
           initial={{ name: editTarget.name, cnpj: editTarget.cnpj ?? "" }}
           onSubmit={(data) =>
-            updateMutation.mutate({ id: editTarget.id, data })
+            updateMutation.mutate(
+              { id: editTarget.id, data },
+              { onSuccess: () => setEditTarget(null) },
+            )
           }
         />
       )}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
@@ -23,7 +23,13 @@ export const DashboardDateRangePicker = ({
   onDateChange,
 }: DashboardDateRangePickerProps) => {
   const [open, setOpen] = useState(false);
+  const [month, setMonth] = useState<Date>(() => date?.from ?? new Date());
   const hasValue = Boolean(date?.from);
+
+  useEffect(() => {
+    if (!open) return;
+    setMonth(date?.from ?? new Date());
+  }, [open]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -56,10 +62,14 @@ export const DashboardDateRangePicker = ({
         <Calendar
           mode="range"
           className="p-3"
-          defaultMonth={date?.from}
+          month={month}
+          onMonthChange={setMonth}
           selected={date}
           onSelect={onDateChange}
           numberOfMonths={2}
+          min={1}
+          resetOnSelect
+          showOutsideDays={false}
           locale={ptBR}
         />
       </PopoverContent>

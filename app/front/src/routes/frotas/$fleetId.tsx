@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { FleetDetailPage } from "@/features/fleet/pages/FleetDetailPage/FleetDetailPage";
 import { getFleet } from "@/features/fleet/api/requests";
+import { fleetKeys } from "@/features/fleet/api/fleet-query-keys";
 import { requireRoles } from "@/lib/route-guard";
 
 const FleetDetailRoute = () => {
@@ -9,7 +10,7 @@ const FleetDetailRoute = () => {
   const numericFleetId = Number(fleetId);
 
   const { data: fleet } = useQuery({
-    queryKey: ["fleets", numericFleetId],
+    queryKey: fleetKeys.detail(numericFleetId),
     queryFn: () => getFleet(numericFleetId),
   });
 

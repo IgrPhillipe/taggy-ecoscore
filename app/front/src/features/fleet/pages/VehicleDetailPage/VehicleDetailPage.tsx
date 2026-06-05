@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
 import { Clock, Coins, Fuel, Leaf, Scroll, Ticket } from "lucide-react";
 import { format } from "date-fns";
@@ -24,6 +24,7 @@ import { TRANSACTION_MODAL_FILTER_DEFAULTS } from "@/components/TransactionFilte
 import { FilterModal } from "@/components/FilterModal";
 import { useFilterDraft } from "@/hooks/useFilterDraft";
 import { getVehicle, getVehicleTransactionsFiltered, getVehicleSummary } from "../../api/requests";
+import { vehicleKeys } from "../../api/query-keys";
 import type { VehicleTransaction } from "../../api/types";
 import { VehicleFormDialog } from "../../components/VehicleFormDialog/VehicleFormDialog";
 import { VEHICLE_CATEGORY_LABELS } from "../../constants";
@@ -92,7 +93,6 @@ const fuelLabels: Record<string, string> = {
 };
 
 export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
-  const queryClient = useQueryClient();
   const [txPage, setTxPage] = useState(1);
   const [txFilters, setTxFilters] = useState<TransactionFilterState>({});
   const [editOpen, setEditOpen] = useState(false);
@@ -113,12 +113,12 @@ export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
   );
 
   const { data: vehicle, isLoading: vehicleLoading } = useQuery({
-    queryKey: ["vehicles", vehicleId],
+    queryKey: vehicleKeys.detail(vehicleId),
     queryFn: () => getVehicle(vehicleId),
   });
 
   const { data: summary } = useQuery({
-    queryKey: ["vehicles", vehicleId, "summary"],
+    queryKey: vehicleKeys.summary(vehicleId),
     queryFn: () => getVehicleSummary(vehicleId),
   });
 
@@ -130,7 +130,7 @@ export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
   };
 
   const { data: txData, isLoading: txLoading } = useQuery({
-    queryKey: ["vehicles", vehicleId, "transactions", txPage, filters],
+    queryKey: vehicleKeys.transactions(vehicleId, txPage, filters),
     queryFn: () => getVehicleTransactionsFiltered(vehicleId, txPage, PAGE_SIZE, filters),
   });
 
@@ -212,10 +212,7 @@ export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
       {vehicle && (
         <VehicleFormDialog
           open={editOpen}
-          onClose={() => {
-            setEditOpen(false);
-            queryClient.invalidateQueries({ queryKey: ["vehicles", vehicleId] });
-          }}
+          onClose={() => setEditOpen(false)}
           vehicle={vehicle}
         />
       )}

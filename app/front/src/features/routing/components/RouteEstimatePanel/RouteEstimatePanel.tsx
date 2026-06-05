@@ -91,7 +91,7 @@ export const RouteEstimatePanel = ({
       <button
         type="button"
         onClick={onEditDestination}
-        className="w-full text-center text-sm font-medium text-primary hover:underline"
+        className="w-full text-center text-sm font-medium capitalize text-primary hover:underline"
       >
         Alterar destino
       </button>

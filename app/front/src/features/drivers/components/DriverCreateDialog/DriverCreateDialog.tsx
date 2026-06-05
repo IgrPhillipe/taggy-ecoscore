@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getToastErrorMessage } from "@/lib/api-error";
 import { Button } from "@/components/ui/button";
@@ -7,9 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { OrganizationsCombobox } from "@/features/fleet/components/OrganizationsCombobox/OrganizationsCombobox";
-import { createUser } from "@/features/users/api/requests";
-import { DEFAULT_USER_PASSWORD } from "@/features/users/constants";
-import { userQueryKeys } from "@/features/users/api/query-keys";
+import { useCreateUser } from "@/features/users/hooks/useUpdateUser";
 
 type DriverCreateDialogProps = {
   open: boolean;
@@ -17,34 +14,36 @@ type DriverCreateDialogProps = {
 };
 
 export const DriverCreateDialog = ({ open, onClose }: DriverCreateDialogProps) => {
-  const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [organizationId, setOrganizationId] = useState<number | undefined>();
+  const { mutate: createDriver, isPending } = useCreateUser({
+    silent: true,
+  });
 
-  const mutation = useMutation({
-    mutationFn: () =>
-      createUser({
+  const handleSave = () => {
+    createDriver(
+      {
         name,
         email,
-        password: DEFAULT_USER_PASSWORD,
         role: "motorista",
         organization_id: organizationId ?? null,
-      }),
-    onSuccess: () => {
-      toast.success("Motorista cadastrado.");
-      queryClient.invalidateQueries({ queryKey: userQueryKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["drivers"] });
-      setName("");
-      setEmail("");
-      setOrganizationId(undefined);
-      onClose();
-    },
-    onError: (error) =>
-      toast.error(
-        getToastErrorMessage(error, { fallback: "Erro ao cadastrar motorista." }),
-      ),
-  });
+      },
+      {
+        onSuccess: () => {
+          toast.success("Motorista cadastrado.");
+          setName("");
+          setEmail("");
+          setOrganizationId(undefined);
+          onClose();
+        },
+        onError: (error) =>
+          toast.error(
+            getToastErrorMessage(error, { fallback: "Erro ao cadastrar motorista." }),
+          ),
+      },
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -72,8 +71,8 @@ export const DriverCreateDialog = ({ open, onClose }: DriverCreateDialogProps) =
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
             <Button
-              onClick={() => mutation.mutate()}
-              disabled={!name.trim() || !email.trim() || mutation.isPending}
+              onClick={handleSave}
+              disabled={!name.trim() || !email.trim() || isPending}
             >
               Salvar
             </Button>

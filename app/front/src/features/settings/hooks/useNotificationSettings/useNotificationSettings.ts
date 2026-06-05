@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getUserById, updateUser } from "@/features/users/api/requests";
+import { invalidateUserQueries } from "@/lib/query-invalidation";
 import {
   notificationSettingsToPayload,
   userToNotificationSettings,
@@ -22,10 +23,11 @@ export const useNotificationSettings = (userId: number | undefined) => {
   const mutation = useMutation({
     mutationFn: (settings: NotificationSettings) =>
       updateUser(userId!, notificationSettingsToPayload(settings)),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
         queryKey: notificationSettingsKey(userId!),
       });
+      await invalidateUserQueries(queryClient, { id: userId! });
     },
   });
 

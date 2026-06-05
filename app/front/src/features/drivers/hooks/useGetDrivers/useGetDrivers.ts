@@ -5,6 +5,7 @@ import { useGetRawVehicles } from "@/features/users/hooks/useGetRawVehicles";
 import { joinUsersWithVehicles } from "@/features/users/lib/join-users-with-vehicles";
 import type { UserWithVehicle } from "@/features/users/api/types";
 import { sortItems } from "@/lib/list-utils";
+import { driverKeys } from "../../api/query-keys";
 
 type UseGetDriversParams = {
   page?: number;
@@ -26,14 +27,13 @@ export const useGetDrivers = ({
   sortOrder = "asc",
 }: UseGetDriversParams = {}) => {
   const usersQuery = useQuery({
-    queryKey: [
-      "drivers",
+    queryKey: driverKeys.list({
       page,
       pageSize,
       search,
       organizationId,
       fleetId,
-    ],
+    }),
     queryFn: () =>
       getUsersPaginated({
         role: "motorista",

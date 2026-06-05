@@ -58,6 +58,7 @@ export function buildTransactionDetailExportUrl(transactionId: number): string {
 export type DashboardExportParams = {
   organizationId?: number;
   fleetId?: number;
+  fuelType?: string;
   days?: number;
   fromDate?: string;
   toDate?: string;
@@ -68,6 +69,7 @@ export function buildDashboardExportUrl(params: DashboardExportParams = {}): str
   appendSearchParams(searchParams, {
     organization_id: params.organizationId,
     fleet_id: params.fleetId,
+    fuel_type: params.fuelType,
     days: params.days,
     from_date: params.fromDate,
     to_date: params.toDate,

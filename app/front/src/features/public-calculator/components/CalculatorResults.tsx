@@ -172,14 +172,14 @@ export function CalculatorResults({ result, onReset }: Props) {
         href="https://taggy.com.br"
         target="_blank"
         rel="noopener noreferrer"
-        className="block w-full text-center rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 transition-colors"
+        className="block w-full rounded-xl bg-emerald-600 py-3.5 text-center font-semibold capitalize text-white transition-colors hover:bg-emerald-700"
       >
         Quero minha Taggy
       </a>
 
       <button
         onClick={onReset}
-        className="flex items-center gap-2 mx-auto text-sm text-neutral-400 hover:text-neutral-600 transition-colors"
+        className="mx-auto flex items-center gap-2 text-sm capitalize text-neutral-400 transition-colors hover:text-neutral-600"
       >
         <RotateCcw className="h-3.5 w-3.5" />
         Recalcular

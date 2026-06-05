@@ -1,17 +1,26 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { getToastErrorMessage } from "@/lib/api-error";
+import {
+  invalidateDriverQueries,
+  invalidateOrganizationQueries,
+  invalidateUserQueries,
+  invalidateUserVehicleAssignmentQueries,
+  removeUserDetailQueries,
+} from "@/lib/query-invalidation";
 import { DEFAULT_USER_PASSWORD } from "../../constants";
-import { createUser, updateUser, deleteUser } from "../../api/requests";
-import { userQueryKeys } from "../../api/query-keys";
-import type { UpdateUserPayload, User } from "../../api/types";
+import { createUser, updateUser, deleteUser, updateUserVehicles } from "../../api/requests";
+import type { UpdateUserPayload } from "../../api/types";
 
 type UserMutationOptions = {
   silent?: boolean;
+  successMessage?: string;
 };
 
-export const useCreateUser = () => {
+export const useCreateUser = (options?: UserMutationOptions) => {
   const queryClient = useQueryClient();
+  const silent = options?.silent ?? false;
+  const successMessage = options?.successMessage ?? "Usuário criado com sucesso!";
 
   return useMutation({
     mutationFn: (data: {
@@ -24,14 +33,19 @@ export const useCreateUser = () => {
         ...data,
         password: DEFAULT_USER_PASSWORD,
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userQueryKeys.all });
-      toast.success("Usuário criado com sucesso!");
+    onSuccess: async () => {
+      await invalidateUserQueries(queryClient);
+      await invalidateDriverQueries(queryClient);
+      if (!silent) {
+        toast.success(successMessage);
+      }
     },
     onError: (error) => {
-      toast.error(
-        getToastErrorMessage(error, { fallback: "Erro ao criar usuário." }),
-      );
+      if (!silent) {
+        toast.error(
+          getToastErrorMessage(error, { fallback: "Erro ao criar usuário." }),
+        );
+      }
     },
   });
 };
@@ -43,11 +57,10 @@ export const useUpdateUser = (options?: UserMutationOptions) => {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateUserPayload }) =>
       updateUser(id, data),
-    onSuccess: (updatedUser) => {
-      queryClient.setQueryData<User[]>(userQueryKeys.list(), (old) =>
-        old?.map((user) => (user.id === updatedUser.id ? updatedUser : user)),
-      );
-      queryClient.setQueryData(userQueryKeys.detail(updatedUser.id), updatedUser);
+    onSuccess: async (_updatedUser, { id }) => {
+      await invalidateUserQueries(queryClient, { id });
+      await invalidateDriverQueries(queryClient);
+      await invalidateOrganizationQueries(queryClient);
       if (!silent) {
         toast.success("Usuário atualizado com sucesso!");
       }
@@ -67,17 +80,42 @@ export const useDeleteUser = () => {
 
   return useMutation({
     mutationFn: (id: number) => deleteUser(id),
-    onSuccess: (_data, id) => {
-      queryClient.setQueryData<User[]>(userQueryKeys.list(), (old) =>
-        old?.filter((user) => user.id !== id),
-      );
-      queryClient.removeQueries({ queryKey: userQueryKeys.detail(id) });
+    onSuccess: async (_data, id) => {
+      await invalidateUserQueries(queryClient);
+      await invalidateDriverQueries(queryClient);
+      await invalidateOrganizationQueries(queryClient);
+      await removeUserDetailQueries(queryClient, id);
       toast.success("Usuário excluído com sucesso!");
     },
     onError: (error) => {
       toast.error(
         getToastErrorMessage(error, { fallback: "Erro ao excluir usuário." }),
       );
+    },
+  });
+};
+
+export const useUpdateUserVehicles = (options?: UserMutationOptions) => {
+  const queryClient = useQueryClient();
+  const silent = options?.silent ?? false;
+
+  return useMutation({
+    mutationFn: ({ userId, vehicleIds }: { userId: number; vehicleIds: number[] }) =>
+      updateUserVehicles(userId, vehicleIds),
+    onSuccess: async (_data, { userId }) => {
+      await invalidateUserVehicleAssignmentQueries(queryClient, userId);
+      if (!silent) {
+        toast.success("Veículos vinculados atualizados.");
+      }
+    },
+    onError: (error) => {
+      if (!silent) {
+        toast.error(
+          getToastErrorMessage(error, {
+            fallback: "Erro ao atualizar veículos vinculados.",
+          }),
+        );
+      }
     },
   });
 };

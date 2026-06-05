@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -12,8 +12,7 @@ import {
   VehiclesRelationSelect,
 } from "@/components/form/relation-selects";
 import { useGetRawVehicles } from "@/features/users/hooks/useGetRawVehicles";
-import { useUpdateUser } from "@/features/users/hooks/useUpdateUser";
-import { updateUserVehicles } from "@/features/users/api/requests";
+import { useUpdateUser, useUpdateUserVehicles } from "@/features/users/hooks/useUpdateUser";
 import { joinUsersWithVehicles } from "@/features/users/lib/join-users-with-vehicles";
 import { driverFormSchema, type DriverFormData } from "@/features/users/schemas/user-schema";
 import type { User } from "@/features/users/api/types";
@@ -26,8 +25,10 @@ type DriverFormDialogProps = {
 
 export const DriverFormDialog = ({ open, onClose, driver }: DriverFormDialogProps) => {
   const { data: vehicles = [] } = useGetRawVehicles();
-  const { mutate, isPending } = useUpdateUser({ silent: true });
-  const [savingVehicles, setSavingVehicles] = useState(false);
+  const { mutate: updateUser, isPending: isUpdatingUser } = useUpdateUser({ silent: true });
+  const { mutate: updateUserVehicles, isPending: isUpdatingVehicles } = useUpdateUserVehicles({
+    silent: true,
+  });
 
   const driverWithVehicle = useMemo(
     () => joinUsersWithVehicles([driver], vehicles)[0],
@@ -64,8 +65,8 @@ export const DriverFormDialog = ({ open, onClose, driver }: DriverFormDialogProp
     });
   }, [open, driverWithVehicle, assignedVehicleIds, form]);
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    mutate(
+  const onSubmit = form.handleSubmit((data) => {
+    updateUser(
       {
         id: driver.id,
         data: {
@@ -75,28 +76,28 @@ export const DriverFormDialog = ({ open, onClose, driver }: DriverFormDialogProp
         },
       },
       {
-        onSuccess: async () => {
-          try {
-            setSavingVehicles(true);
-            if (isIndividualDriver) {
-              await updateUserVehicles(driver.id, data.vehicle_ids ?? []);
-            } else {
-              await updateUserVehicles(
-                driver.id,
-                data.vehicle_id != null ? [data.vehicle_id] : [],
-              );
-            }
-            toast.success("Motorista atualizado.");
-            onClose();
-          } catch (vehicleError) {
-            toast.error(
-              getToastErrorMessage(vehicleError, {
-                fallback: "Erro ao atualizar veículos vinculados.",
-              }),
-            );
-          } finally {
-            setSavingVehicles(false);
-          }
+        onSuccess: () => {
+          const vehicleIds = isIndividualDriver
+            ? (data.vehicle_ids ?? [])
+            : data.vehicle_id != null
+              ? [data.vehicle_id]
+              : [];
+
+          updateUserVehicles(
+            { userId: driver.id, vehicleIds },
+            {
+              onSuccess: () => {
+                toast.success("Motorista atualizado.");
+                onClose();
+              },
+              onError: (error) =>
+                toast.error(
+                  getToastErrorMessage(error, {
+                    fallback: "Erro ao atualizar veículos vinculados.",
+                  }),
+                ),
+            },
+          );
         },
         onError: (error) =>
           toast.error(
@@ -106,7 +107,7 @@ export const DriverFormDialog = ({ open, onClose, driver }: DriverFormDialogProp
     );
   });
 
-  const pending = isPending || savingVehicles;
+  const pending = isUpdatingUser || isUpdatingVehicles;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>

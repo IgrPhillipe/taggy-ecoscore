@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
   Car,
@@ -13,8 +13,6 @@ import {
   Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import { getToastErrorMessage } from "@/lib/api-error";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageBackLink, PageLayout } from "@/components/layout/PageLayout";
@@ -41,14 +39,17 @@ import type { User } from "@/features/users/api/types";
 import {
   getOrganizationSummary,
   getOrganizationUsers,
-  linkOrganizationUser,
-  unlinkOrganizationUser,
-  updateOrganization,
 } from "../../api/requests";
+import { organizationKeys } from "../../api/organization-query-keys";
 import {
   OrgFormDialog,
   type OrgFormData,
 } from "../../components/OrgFormDialog";
+import {
+  useLinkOrganizationUser,
+  useUnlinkOrganizationUser,
+  useUpdateOrganization,
+} from "../../hooks/useOrganizationMutations";
 
 const makeUserColumns = (onUnlink: (user: User) => void): ColumnDef<User>[] => [
   entityIdColumn<User>(),
@@ -85,62 +86,24 @@ export const OrganizationDetailPage = ({
   orgName,
   orgCnpj,
 }: OrganizationDetailPageProps) => {
-  const queryClient = useQueryClient();
   const [userSearch, setUserSearch] = useState("");
   const [linkUserOpen, setLinkUserOpen] = useState(false);
   const [selectedLinkUserId, setSelectedLinkUserId] = useState<number | undefined>();
   const [editOpen, setEditOpen] = useState(false);
 
   const { data: summary } = useQuery({
-    queryKey: ["organizations", orgId, "summary"],
+    queryKey: organizationKeys.summary(orgId),
     queryFn: () => getOrganizationSummary(orgId),
   });
 
   const { data: orgUsers = [], isLoading: usersLoading } = useQuery({
-    queryKey: ["organizations", orgId, "users"],
+    queryKey: organizationKeys.users(orgId),
     queryFn: () => getOrganizationUsers(orgId),
   });
 
-  const updateMutation = useMutation({
-    mutationFn: (data: OrgFormData) =>
-      updateOrganization(orgId, { name: data.name, cnpj: data.cnpj || undefined }),
-    onSuccess: () => {
-      toast.success("Organização atualizada.");
-      queryClient.invalidateQueries({ queryKey: ["organizations"] });
-    },
-    onError: (error) =>
-      toast.error(
-        getToastErrorMessage(error, {
-          fallback: "Erro ao atualizar organização.",
-        }),
-      ),
-  });
-
-  const unlinkMutation = useMutation({
-    mutationFn: (userId: number) => unlinkOrganizationUser(orgId, userId),
-    onSuccess: () => {
-      toast.success("Usuário desvinculado.");
-      queryClient.invalidateQueries({ queryKey: ["organizations", orgId, "users"] });
-    },
-    onError: (error) =>
-      toast.error(
-        getToastErrorMessage(error, { fallback: "Erro ao desvincular usuário." }),
-      ),
-  });
-
-  const linkMutation = useMutation({
-    mutationFn: (userId: number) => linkOrganizationUser(orgId, userId),
-    onSuccess: () => {
-      toast.success("Usuário vinculado.");
-      queryClient.invalidateQueries({ queryKey: ["organizations", orgId, "users"] });
-      setLinkUserOpen(false);
-      setSelectedLinkUserId(undefined);
-    },
-    onError: (error) =>
-      toast.error(
-        getToastErrorMessage(error, { fallback: "Erro ao vincular usuário." }),
-      ),
-  });
+  const updateMutation = useUpdateOrganization();
+  const unlinkMutation = useUnlinkOrganizationUser(orgId);
+  const linkMutation = useLinkOrganizationUser(orgId);
 
   const filteredUsers = useMemo(() => {
     if (!userSearch.trim()) return orgUsers;
@@ -198,7 +161,12 @@ export const OrganizationDetailPage = ({
         onClose={() => setEditOpen(false)}
         title="Editar Organização"
         initial={{ name: orgName, cnpj: orgCnpj ?? "" }}
-        onSubmit={(data) => updateMutation.mutate(data)}
+        onSubmit={(data: OrgFormData) =>
+          updateMutation.mutate(
+            { id: orgId, data },
+            { onSuccess: () => setEditOpen(false) },
+          )
+        }
       />
 
       <Dialog
@@ -228,7 +196,12 @@ export const OrganizationDetailPage = ({
               disabled={selectedLinkUserId == null || linkMutation.isPending}
               onClick={() => {
                 if (selectedLinkUserId != null) {
-                  linkMutation.mutate(selectedLinkUserId);
+                  linkMutation.mutate(selectedLinkUserId, {
+                    onSuccess: () => {
+                      setLinkUserOpen(false);
+                      setSelectedLinkUserId(undefined);
+                    },
+                  });
                 }
               }}
             >

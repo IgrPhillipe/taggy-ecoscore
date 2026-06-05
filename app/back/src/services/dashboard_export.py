@@ -22,13 +22,34 @@ def _apply_transaction_scope(
     *,
     organization_id: int | None,
     fleet_id: int | None,
+    fuel_type: str | None = None,
 ):
+    if fuel_type is not None:
+        query = query.join(Vehicle, Transaction.vehicle_id == Vehicle.id).where(
+            Vehicle.fuel_type == fuel_type
+        )
     if fleet_id is not None:
         query = query.where(
             Transaction.vehicle_id.in_(_fleet_vehicle_ids_subquery(fleet_id))
         )
     if organization_id is not None:
         query = query.where(Transaction.organization_id == organization_id)
+    return query
+
+
+def _apply_vehicle_scope(
+    query,
+    *,
+    organization_id: int | None,
+    fleet_id: int | None,
+    fuel_type: str | None = None,
+):
+    if organization_id is not None:
+        query = query.where(Vehicle.organization_id == organization_id)
+    if fleet_id is not None:
+        query = query.where(Vehicle.fleet_id == fleet_id)
+    if fuel_type is not None:
+        query = query.where(Vehicle.fuel_type == fuel_type)
     return query
 
 
@@ -68,6 +89,7 @@ async def collect_dashboard_export_data(
     *,
     organization_id: int | None,
     fleet_id: int | None,
+    fuel_type: str | None = None,
     days: int = DEFAULT_DAILY_STATS_DAYS,
     from_date: date | None = None,
     to_date: date | None = None,
@@ -85,11 +107,13 @@ async def collect_dashboard_export_data(
         tx_query,
         organization_id=organization_id,
         fleet_id=fleet_id,
+        fuel_type=fuel_type,
     )
     digital_query = _apply_transaction_scope(
         digital_query,
         organization_id=organization_id,
         fleet_id=fleet_id,
+        fuel_type=fuel_type,
     )
     tx_query = _apply_date_scope(
         tx_query,
@@ -102,12 +126,12 @@ async def collect_dashboard_export_data(
         to_date=to_date,
     )
 
-    if organization_id is not None:
-        vehicle_query = vehicle_query.where(
-            Vehicle.organization_id == organization_id,
-        )
-    if fleet_id is not None:
-        vehicle_query = vehicle_query.where(Vehicle.fleet_id == fleet_id)
+    vehicle_query = _apply_vehicle_scope(
+        vehicle_query,
+        organization_id=organization_id,
+        fleet_id=fleet_id,
+        fuel_type=fuel_type,
+    )
 
     tx_result = await db.execute(tx_query)
     transaction_count, co2_total, fuel_total, savings_total = tx_result.one()
@@ -144,6 +168,7 @@ async def collect_dashboard_export_data(
         daily_query,
         organization_id=organization_id,
         fleet_id=fleet_id,
+        fuel_type=fuel_type,
     )
     daily_result = await db.execute(daily_query)
     daily_rows = daily_result.all()
@@ -174,6 +199,7 @@ async def collect_dashboard_export_data(
         uf_query,
         organization_id=organization_id,
         fleet_id=fleet_id,
+        fuel_type=fuel_type,
     )
     uf_query = _apply_date_scope(
         uf_query,
@@ -194,6 +220,7 @@ async def collect_dashboard_export_data(
         "filters": {
             "organization_id": organization_id,
             "fleet_id": fleet_id,
+            "fuel_type": fuel_type,
             "from_date": from_date.isoformat() if from_date else None,
             "to_date": to_date.isoformat() if to_date else None,
             "daily_period_start": daily_start.isoformat(),

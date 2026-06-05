@@ -9,6 +9,9 @@ import { PageBackLink, PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { PAGE_SIZE } from "@/constants";
 import { getUserById } from "@/features/users/api/requests";
+import { userQueryKeys } from "@/features/users/api/query-keys";
+import { userStatsKeys } from "@/features/dashboard/api/query-keys";
+import { transactionKeys } from "@/features/transactions/api/query-keys";
 import { getUserTransactions } from "@/features/fleet/api/requests";
 import type { VehicleTransaction } from "@/features/fleet/api/types";
 import { KpiCard, SectionCard } from "@/features/sustainability/components/MetricCard";
@@ -118,12 +121,12 @@ export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
   );
 
   const { data: driver, isLoading: driverLoading } = useQuery({
-    queryKey: ["users", driverId],
+    queryKey: userQueryKeys.detail(driverId),
     queryFn: () => getUserById(driverId),
   });
 
   const { data: stats } = useQuery({
-    queryKey: ["user-stats", driverId],
+    queryKey: userStatsKeys.detail(driverId),
     queryFn: () => api.get(`/api/user-stats/${driverId}`).json<UserStats>(),
   });
 
@@ -136,7 +139,7 @@ export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
   };
 
   const { data: txData, isLoading: txLoading } = useQuery({
-    queryKey: ["transactions", "user", driverId, txPage, filters],
+    queryKey: transactionKeys.user(driverId, txPage, filters),
     queryFn: () => getUserTransactions(driverId, txPage, PAGE_SIZE, filters),
   });
 

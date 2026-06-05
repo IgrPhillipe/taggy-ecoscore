@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/http-client";
+import { dashboardKeys } from "../api/query-keys";
 
 export type DailyStatItem = {
   day: string;
@@ -11,11 +12,28 @@ type UseDailyStatsParams = {
   days?: number;
   organizationId?: number;
   fleetId?: number;
+  fuelType?: string;
+  fromDate?: string;
+  toDate?: string;
 };
 
-export const useDailyStats = ({ days = 30, organizationId, fleetId }: UseDailyStatsParams = {}) => {
+export const useDailyStats = ({
+  days = 30,
+  organizationId,
+  fleetId,
+  fuelType,
+  fromDate,
+  toDate,
+}: UseDailyStatsParams = {}) => {
   return useQuery({
-    queryKey: ["dashboard", "daily-stats", days, organizationId, fleetId],
+    queryKey: dashboardKeys.dailyStats({
+      days,
+      organizationId,
+      fleetId,
+      fuelType,
+      fromDate,
+      toDate,
+    }),
     queryFn: () =>
       api
         .get("/api/dashboard/daily-stats", {
@@ -23,6 +41,9 @@ export const useDailyStats = ({ days = 30, organizationId, fleetId }: UseDailySt
             days,
             ...(organizationId != null && { organization_id: organizationId }),
             ...(fleetId != null && { fleet_id: fleetId }),
+            ...(fuelType && { fuel_type: fuelType }),
+            ...(fromDate && { from_date: fromDate }),
+            ...(toDate && { to_date: toDate }),
           },
         })
         .json<{ items: DailyStatItem[] }>()

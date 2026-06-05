@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getTransaction } from "../../api/requests";
+import { transactionKeys } from "../../api/query-keys";
 
 type UseGetTransactionOptions = {
   enabled?: boolean;
@@ -10,7 +11,7 @@ export const useGetTransaction = (
   options: UseGetTransactionOptions = {},
 ) => {
   return useQuery({
-    queryKey: ["transactions", id],
+    queryKey: transactionKeys.detail(id),
     queryFn: () => getTransaction(id),
     enabled: options.enabled ?? !!id,
   });

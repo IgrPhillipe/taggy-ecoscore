@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { OrganizationDetailPage } from "@/features/fleet/pages/OrganizationDetailPage";
 import { getOrganization } from "@/features/fleet/api/requests";
+import { organizationKeys } from "@/features/fleet/api/organization-query-keys";
 import { requireRoles } from "@/lib/route-guard";
 
 const OrganizationDetailRoute = () => {
@@ -9,7 +10,7 @@ const OrganizationDetailRoute = () => {
   const numericId = Number(id);
 
   const { data: org } = useQuery({
-    queryKey: ["organizations", numericId],
+    queryKey: organizationKeys.detail(numericId),
     queryFn: () => getOrganization(numericId),
   });
 

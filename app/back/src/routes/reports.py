@@ -204,6 +204,7 @@ async def export_transactions_legacy(
 async def export_dashboard(
     organization_id: int | None = Query(default=None),
     fleet_id: int | None = Query(default=None),
+    fuel_type: str | None = Query(default=None),
     days: int = Query(default=30, ge=7, le=90),
     from_date: str | None = Query(default=None),
     to_date: str | None = Query(default=None),
@@ -216,6 +217,7 @@ async def export_dashboard(
         db,
         organization_id=org_scope,
         fleet_id=fleet_id,
+        fuel_type=fuel_type,
         days=days,
         from_date=parsed_from,
         to_date=parsed_to,

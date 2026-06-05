@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { useAuthStore } from "@/features/auth/auth-store";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
@@ -19,8 +18,8 @@ import { formFieldErrorId } from "@/components/form/FormField";
 import { fieldControlErrorClassName } from "@/lib/field-control";
 import { isValidPlate } from "@/lib/plate-utils";
 import { cn } from "@/lib/utils";
-import { processTransaction } from "../../api/requests";
-import type { ProcessTransactionBody, ProcessTransactionResult } from "../../api/types";
+import { useProcessTransaction } from "../../hooks/useProcessTransaction";
+import type { ProcessTransactionBody } from "../../api/types";
 import { SimulatorResultPanel, SimulatorResultSkeleton } from "./SimulatorResultPanel";
 
 const UF_OPTIONS = [
@@ -44,9 +43,7 @@ export function TransactionSimulatorPage() {
 
   const currentUser = useAuthStore((s) => s.user);
 
-  const mutation = useMutation<ProcessTransactionResult, Error, ProcessTransactionBody>({
-    mutationFn: processTransaction,
-  });
+  const mutation = useProcessTransaction();
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));

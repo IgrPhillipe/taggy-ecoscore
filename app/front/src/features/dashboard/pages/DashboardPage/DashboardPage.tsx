@@ -115,11 +115,21 @@ export const DashboardPage = () => {
     days: 30,
     organizationId: scopedOrgId,
     fleetId,
+    fuelType,
+    fromDate: dateRange?.from
+      ? format(dateRange.from, "yyyy-MM-dd")
+      : undefined,
+    toDate: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined,
   });
 
   const { data: summary } = useDashboardSummary({
     organizationId: scopedOrgId,
     fleetId,
+    fuelType,
+    fromDate: dateRange?.from
+      ? format(dateRange.from, "yyyy-MM-dd")
+      : undefined,
+    toDate: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined,
   });
 
   const METRICS = [
@@ -153,6 +163,7 @@ export const DashboardPage = () => {
   const dashboardExportUrl = buildDashboardExportUrl({
     organizationId: scopedOrgId,
     fleetId,
+    fuelType,
     fromDate: dateRange?.from
       ? format(dateRange.from, "yyyy-MM-dd")
       : undefined,
@@ -236,7 +247,15 @@ export const DashboardPage = () => {
       </section>
 
       <section className="grid grid-cols-2 gap-6">
-        <RegionalEmissionsMap organizationId={scopedOrgId} fleetId={fleetId} />
+        <RegionalEmissionsMap
+          organizationId={scopedOrgId}
+          fleetId={fleetId}
+          fuelType={fuelType}
+          fromDate={
+            dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined
+          }
+          toDate={dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined}
+        />
         {/* TODO: Integração pendente — dados comparativos mockados */}
         <ComparativeBarChart />
       </section>

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { filterBySearch, paginateItems, sortItems } from "@/lib/list-utils";
 import { getFleets } from "../../api/requests";
+import { fleetKeys } from "../../api/fleet-query-keys";
 import type { Fleet } from "../../api/types";
 
 type UseGetFleetsFilteredParams = {
@@ -22,7 +23,7 @@ export const useGetFleetsFiltered = ({
   sortOrder = "asc",
 }: UseGetFleetsFilteredParams = {}) => {
   const query = useQuery({
-    queryKey: ["fleets", "list", organizationId, search],
+    queryKey: fleetKeys.list(organizationId, search),
     queryFn: () => getFleets({ organizationId, search: search || undefined }),
   });
 

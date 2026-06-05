@@ -24,7 +24,7 @@ export function TransactionViewButton({
           aria-label={label}
           className={cn(
             "flex items-center gap-0.5 rounded border border-border bg-muted px-2 py-1",
-            "text-[10px] font-medium text-muted-foreground transition-colors hover:bg-accent",
+            "text-[10px] font-medium capitalize text-muted-foreground transition-colors hover:bg-accent",
           )}
         >
           <Eye className="h-3 w-3" />

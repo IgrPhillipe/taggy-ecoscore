@@ -10,34 +10,25 @@ from src.middleware.dev_auth import apply_org_scope_for_gestor
 from src.models.transaction import Transaction
 from src.models.user import User
 from src.models.vehicle import Vehicle
+from src.services.dashboard_export import (
+    DEFAULT_DAILY_STATS_DAYS,
+    _apply_date_scope,
+    _apply_transaction_scope,
+    _apply_vehicle_scope,
+    _resolve_daily_range,
+)
 from src.services.paper_savings import compute_paper_saved_meters
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
-
-
-def _fleet_vehicle_ids_subquery(fleet_id: int):
-    return select(Vehicle.id).where(Vehicle.fleet_id == fleet_id)
-
-
-def _apply_transaction_scope(
-    query,
-    *,
-    organization_id: int | None,
-    fleet_id: int | None,
-):
-    if fleet_id is not None:
-        query = query.where(
-            Transaction.vehicle_id.in_(_fleet_vehicle_ids_subquery(fleet_id))
-        )
-    if organization_id is not None:
-        query = query.where(Transaction.organization_id == organization_id)
-    return query
 
 
 @router.get("/summary")
 async def get_dashboard_summary(
     organization_id: int | None = Query(default=None),
     fleet_id: int | None = Query(default=None),
+    fuel_type: str | None = Query(default=None),
+    from_date: date | None = Query(default=None),
+    to_date: date | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -58,19 +49,31 @@ async def get_dashboard_summary(
         tx_query,
         organization_id=organization_id,
         fleet_id=fleet_id,
+        fuel_type=fuel_type,
     )
     digital_query = _apply_transaction_scope(
         digital_query,
         organization_id=organization_id,
         fleet_id=fleet_id,
+        fuel_type=fuel_type,
+    )
+    tx_query = _apply_date_scope(
+        tx_query,
+        from_date=from_date,
+        to_date=to_date,
+    )
+    digital_query = _apply_date_scope(
+        digital_query,
+        from_date=from_date,
+        to_date=to_date,
     )
 
-    if organization_id is not None:
-        vehicle_query = vehicle_query.where(
-            Vehicle.organization_id == organization_id,
-        )
-    if fleet_id is not None:
-        vehicle_query = vehicle_query.where(Vehicle.fleet_id == fleet_id)
+    vehicle_query = _apply_vehicle_scope(
+        vehicle_query,
+        organization_id=organization_id,
+        fleet_id=fleet_id,
+        fuel_type=fuel_type,
+    )
 
     tx_result = await db.execute(tx_query)
     transaction_count, co2_total, fuel_total, savings_total = tx_result.one()
@@ -97,14 +100,21 @@ async def get_dashboard_summary(
 
 @router.get("/daily-stats")
 async def get_daily_stats(
-    days: int = Query(default=30, ge=7, le=90),
+    days: int = Query(default=DEFAULT_DAILY_STATS_DAYS, ge=7, le=90),
     organization_id: int | None = Query(default=None),
     fleet_id: int | None = Query(default=None),
+    fuel_type: str | None = Query(default=None),
+    from_date: date | None = Query(default=None),
+    to_date: date | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     organization_id = apply_org_scope_for_gestor(current_user, organization_id)
-    since = date.today() - timedelta(days=days - 1)
+    daily_start, daily_end = _resolve_daily_range(
+        days=days,
+        from_date=from_date,
+        to_date=to_date,
+    )
 
     query = (
         select(
@@ -112,7 +122,10 @@ async def get_daily_stats(
             func.count().label("transaction_count"),
             func.coalesce(func.sum(Transaction.co2_avoided_kg), 0).label("co2_total_kg"),
         )
-        .where(Transaction.created_at >= since)
+        .where(
+            cast(Transaction.created_at, Date) >= daily_start,
+            cast(Transaction.created_at, Date) <= daily_end,
+        )
         .group_by(cast(Transaction.created_at, Date))
         .order_by(cast(Transaction.created_at, Date))
     )
@@ -121,6 +134,7 @@ async def get_daily_stats(
         query,
         organization_id=organization_id,
         fleet_id=fleet_id,
+        fuel_type=fuel_type,
     )
 
     result = await db.execute(query)
@@ -128,14 +142,16 @@ async def get_daily_stats(
 
     day_map = {row.day: row for row in rows}
     data = []
-    for i in range(days):
-        d = since + timedelta(days=i)
-        row = day_map.get(d)
+    current = daily_start
+
+    while current <= daily_end:
+        row = day_map.get(current)
         data.append({
-            "day": d.isoformat(),
+            "day": current.isoformat(),
             "transaction_count": row.transaction_count if row else 0,
             "co2_total_kg": float(row.co2_total_kg) if row else 0.0,
         })
+        current += timedelta(days=1)
 
     return {"items": data}
 
@@ -144,6 +160,9 @@ async def get_daily_stats(
 async def get_emissions_by_uf(
     organization_id: int | None = Query(default=None),
     fleet_id: int | None = Query(default=None),
+    fuel_type: str | None = Query(default=None),
+    from_date: date | None = Query(default=None),
+    to_date: date | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -164,6 +183,12 @@ async def get_emissions_by_uf(
         query,
         organization_id=organization_id,
         fleet_id=fleet_id,
+        fuel_type=fuel_type,
+    )
+    query = _apply_date_scope(
+        query,
+        from_date=from_date,
+        to_date=to_date,
     )
 
     result = await db.execute(query)
