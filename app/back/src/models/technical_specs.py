@@ -183,11 +183,11 @@ class TechnicalSpecs(SQLModel, table=True):
         default=2023, sa_column=Column(Integer, nullable=False, server_default="2023")
     )
     idle_rates_source: str = Field(
-        default="U.S. DOE Fact #861 (2015) — proxy; sem equivalente CETESB/INMETRO público",
+        default="Edenred Mobilidade — blog.edenredmobilidade.com.br/gestao-de-frotas/impacto-da-conducao-no-consumo-de-combustivel/ (4 L/h — pesado); Contele Rastreador — blog.contelerastreador.com.br/consumo-em-marcha-lenta/ (1,5 L/h — leve)",
         sa_column=Column(String, nullable=False, server_default=""),
     )
     idle_rates_year: int = Field(
-        default=2015, sa_column=Column(Integer, nullable=False, server_default="2015")
+        default=2024, sa_column=Column(Integer, nullable=False, server_default="2024")
     )
     gwp100_source: str = Field(
         default="IPCC AR6 2021, Tabela 7.SM.7",

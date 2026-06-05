@@ -124,11 +124,10 @@ _TECHNICAL_SPECS_VALUES = {
     "blend_biodiesel_pct": 0.15,
 
     # ── Taxas de consumo em idle ──
-    # Fonte: U.S. DOE Fact #861 (2015) — proxy; sem equivalente CETESB/INMETRO público
-    # 1.0 L/h para veículos leves (frota brasileira média)
-    "idle_rate_leve": 0.00028,
-    # 2.5 L/h para caminhões médios (VW Delivery, MB Atego)
-    "idle_rate_pesado": 0.00069,
+    # Fonte: Contele Rastreador (BR) — 1,5 L/h para veículos leves
+    "idle_rate_leve": 0.000417,
+    # Fonte: Edenred Mobilidade (BR) — 4 L/h para veículos pesados
+    "idle_rate_pesado": 0.001111,
     # 0.50 m³/h — derivado por conversão energética
     "idle_rate_gnv": 0.00014,
     # 1.0 kWh/h — estimativa; sem fonte disponível
@@ -170,8 +169,8 @@ _TECHNICAL_SPECS_VALUES = {
     # ── Source attribution ──
     "emission_factors_source": "FGV GHG Protocol Tool / BEN 2023 / MCTIC 2016",
     "emission_factors_year": 2023,
-    "idle_rates_source": "U.S. DOE Fact #861 (fev/2015) — proxy; sem equivalente CETESB/INMETRO público",
-    "idle_rates_year": 2015,
+    "idle_rates_source": "Edenred Mobilidade — blog.edenredmobilidade.com.br/gestao-de-frotas/impacto-da-conducao-no-consumo-de-combustivel/ (4 L/h — pesado); Contele Rastreador — blog.contelerastreador.com.br/consumo-em-marcha-lenta/ (1,5 L/h — leve)",
+    "idle_rates_year": 2024,
     "gwp100_source": "IPCC AR6 2021, Tabela 7.SM.7",
     "blend_factors_source": "ANP/CNPE: E30 por Lei 14.993/2024 (em vigor ago/2025); B15 por Resolução CNPE (em vigor ago/2025)",
     "blend_factors_year": 2025,

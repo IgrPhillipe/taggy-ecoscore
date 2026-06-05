@@ -47,6 +47,7 @@ type TechSpecsRaw = {
       emission_factors_source: string
       emission_factors_year: number
       idle_rates_source: string
+      idle_rates_year: number
       gwp100_source: string
       blend_factors_source: string
       blend_factors_year: number
@@ -60,12 +61,12 @@ const FALLBACK = {
   diesel_s10_base: 2.631, blend_bio: 0.15, diesel_s10_eff: 2.236,
   etanol: 1.510, gnv: 1.999, ev_kwh: 0.046,
   gwp_ch4: 27.9, gwp_n2o: 273.0,
-  idle_leve: 0.00028, idle_pesado: 0.00069,
+  idle_leve: 0.000417, idle_pesado: 0.001111, idle_year: 2024,
   baseline_pedagio: 180, baseline_estacionamento: 120,
   paper_co2: 0.012,
   ef_source: "FGV GHG Protocol Tool / BEN 2023 / MCTIC 2016",
   ef_year: 2023,
-  idle_source: "U.S. DOE Fact #861 (2015) — proxy; sem dado CETESB/INMETRO público",
+  idle_source: "Edenred Mobilidade / Contele Rastreador — referências brasileiras",
   elapsed_pedagio: 15,
   elapsed_estacionamento: 30,
   elapsed_source: "Premissa declarada — Sem Parar/ConectCar não publicam tempo médio por passagem",
@@ -190,7 +191,7 @@ export const MetodologiaPage = () => {
       value: `${s?.idle_rate_leve ?? FALLBACK.idle_leve} (${((s?.idle_rate_leve ?? FALLBACK.idle_leve) * 3600).toFixed(1)} L/h)`,
       unit: "L/s",
       source: s?.idle_rates_source ?? FALLBACK.idle_source,
-      year: 2015,
+      year: s?.idle_rates_year ?? FALLBACK.idle_year,
       warn: true,
     },
     {
@@ -198,7 +199,7 @@ export const MetodologiaPage = () => {
       value: `${s?.idle_rate_pesado ?? FALLBACK.idle_pesado} (${((s?.idle_rate_pesado ?? FALLBACK.idle_pesado) * 3600).toFixed(1)} L/h)`,
       unit: "L/s",
       source: s?.idle_rates_source ?? FALLBACK.idle_source,
-      year: 2015,
+      year: s?.idle_rates_year ?? FALLBACK.idle_year,
       warn: true,
     },
     {
@@ -240,7 +241,7 @@ export const MetodologiaPage = () => {
   const limitations = [
     {
       title: "Taxa de consumo em idle (idle_rate)",
-      text: `Nota de Conservadorismo Metodológico: Na ausência de fatores de marcha lenta específicos para a frota brasileira homologados pela CETESB ou INMETRO, adotou-se o U.S. DOE Fact #861 (2015) como proxy técnica. Valores atuais: leve ${(s?.idle_rate_leve ?? FALLBACK.idle_leve) * 3600} L/h; pesado ${(s?.idle_rate_pesado ?? FALLBACK.idle_pesado) * 3600} L/h. Pelo princípio do conservadorismo do GHG Protocol, os valores foram aplicados linearmente, desconsiderando variações de eficiência por envelhecimento da frota nacional — o que torna a estimativa de emissões evitadas conservadora.`,
+      text: `Valores adotados com base em referências brasileiras do setor: leve = ${((s?.idle_rate_leve ?? FALLBACK.idle_leve) * 3600).toFixed(1)} L/h (Contele Rastreador); pesado = ${((s?.idle_rate_pesado ?? FALLBACK.idle_pesado) * 3600).toFixed(1)} L/h (Edenred Mobilidade). Pelo princípio do conservadorismo do GHG Protocol, os valores foram aplicados linearmente, desconsiderando variações de eficiência por envelhecimento da frota nacional. Na ausência de fatores homologados pela CETESB ou INMETRO, fontes setoriais brasileiras foram preferidas ao proxy U.S. DOE (2015).`,
       warn: true,
     },
     {
@@ -287,9 +288,14 @@ export const MetodologiaPage = () => {
       url: "https://www.gov.br/mdic/pt-br/assuntos/bioeconomia/bioenergia",
     },
     {
-      name: "U.S. DOE Fact #861 (2015)",
-      desc: "Idle fuel consumption — proxy para taxa de consumo em marcha lenta",
-      url: "https://www.energy.gov/eere/vehicles/fact-861-february-23-2015-idle-fuel-consumption-selected-gasoline-and-diesel-vehicles",
+      name: "Edenred Mobilidade — Impacto da condução no consumo de combustível",
+      desc: "Idle fuel consumption — 4 L/h para veículos pesados (referência brasileira)",
+      url: "https://blog.edenredmobilidade.com.br/gestao-de-frotas/impacto-da-conducao-no-consumo-de-combustivel/",
+    },
+    {
+      name: "Contele Rastreador — Consumo em marcha lenta",
+      desc: "Idle fuel consumption — 1,5 L/h para veículos leves (referência brasileira)",
+      url: "https://blog.contelerastreador.com.br/consumo-em-marcha-lenta/",
     },
     {
       name: "apibrasil.io — Consulta Veicular",

@@ -80,7 +80,7 @@ _SOURCE_URLS: dict[str, str] = {
     "emission_factors": "https://fgvcli.fgv.br/ghg",
     "gwp100":           "https://www.ipcc.ch/report/ar6/wg1/",
     "blend_factors":    "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2024/lei/l14993.htm",
-    "idle_rates":       "https://www.energy.gov/eere/vehicles/fact-861-february-9-2015-idle-fuel-consumption-selected-gasoline-and-diesel-vehicles",
+    "idle_rates":       "https://blog.edenredmobilidade.com.br/gestao-de-frotas/impacto-da-conducao-no-consumo-de-combustivel/",
     "paper_impact":     "https://ecoinvent.org/database/",
     "fuel_prices":      "https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/levantamento-de-precos",
 }
@@ -389,11 +389,11 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: fl
         ),
         "idle_rate_leve": (
             "Litros de combustível consumidos por segundo com motor ligado parado (marcha lenta). "
-            "Veículos leves = carros de passeio. Baseado em proxy U.S. DOE 2015 — sem equivalente CETESB/INMETRO público."
+            "Veículos leves = carros de passeio. Fonte: Contele Rastreador (BR) — 1,5 L/h para frota leve brasileira."
         ),
         "idle_rate_pesado": (
             "Mesmo conceito para veículos pesados (caminhões, ônibus). "
-            "Consumo idle é proporcionalmente maior por cilindrada."
+            "Fonte: Edenred Mobilidade (BR) — 4 L/h para veículos pesados. Consumo idle é proporcionalmente maior por cilindrada."
         ),
         "idle_rate_gnv": "Taxa de consumo idle para veículos GNV, estimada por conversão energética equivalente.",
         "idle_rate_eletrico": "Consumo elétrico do sistema com veículo parado (ar condicionado, eletrônica). Estimativa — sem fonte oficial.",
@@ -1156,7 +1156,7 @@ _GLOSSARY: list[tuple[str, str, str]] = [
         "Consumo de combustível por segundo com o motor ligado e o veículo parado. "
         "É o quanto o motor consome enquanto está na fila ou aguardando a cancela.",
         "Parâmetro central para calcular o combustível economizado ao usar tag. "
-        "⚠️ Baseado em proxy U.S. DOE (2015) — sem dado oficial brasileiro público.",
+        "Baseado em referências brasileiras do setor (Edenred Mobilidade / Contele Rastreador).",
     ),
     (
         "Baseline (Tempo médio sem tag)",
