@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Bell, Car, ChevronRight, HelpCircle, History } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { EnumBadge } from "@/components/DataTable";
 import {
   Card,
   CardContent,
@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { USER_ROLE_LABELS } from "@/constants/current-user";
+import { USER_ROLE_LABELS, STATUS_LABELS } from "@/lib/enum-labels";
 import type { UserRole } from "@/features/auth/types";
 import { useCurrentUser } from "@/features/auth";
 import { useGetRawVehicles } from "@/features/users/hooks/useGetRawVehicles";
@@ -109,16 +109,14 @@ export const UserProfilePage = () => {
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Perfil</span>
-              <span>{USER_ROLE_LABELS[user.role]}</span>
+              <EnumBadge value={user.role} labels={USER_ROLE_LABELS} />
             </div>
 
             <Separator />
 
             <div className="flex justify-between">
               <span className="text-muted-foreground">Status</span>
-              <Badge variant={status === "active" ? "success" : "secondary"}>
-                {status === "active" ? "Ativo" : "Inativo"}
-              </Badge>
+              <EnumBadge value={status} labels={STATUS_LABELS} />
             </div>
 
             {user.role === "motorista" ? (

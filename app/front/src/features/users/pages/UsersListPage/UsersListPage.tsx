@@ -14,12 +14,13 @@ import {
   parseAsStringEnum,
   useQueryStates,
 } from "nuqs";
-import { Badge } from "@/components/ui/badge";
-import { getToastErrorMessage } from "@/lib/api-error";
-import { Button } from "@/components/ui/button";
+import { DataTable, entityIdColumn, EnumBadge, RelatedEntityCell } from "@/components/DataTable";
+import { PageLayout } from "@/components/layout/PageLayout";
 import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
 import { FormField } from "@/components/form/FormField";
-import { useFilterDraft } from "@/hooks/useFilterDraft";
+import { OrganizationsRelationSelect } from "@/components/form/relation-selects";
+import { ActionHintPopover } from "@/components/ActionHintPopover";
+import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import {
   Select,
   SelectContent,
@@ -27,19 +28,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { OrganizationsRelationSelect } from "@/components/form/relation-selects";
-import { ActionHintPopover } from "@/components/ActionHintPopover";
-import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
-import { DataTable, entityIdColumn } from "@/components/DataTable";
-import { PageLayout } from "@/components/layout/PageLayout";
+import { Button } from "@/components/ui/button";
+import { getToastErrorMessage } from "@/lib/api-error";
+import { useFilterDraft } from "@/hooks/useFilterDraft";
 import { PAGE_SIZE } from "@/constants";
 import { useCurrentUser } from "@/features/auth";
+import { useOrganizationNameMap } from "@/hooks/useOrganizationNameMap";
 import type { User } from "../../api/types";
 import { USER_ROLE_LABELS, USER_ROLE_OPTIONS } from "../../constants";
 import { useGetUsersFiltered } from "../../hooks/useGetUsersFiltered";
 import { useDeleteUser } from "../../hooks/useUpdateUser";
 
-const columns = (onDelete: (user: User) => void, onEdit: (user: User) => void): ColumnDef<User>[] => [
+const columns = (
+  onDelete: (user: User) => void,
+  onEdit: (user: User) => void,
+  orgNameMap: Map<number, string>,
+): ColumnDef<User>[] => [
   entityIdColumn<User>(),
   {
     accessorKey: "name",
@@ -56,14 +60,19 @@ const columns = (onDelete: (user: User) => void, onEdit: (user: User) => void): 
     header: "Perfil",
     enableSorting: true,
     cell: ({ row }) => (
-      <Badge variant="outline">{USER_ROLE_LABELS[row.original.role]}</Badge>
+      <EnumBadge value={row.original.role} labels={USER_ROLE_LABELS} />
     ),
   },
   {
     accessorKey: "organization_id",
     header: "Organização",
     enableSorting: true,
-    cell: ({ row }) => row.original.organization_id ?? "—",
+    cell: ({ row }) => (
+      <RelatedEntityCell
+        id={row.original.organization_id}
+        labelMap={orgNameMap}
+      />
+    ),
   },
   {
     id: "actions",
@@ -118,6 +127,7 @@ export const UsersListPage = () => {
   const [userToEdit, setUserToEdit] = useState<User | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const { mutate: deleteUser, isPending: isDeleting } = useDeleteUser();
+  const orgNameMap = useOrganizationNameMap();
 
   const pagination: PaginationState = {
     pageIndex: page - 1,
@@ -262,7 +272,7 @@ export const UsersListPage = () => {
           </section>
 
           <DataTable
-            columns={columns(setUserToDelete, setUserToEdit)}
+            columns={columns(setUserToDelete, setUserToEdit, orgNameMap)}
             data={data?.items ?? []}
             isLoading={isLoading}
             pageCount={pageCount}

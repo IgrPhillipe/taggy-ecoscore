@@ -18,9 +18,24 @@ import { TRANSACTION_MODAL_FILTER_DEFAULTS } from "@/components/TransactionFilte
 import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
 import { FormField } from "@/components/form/FormField";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useEntityLabelMap } from "@/hooks/useEntityLabelMap";
 import { useFilterDraft } from "@/hooks/useFilterDraft";
+import { useOrganizationNameMap } from "@/hooks/useOrganizationNameMap";
 import { PAGE_SIZE } from "@/constants";
 import { useCurrentUser } from "@/features/auth";
+import { getVehicle } from "@/features/fleet/api/requests";
+import { vehicleKeys } from "@/features/fleet/api/query-keys";
+import { getUserById } from "@/features/users/api/requests";
+import { userQueryKeys } from "@/features/users/api/query-keys";
+import {
+  transactionContextColumn,
+  transactionDigitalColumn,
+  transactionOrganizationColumn,
+  transactionPlateColumn,
+  transactionUfColumn,
+  transactionUserColumn,
+  transactionVehicleColumn,
+} from "@/features/transactions/lib/transaction-table-columns";
 import { ExportButton } from "@/features/reports/components/ExportButton";
 import { transactionActionsColumn } from "@/features/reports/components/transaction-audit-action-column";
 import { buildTransactionListExportUrl } from "@/features/reports/lib/export-urls";
@@ -34,78 +49,60 @@ const formatNumber = (value: number | null, digits = 2) =>
 const formatDateTime = (value: string) =>
   new Date(value).toLocaleString("pt-BR");
 
-const baseColumns: ColumnDef<Transaction>[] = [
-  entityIdColumn<Transaction>(),
-  {
-    accessorKey: "created_at",
-    header: "Data",
-    cell: ({ row }) => formatDateTime(row.original.created_at),
-  },
-  {
-    accessorKey: "plate",
-    header: "Placa",
-    cell: ({ row }) => row.original.plate ?? "—",
-  },
-  { accessorKey: "context", header: "Contexto" },
-  {
-    accessorKey: "uf",
-    header: "UF",
-    cell: ({ row }) => row.original.uf ?? "—",
-  },
-  {
-    accessorKey: "is_digital",
-    header: "Digital",
-    cell: ({ row }) => (row.original.is_digital ? "Sim" : "Não"),
-  },
-  {
-    accessorKey: "elapsed_time_sec",
-    header: "Tempo (s)",
-    cell: ({ row }) => formatNumber(row.original.elapsed_time_sec, 0),
-  },
-  {
-    accessorKey: "co2_avoided_kg",
-    header: "CO₂ (kg)",
-    cell: ({ row }) => formatNumber(row.original.co2_avoided_kg, 3),
-  },
-  {
-    accessorKey: "fuel_saved_liters",
-    header: "Comb. (L)",
-    cell: ({ row }) => formatNumber(row.original.fuel_saved_liters, 3),
-  },
-  {
-    accessorKey: "time_saved_sec",
-    header: "Tempo econ. (s)",
-    cell: ({ row }) => formatNumber(row.original.time_saved_sec, 0),
-  },
-  {
-    accessorKey: "financial_savings_brl",
-    header: "Economia (R$)",
-    cell: ({ row }) =>
-      row.original.financial_savings_brl != null
-        ? `R$ ${row.original.financial_savings_brl.toFixed(2)}`
-        : "—",
-  },
-  {
-    accessorKey: "water_saved_liters",
-    header: "Água (L)",
-    cell: ({ row }) => formatNumber(row.original.water_saved_liters, 2),
-  },
-  {
-    accessorKey: "user_id",
-    header: "User ID",
-    cell: ({ row }) => row.original.user_id ?? "—",
-  },
-  {
-    accessorKey: "vehicle_id",
-    header: "Veículo ID",
-    cell: ({ row }) => row.original.vehicle_id ?? "—",
-  },
-  {
-    accessorKey: "organization_id",
-    header: "Org ID",
-    cell: ({ row }) => row.original.organization_id ?? "—",
-  },
-];
+function buildAuditColumns(
+  orgNameMap: Map<number, string>,
+  userNameMap: Map<number, string>,
+  vehicleLabelMap: Map<number, string>,
+): ColumnDef<Transaction>[] {
+  return [
+    entityIdColumn<Transaction>(),
+    {
+      accessorKey: "created_at",
+      header: "Data",
+      cell: ({ row }) => formatDateTime(row.original.created_at),
+    },
+    transactionPlateColumn<Transaction>("Placa"),
+    transactionContextColumn<Transaction>("Contexto"),
+    transactionUfColumn<Transaction>(),
+    transactionDigitalColumn<Transaction>(),
+    {
+      accessorKey: "elapsed_time_sec",
+      header: "Tempo (s)",
+      cell: ({ row }) => formatNumber(row.original.elapsed_time_sec, 0),
+    },
+    {
+      accessorKey: "co2_avoided_kg",
+      header: "CO₂ (kg)",
+      cell: ({ row }) => formatNumber(row.original.co2_avoided_kg, 3),
+    },
+    {
+      accessorKey: "fuel_saved_liters",
+      header: "Comb. (L)",
+      cell: ({ row }) => formatNumber(row.original.fuel_saved_liters, 3),
+    },
+    {
+      accessorKey: "time_saved_sec",
+      header: "Tempo econ. (s)",
+      cell: ({ row }) => formatNumber(row.original.time_saved_sec, 0),
+    },
+    {
+      accessorKey: "financial_savings_brl",
+      header: "Economia (R$)",
+      cell: ({ row }) =>
+        row.original.financial_savings_brl != null
+          ? `R$ ${row.original.financial_savings_brl.toFixed(2)}`
+          : "—",
+    },
+    {
+      accessorKey: "water_saved_liters",
+      header: "Água (L)",
+      cell: ({ row }) => formatNumber(row.original.water_saved_liters, 2),
+    },
+    transactionUserColumn<Transaction>(userNameMap),
+    transactionVehicleColumn<Transaction>(vehicleLabelMap),
+    transactionOrganizationColumn<Transaction>(orgNameMap),
+  ];
+}
 
 const auditSearchParams = {
   page: parseAsInteger.withDefault(1),
@@ -137,20 +134,6 @@ export const TransactionsAuditPage = () => {
   const [detailTransaction, setDetailTransaction] =
     useState<Transaction | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
-
-  const columns = useMemo(
-    () => [
-      ...baseColumns,
-      transactionActionsColumn<Transaction>({
-        onViewDetails: (transaction) => {
-          setSelectedTransaction(transaction);
-          setDetailTransaction(transaction);
-          setDetailsOpen(true);
-        },
-      }),
-    ],
-    [],
-  );
 
   const appliedAuditFilters: AuditModalFilterState = {
     context: filters.context,
@@ -214,6 +197,35 @@ export const TransactionsAuditPage = () => {
       ? format(filters.dateRange.to, "yyyy-MM-dd")
       : undefined,
   });
+
+  const orgNameMap = useOrganizationNameMap();
+  const items = data?.items ?? [];
+  const userNameMap = useEntityLabelMap(
+    items.map((item) => item.user_id),
+    userQueryKeys.detail,
+    getUserById,
+    (user) => user.name,
+  );
+  const vehicleLabelMap = useEntityLabelMap(
+    items.map((item) => item.vehicle_id),
+    vehicleKeys.detail,
+    getVehicle,
+    (vehicle) => vehicle.license_plate || `#${vehicle.id}`,
+  );
+
+  const columns = useMemo(() => {
+    const base = buildAuditColumns(orgNameMap, userNameMap, vehicleLabelMap);
+    return [
+      ...base,
+      transactionActionsColumn<Transaction>({
+        onViewDetails: (transaction) => {
+          setSelectedTransaction(transaction);
+          setDetailTransaction(transaction);
+          setDetailsOpen(true);
+        },
+      }),
+    ];
+  }, [orgNameMap, userNameMap, vehicleLabelMap]);
 
   const pagination: PaginationState = {
     pageIndex: page - 1,

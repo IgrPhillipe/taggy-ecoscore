@@ -28,6 +28,7 @@ export function joinUsersWithVehicles(
       vehicleTag: vehicle.id_tag,
       isFleetLinked,
       fleetOrganizationId: isFleetLinked ? vehicle.organization_id : null,
+      fleetId: isFleetLinked ? (vehicle.fleet_id ?? null) : null,
     };
   });
 }

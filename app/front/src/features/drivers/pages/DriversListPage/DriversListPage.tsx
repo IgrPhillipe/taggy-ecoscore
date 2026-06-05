@@ -31,6 +31,8 @@ import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { PAGE_SIZE } from "@/constants";
 import { useCurrentUser } from "@/features/auth";
+import { useOrganizationNameMap } from "@/hooks/useOrganizationNameMap";
+import { useFleetNameMap } from "@/hooks/useFleetNameMap";
 import type { UserWithVehicle } from "@/features/users/api/types";
 import { useDeleteUser } from "@/features/users/hooks/useUpdateUser";
 import { useGetDrivers } from "../../hooks/useGetDrivers";
@@ -40,6 +42,8 @@ import { buildDriverListExportUrl } from "@/features/reports/lib/export-urls";
 const columns = (
   onDelete: (driver: UserWithVehicle) => void,
   onEdit: (driver: UserWithVehicle) => void,
+  orgNameMap: Map<number, string>,
+  fleetNameMap: Map<number, string>,
 ): ColumnDef<UserWithVehicle>[] => [
   entityIdColumn<UserWithVehicle>(),
   {
@@ -67,10 +71,17 @@ const columns = (
       row.isFleetLinked ? String(row.fleetOrganizationId ?? "") : "individual",
     cell: ({ row }) => {
       const driver = row.original;
-      if (driver.isFleetLinked && driver.fleetOrganizationId != null) {
-        return (
-          <Badge variant="outline">Frota {driver.fleetOrganizationId}</Badge>
-        );
+      if (driver.isFleetLinked) {
+        const fleetName =
+          driver.fleetId != null
+            ? fleetNameMap.get(driver.fleetId) ?? `#${driver.fleetId}`
+            : driver.fleetOrganizationId != null
+              ? orgNameMap.get(driver.fleetOrganizationId) ??
+                `#${driver.fleetOrganizationId}`
+              : null;
+        if (fleetName) {
+          return <Badge variant="outline">{fleetName}</Badge>;
+        }
       }
       return "";
     },
@@ -142,6 +153,16 @@ export const DriversListPage = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const { mutate: deleteDriver, isPending: isDeleting } = useDeleteUser();
 
+  const scopedOrgId =
+    user?.role === "gestor_frota"
+      ? (user.organization_id ?? undefined)
+      : isAdmin
+        ? (org ?? undefined)
+        : undefined;
+
+  const orgNameMap = useOrganizationNameMap();
+  const fleetNameMap = useFleetNameMap(scopedOrgId);
+
   const pagination: PaginationState = {
     pageIndex: page - 1,
     pageSize: PAGE_SIZE,
@@ -149,13 +170,6 @@ export const DriversListPage = () => {
   const sorting: SortingState = sort
     ? [{ id: sort, desc: order === "desc" }]
     : [];
-
-  const scopedOrgId =
-    user?.role === "gestor_frota"
-      ? (user.organization_id ?? undefined)
-      : isAdmin
-        ? (org ?? undefined)
-        : undefined;
 
   const { data, isLoading, isError, error } = useGetDrivers({
     page,
@@ -296,7 +310,7 @@ export const DriversListPage = () => {
           </section>
 
           <DataTable
-            columns={columns(setDriverToDelete, setDriverToEdit)}
+            columns={columns(setDriverToDelete, setDriverToEdit, orgNameMap, fleetNameMap)}
             data={data?.items ?? []}
             isLoading={isLoading}
             pageCount={pageCount}

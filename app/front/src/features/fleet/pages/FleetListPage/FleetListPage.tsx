@@ -22,12 +22,15 @@ import {
   OrganizationsRelationSelect,
 } from "@/components/form/relation-selects";
 import { Button } from "@/components/ui/button";
-import { DataTable, entityIdColumn } from "@/components/DataTable";
+import { DataTable, entityIdColumn, EnumBadge, RelatedEntityCell } from "@/components/DataTable";
 import { FilterSelect } from "@/components/ui/FilterSelect";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useFilterDraft } from "@/hooks/useFilterDraft";
+import { useFleetNameMap } from "@/hooks/useFleetNameMap";
+import { useOrganizationNameMap } from "@/hooks/useOrganizationNameMap";
 import { PAGE_SIZE } from "@/constants";
 import { FUEL_TYPE_OPTIONS } from "@/features/dashboard/constants";
+import { FUEL_TYPE_LABELS, VEHICLE_CATEGORY_LABELS } from "@/lib/enum-labels";
 import { useCurrentUser } from "@/features/auth";
 import { useGetVehicles } from "../../hooks/useGetVehicles";
 import { useDeleteVehicle } from "../../hooks/useDeleteVehicle";
@@ -113,6 +116,9 @@ export const FleetListPage = () => {
         ? (org ?? undefined)
         : undefined;
 
+  const orgNameMap = useOrganizationNameMap();
+  const fleetNameMap = useFleetNameMap(scopedOrgId);
+
   const semFrotaParam =
     isAdmin && sem_frota === "yes" ? true : isAdmin && sem_frota === "no" ? false : undefined;
 
@@ -183,13 +189,43 @@ export const FleetListPage = () => {
     { accessorKey: "id_tag", header: "TAG ID", enableSorting: true },
     { accessorKey: "license_plate", header: "PLACA", enableSorting: true },
     { accessorKey: "model", header: "MODELO", enableSorting: true },
-    { accessorKey: "fuel_type", header: "TIPO DE COMBUSTÍVEL", enableSorting: true },
+    {
+      accessorKey: "organization_id",
+      header: "ORGANIZAÇÃO",
+      enableSorting: true,
+      cell: ({ row }) => (
+        <RelatedEntityCell
+          id={row.original.organization_id}
+          labelMap={orgNameMap}
+        />
+      ),
+    },
+    {
+      accessorKey: "fleet_id",
+      header: "FROTA",
+      enableSorting: true,
+      cell: ({ row }) => (
+        <RelatedEntityCell id={row.original.fleet_id} labelMap={fleetNameMap} />
+      ),
+    },
+    {
+      accessorKey: "fuel_type",
+      header: "TIPO DE COMBUSTÍVEL",
+      enableSorting: true,
+      cell: ({ row }) => (
+        <EnumBadge value={row.original.fuel_type} labels={FUEL_TYPE_LABELS} />
+      ),
+    },
     {
       accessorKey: "category",
       header: "CATEGORIA",
       enableSorting: true,
-      cell: ({ row }) =>
-        row.original.category === "pesado" ? "Pesado" : "Leve",
+      cell: ({ row }) => (
+        <EnumBadge
+          value={row.original.category}
+          labels={VEHICLE_CATEGORY_LABELS}
+        />
+      ),
     },
     {
       id: "actions",

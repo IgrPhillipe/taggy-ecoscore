@@ -8,6 +8,8 @@ import {
   Leaf,
   Scroll,
 } from "lucide-react";
+import { BooleanBadge, EnumBadge, RelatedEntityCell } from "@/components/DataTable";
+import { DetailInfoRow } from "@/components/DetailInfoRow";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -27,16 +29,18 @@ import {
   KPI_ICON_SIZE,
   KPI_TITLES,
 } from "@/features/sustainability/lib/kpi";
+import { getVehicle } from "@/features/fleet/api/requests";
+import { vehicleKeys } from "@/features/fleet/api/query-keys";
+import { getUserById } from "@/features/users/api/requests";
+import { userQueryKeys } from "@/features/users/api/query-keys";
+import { useEntityLabelMap } from "@/hooks/useEntityLabelMap";
+import { useOrganizationNameMap } from "@/hooks/useOrganizationNameMap";
+import { TRANSACTION_CONTEXT_LABELS } from "@/lib/enum-labels";
 import type { CalcComparisonSide, CalcResult, Transaction } from "../../api/types";
 import {
   getCalcResultFromSnapshot,
   getSnapshotForDisplay,
 } from "./parse-transaction-snapshot";
-
-const CONTEXT_LABELS: Record<string, string> = {
-  pedagio: "Pedágio",
-  estacionamento: "Estacionamento",
-};
 
 type PricingSnapshot = {
   fuel_price_brl_per_unit?: number;
@@ -45,10 +49,7 @@ type PricingSnapshot = {
 };
 
 const InfoRow = ({ label, value }: { label: string; value: ReactNode }) => (
-  <div className="flex justify-between border-b border-neutral-100 py-2 text-sm last:border-0">
-    <span className="text-neutral-500">{label}</span>
-    <span className="font-medium text-neutral-900">{value ?? "—"}</span>
-  </div>
+  <DetailInfoRow label={label} value={value} />
 );
 
 function formatDuration(sec: number | null | undefined): string {
@@ -114,6 +115,19 @@ export function TransactionDetailsPanel({
   technicalJson,
 }: TransactionDetailsPanelProps) {
   const [showSnapshot, setShowSnapshot] = useState(false);
+  const orgNameMap = useOrganizationNameMap();
+  const userNameMap = useEntityLabelMap(
+    [transaction.user_id],
+    userQueryKeys.detail,
+    getUserById,
+    (user) => user.name,
+  );
+  const vehicleLabelMap = useEntityLabelMap(
+    [transaction.vehicle_id],
+    vehicleKeys.detail,
+    getVehicle,
+    (vehicle) => vehicle.license_plate || `#${vehicle.id}`,
+  );
   const result =
     resultProp ?? getCalcResultFromSnapshot(transaction.parameters_snapshot);
   const snapshot = getSnapshotForDisplay(transaction);
@@ -159,6 +173,9 @@ export function TransactionDetailsPanel({
   const fuelUnit = env.fuel_unit ?? "L";
   const pricing = meta.pricing_snapshot as PricingSnapshot | undefined;
 
+  const contextValue = meta.context ?? transaction.context;
+  const ufValue = meta.uf_passagem ?? transaction.uf;
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
@@ -194,13 +211,59 @@ export function TransactionDetailsPanel({
         <InfoRow
           label="Contexto"
           value={
-            meta.context
-              ? (CONTEXT_LABELS[meta.context] ?? meta.context)
-              : (CONTEXT_LABELS[transaction.context] ?? transaction.context)
+            <EnumBadge
+              value={contextValue}
+              labels={TRANSACTION_CONTEXT_LABELS}
+            />
           }
         />
-        <InfoRow label="UF" value={meta.uf_passagem ?? transaction.uf} />
-        <InfoRow label="Digital" value={transaction.is_digital ? "Sim" : "Não"} />
+        <InfoRow
+          label="UF"
+          value={
+            ufValue ? (
+              <EnumBadge value={ufValue} labels={{}} />
+            ) : (
+              "—"
+            )
+          }
+        />
+        <InfoRow
+          label="Digital"
+          value={<BooleanBadge value={transaction.is_digital} />}
+        />
+        {transaction.user_id != null ? (
+          <InfoRow
+            label="Usuário"
+            value={
+              <RelatedEntityCell
+                id={transaction.user_id}
+                labelMap={userNameMap}
+              />
+            }
+          />
+        ) : null}
+        {transaction.vehicle_id != null ? (
+          <InfoRow
+            label="Veículo"
+            value={
+              <RelatedEntityCell
+                id={transaction.vehicle_id}
+                labelMap={vehicleLabelMap}
+              />
+            }
+          />
+        ) : null}
+        {transaction.organization_id != null ? (
+          <InfoRow
+            label="Organização"
+            value={
+              <RelatedEntityCell
+                id={transaction.organization_id}
+                labelMap={orgNameMap}
+              />
+            }
+          />
+        ) : null}
         <InfoRow
           label="Tempo economizado"
           value={formatDuration(meta.time_saved_sec)}

@@ -12,20 +12,14 @@ import {
   formatKpiCo2,
   formatKpiCurrency,
 } from "@/features/sustainability/lib/kpi";
+import { EnumBadge } from "@/components/DataTable";
+import {
+  FUEL_TYPE_LABELS,
+  VEHICLE_CATEGORY_LABELS,
+} from "@/lib/enum-labels";
 import type { PublicCalculatorResponse } from "../api/types";
 
-const FUEL_TYPE_LABELS: Record<string, string> = {
-  gasolina_c: "Gasolina",
-  diesel_s10: "Diesel",
-  etanol: "Etanol",
-  gnv: "GNV",
-  eletrico: "Elétrico",
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  leve: "Leve",
-  pesado: "Pesado",
-};
+const CATEGORY_LABELS = VEHICLE_CATEGORY_LABELS;
 
 interface Props {
   result: PublicCalculatorResponse;
@@ -80,9 +74,13 @@ export function CalculatorResults({ result, onReset }: Props) {
     fallback_reason,
   } = result;
 
-  const vehicleLabel = vehicle_model
-    ? `${vehicle_model} · ${FUEL_TYPE_LABELS[fuel_type] ?? fuel_type} · ${CATEGORY_LABELS[category] ?? category}`
-    : `${FUEL_TYPE_LABELS[fuel_type] ?? fuel_type} · ${CATEGORY_LABELS[category] ?? category}`;
+  const vehicleLabel = vehicle_fallback ? null : (
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      {vehicle_model ? <span>{vehicle_model}</span> : null}
+      <EnumBadge value={fuel_type} labels={FUEL_TYPE_LABELS} />
+      <EnumBadge value={category} labels={CATEGORY_LABELS} />
+    </span>
+  );
 
   return (
     <div className="space-y-5">
@@ -97,9 +95,13 @@ export function CalculatorResults({ result, onReset }: Props) {
 
       <div className="rounded-xl border border-emerald-200 bg-emerald-600 p-5 text-white space-y-1">
         <p className="text-sm font-medium text-emerald-100">
-          {vehicle_fallback
-            ? "Estimativa de economia mensal"
-            : `Economia mensal · ${vehicleLabel}`}
+          {vehicle_fallback ? (
+            "Estimativa de economia mensal"
+          ) : (
+            <>
+              Economia mensal · {vehicleLabel}
+            </>
+          )}
         </p>
         <p className="text-4xl font-bold tracking-tight">
           {formatKpiCurrency(monthly.financial_brl)}

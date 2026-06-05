@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
-import { DataTable, entityIdColumn } from "@/components/DataTable";
+import { DataTable, entityIdColumn, EnumBadge } from "@/components/DataTable";
 import { PageBackLink, PageLayout } from "@/components/layout/PageLayout";
 import { FilterInput } from "@/components/ui/FilterInput";
 import { Button } from "@/components/ui/button";
@@ -51,12 +51,20 @@ import {
   useUnlinkOrganizationUser,
   useUpdateOrganization,
 } from "../../hooks/useOrganizationMutations";
+import { USER_ROLE_LABELS } from "@/lib/enum-labels";
 
 const makeUserColumns = (onUnlink: (user: User) => void): ColumnDef<User>[] => [
   entityIdColumn<User>(),
   { accessorKey: "name", header: "NOME", enableSorting: true },
   { accessorKey: "email", header: "E-MAIL", enableSorting: true },
-  { accessorKey: "role", header: "FUNÇÃO", enableSorting: true },
+  {
+    accessorKey: "role",
+    header: "FUNÇÃO",
+    enableSorting: true,
+    cell: ({ row }) => (
+      <EnumBadge value={row.original.role} labels={USER_ROLE_LABELS} />
+    ),
+  },
   {
     id: "actions",
     header: "AÇÕES",

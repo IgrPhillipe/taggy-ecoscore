@@ -5,6 +5,7 @@ export type RawVehicle = {
   id_tag: string;
   user_id: number;
   organization_id: number | null;
+  fleet_id?: number | null;
   assigned_driver_id: number | null;
   license_plate: string;
   model: string;

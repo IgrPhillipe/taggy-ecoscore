@@ -4,7 +4,8 @@ import { Coins, Fuel, Leaf, Scroll, Ticket } from "lucide-react";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { DriverFormDialog } from "../../components/DriverFormDialog/DriverFormDialog";
-import { DataTable, entityIdColumn } from "@/components/DataTable";
+import { DataTable, entityIdColumn, EnumBadge, RelatedEntityCell } from "@/components/DataTable";
+import { DetailInfoRow } from "@/components/DetailInfoRow";
 import { PageBackLink, PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { PAGE_SIZE } from "@/constants";
@@ -37,6 +38,13 @@ import { transactionActionsColumn } from "@/features/reports/components/transact
 import { TransactionDetailsDialog } from "@/features/transactions/components/TransactionDetails";
 import type { Transaction } from "@/features/transactions/api/types";
 import { vehicleTransactionToTransaction } from "@/features/transactions/lib/vehicle-transaction-to-transaction";
+import {
+  transactionContextColumn,
+  transactionPlateColumn,
+  transactionUfColumn,
+} from "@/features/transactions/lib/transaction-table-columns";
+import { USER_ROLE_LABELS } from "@/lib/enum-labels";
+import { useOrganizationNameMap } from "@/hooks/useOrganizationNameMap";
 
 type DriverDetailPageProps = {
   driverId: number;
@@ -53,13 +61,9 @@ type UserStats = {
 
 const baseTransactionColumns: ColumnDef<VehicleTransaction>[] = [
   entityIdColumn<VehicleTransaction>(),
-  {
-    accessorKey: "plate",
-    header: "PLACA",
-    cell: ({ row }) => row.original.plate ?? "—",
-  },
-  { accessorKey: "context", header: "CONTEXTO" },
-  { accessorKey: "uf", header: "UF", cell: ({ row }) => row.original.uf ?? "—" },
+  transactionPlateColumn<VehicleTransaction>(),
+  transactionContextColumn<VehicleTransaction>(),
+  transactionUfColumn<VehicleTransaction>(),
   {
     accessorKey: "co2_avoided_kg",
     header: "CO₂ Evitado (kg)",
@@ -83,18 +87,7 @@ const baseTransactionColumns: ColumnDef<VehicleTransaction>[] = [
   },
 ];
 
-const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
-  <div className="flex justify-between border-b border-neutral-100 py-2 text-sm last:border-0">
-    <span className="text-neutral-500">{label}</span>
-    <span className="font-medium text-neutral-900">{value ?? "—"}</span>
-  </div>
-);
-
-const roleLabels: Record<string, string> = {
-  motorista: "Motorista",
-  gestor_frota: "Gestor de Frota",
-  admin: "Administrador",
-};
+const InfoRow = DetailInfoRow;
 
 export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
   const [txPage, setTxPage] = useState(1);
@@ -106,6 +99,7 @@ export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
   const [editOpen, setEditOpen] = useState(false);
   const [detailTx, setDetailTx] = useState<Transaction | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const orgNameMap = useOrganizationNameMap();
 
   const transactionColumns = useMemo(
     () => [
@@ -193,8 +187,23 @@ export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
         <InfoRow label="E-mail" value={driver?.email} />
         <InfoRow
           label="Função"
-          value={driver?.role ? roleLabels[driver.role] ?? driver.role : undefined}
+          value={
+            driver?.role ? (
+              <EnumBadge value={driver.role} labels={USER_ROLE_LABELS} />
+            ) : undefined
+          }
         />
+        {driver?.organization_id != null ? (
+          <InfoRow
+            label="Organização"
+            value={
+              <RelatedEntityCell
+                id={driver.organization_id}
+                labelMap={orgNameMap}
+              />
+            }
+          />
+        ) : null}
         <div className="mt-3 flex justify-end">
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             Editar motorista

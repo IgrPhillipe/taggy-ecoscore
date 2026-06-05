@@ -3,10 +3,13 @@ import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-tab
 import { Clock, Coins, Fuel, Leaf, Scroll, Ticket } from "lucide-react";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
-import { DataTable, entityIdColumn } from "@/components/DataTable";
+import { DataTable, entityIdColumn, EnumBadge, RelatedEntityCell } from "@/components/DataTable";
+import { DetailInfoRow } from "@/components/DetailInfoRow";
 import { PageBackLink, PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { PAGE_SIZE } from "@/constants";
+import { useFleetNameMap } from "@/hooks/useFleetNameMap";
+import { useOrganizationNameMap } from "@/hooks/useOrganizationNameMap";
 import { KpiCard, SectionCard } from "@/features/sustainability/components/MetricCard";
 import {
   formatEnvironmentalFinancial,
@@ -27,7 +30,12 @@ import { getVehicle, getVehicleTransactionsFiltered, getVehicleSummary } from ".
 import { vehicleKeys } from "../../api/query-keys";
 import type { VehicleTransaction } from "../../api/types";
 import { VehicleFormDialog } from "../../components/VehicleFormDialog/VehicleFormDialog";
-import { VEHICLE_CATEGORY_LABELS } from "../../constants";
+import {
+  transactionContextColumn,
+  transactionPlateColumn,
+  transactionUfColumn,
+} from "@/features/transactions/lib/transaction-table-columns";
+import { FUEL_TYPE_LABELS, VEHICLE_CATEGORY_LABELS } from "@/lib/enum-labels";
 import { ExportButton } from "@/features/reports/components/ExportButton";
 import { buildVehicleDetailExportUrl } from "@/features/reports/lib/export-urls";
 import { transactionActionsColumn } from "@/features/reports/components/transaction-audit-action-column";
@@ -41,13 +49,9 @@ type VehicleDetailPageProps = {
 
 const baseTransactionColumns: ColumnDef<VehicleTransaction>[] = [
   entityIdColumn<VehicleTransaction>(),
-  {
-    accessorKey: "plate",
-    header: "PLACA",
-    cell: ({ row }) => row.original.plate ?? "—",
-  },
-  { accessorKey: "context", header: "CONTEXTO" },
-  { accessorKey: "uf", header: "UF", cell: ({ row }) => row.original.uf ?? "—" },
+  transactionPlateColumn<VehicleTransaction>(),
+  transactionContextColumn<VehicleTransaction>(),
+  transactionUfColumn<VehicleTransaction>(),
   {
     accessorKey: "co2_avoided_kg",
     header: "CO₂ Evitado (kg)",
@@ -79,20 +83,11 @@ const baseTransactionColumns: ColumnDef<VehicleTransaction>[] = [
   },
 ];
 
-const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
-  <div className="flex justify-between border-b border-neutral-100 py-2 text-sm last:border-0">
-    <span className="text-neutral-500">{label}</span>
-    <span className="font-medium text-neutral-900">{value ?? "—"}</span>
-  </div>
-);
-
-const fuelLabels: Record<string, string> = {
-  diesel_s10: "Diesel S10",
-  gasolina_c: "Gasolina C",
-  etanol: "Etanol",
-};
+const InfoRow = DetailInfoRow;
 
 export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
+  const orgNameMap = useOrganizationNameMap();
+  const fleetNameMap = useFleetNameMap();
   const [txPage, setTxPage] = useState(1);
   const [txFilters, setTxFilters] = useState<TransactionFilterState>({});
   const [editOpen, setEditOpen] = useState(false);
@@ -164,7 +159,11 @@ export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
   return (
     <PageLayout
       title={vehicleLoading ? "Carregando…" : (vehicle?.model ?? "Veículo")}
-      description={vehicle ? `${vehicle.license_plate} · ${fuelLabels[vehicle.fuel_type] ?? vehicle.fuel_type}` : "Detalhes do veículo."}
+      description={
+        vehicle
+          ? `${vehicle.license_plate} · ${FUEL_TYPE_LABELS[vehicle.fuel_type] ?? vehicle.fuel_type}`
+          : "Detalhes do veículo."
+      }
       back={<PageBackLink to="/frota" label="Veículos" />}
       actions={
         <ExportButton
@@ -184,16 +183,42 @@ export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
         <InfoRow label="Modelo" value={vehicle?.model} />
         <InfoRow
           label="Combustível"
-          value={vehicle?.fuel_type ? fuelLabels[vehicle.fuel_type] ?? vehicle.fuel_type : undefined}
+          value={
+            vehicle?.fuel_type ? (
+              <EnumBadge value={vehicle.fuel_type} labels={FUEL_TYPE_LABELS} />
+            ) : undefined
+          }
         />
         <InfoRow
           label="Categoria"
           value={
-            vehicle?.category
-              ? VEHICLE_CATEGORY_LABELS[vehicle.category] ?? vehicle.category
-              : undefined
+            vehicle?.category ? (
+              <EnumBadge
+                value={vehicle.category}
+                labels={VEHICLE_CATEGORY_LABELS}
+              />
+            ) : undefined
           }
         />
+        {vehicle?.organization_id != null ? (
+          <InfoRow
+            label="Organização"
+            value={
+              <RelatedEntityCell
+                id={vehicle.organization_id}
+                labelMap={orgNameMap}
+              />
+            }
+          />
+        ) : null}
+        {vehicle?.fleet_id != null ? (
+          <InfoRow
+            label="Frota"
+            value={
+              <RelatedEntityCell id={vehicle.fleet_id} labelMap={fleetNameMap} />
+            }
+          />
+        ) : null}
         <InfoRow
           label="Autonomia média (km/L)"
           value={

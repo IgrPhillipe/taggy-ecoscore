@@ -18,12 +18,13 @@ import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
 import { FormField } from "@/components/form/FormField";
 import { OrganizationsRelationSelect } from "@/components/form/relation-selects";
-import { DataTable, entityIdColumn } from "@/components/DataTable";
+import { DataTable, entityIdColumn, RelatedEntityCell } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { FilterInput } from "@/components/ui/FilterInput";
 import { Button } from "@/components/ui/button";
 import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import { useFilterDraft } from "@/hooks/useFilterDraft";
+import { useOrganizationNameMap } from "@/hooks/useOrganizationNameMap";
 import {
   Dialog,
   DialogContent,
@@ -166,6 +167,7 @@ export const FleetsPage = () => {
   const createMutation = useCreateFleet();
   const updateMutation = useUpdateFleet();
   const deleteMutation = useDeleteFleet();
+  const orgNameMap = useOrganizationNameMap();
 
   const scopedOrgId =
     user?.role === "gestor_frota"
@@ -238,7 +240,12 @@ export const FleetsPage = () => {
       accessorKey: "organization_id",
       header: "Organização",
       enableSorting: true,
-      cell: ({ row }) => row.original.organization_id ?? "—",
+      cell: ({ row }) => (
+        <RelatedEntityCell
+          id={row.original.organization_id}
+          labelMap={orgNameMap}
+        />
+      ),
     },
     {
       accessorKey: "vehicle_count",

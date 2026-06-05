@@ -20,6 +20,7 @@ export type UserWithVehicle = User & {
   /** Veículo cadastrado na frota da organização (não motorista individual). */
   isFleetLinked?: boolean;
   fleetOrganizationId?: number | null;
+  fleetId?: number | null;
 };
 
 export type ListUsersParams = {

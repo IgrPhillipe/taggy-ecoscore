@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { EnumBadge } from "@/components/DataTable";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,6 +12,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { useCurrentUser } from "@/features/auth";
 import { useGetRawVehicles } from "@/features/users/hooks/useGetRawVehicles";
 import { findVehicleForUser } from "@/features/users/lib/join-users-with-vehicles";
+import { FUEL_TYPE_LABELS } from "@/lib/enum-labels";
 
 export const VehicleInfoPage = () => {
   const { user } = useCurrentUser();
@@ -49,7 +51,9 @@ export const VehicleInfoPage = () => {
               </div>
               <div className="flex justify-between">
                 <dt className="text-muted-foreground">Combustível</dt>
-                <dd className="font-medium">{vehicle.fuel_type}</dd>
+                <dd className="font-medium">
+                  <EnumBadge value={vehicle.fuel_type} labels={FUEL_TYPE_LABELS} />
+                </dd>
               </div>
             </dl>
           ) : (

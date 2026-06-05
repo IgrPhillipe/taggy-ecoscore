@@ -5,7 +5,7 @@ import { Car, Coins, Fuel, Leaf, Link2, Scroll, Ticket, Unlink, Users } from "lu
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
-import { DataTable, entityIdColumn } from "@/components/DataTable";
+import { DataTable, entityIdColumn, EnumBadge } from "@/components/DataTable";
 import { PageBackLink, PageLayout } from "@/components/layout/PageLayout";
 import { FilterModal } from "@/components/FilterModal";
 import { FilterInput } from "@/components/ui/FilterInput";
@@ -59,6 +59,15 @@ import { transactionActionsColumn } from "@/features/reports/components/transact
 import { TransactionDetailsDialog } from "@/features/transactions/components/TransactionDetails";
 import type { Transaction } from "@/features/transactions/api/types";
 import { vehicleTransactionToTransaction } from "@/features/transactions/lib/vehicle-transaction-to-transaction";
+import {
+  FUEL_TYPE_LABELS,
+  USER_ROLE_LABELS,
+} from "@/lib/enum-labels";
+import {
+  transactionContextColumn,
+  transactionPlateColumn,
+  transactionUfColumn,
+} from "@/features/transactions/lib/transaction-table-columns";
 
 type FleetDetailPageProps = {
   fleetId: number;
@@ -72,7 +81,14 @@ const makeVehicleColumns = (
   { accessorKey: "id_tag", header: "TAG ID", enableSorting: true },
   { accessorKey: "license_plate", header: "PLACA", enableSorting: true },
   { accessorKey: "model", header: "MODELO", enableSorting: true },
-  { accessorKey: "fuel_type", header: "COMBUSTÍVEL", enableSorting: true },
+  {
+    accessorKey: "fuel_type",
+    header: "COMBUSTÍVEL",
+    enableSorting: true,
+    cell: ({ row }) => (
+      <EnumBadge value={row.original.fuel_type} labels={FUEL_TYPE_LABELS} />
+    ),
+  },
   {
     id: "actions",
     header: "AÇÕES",
@@ -111,7 +127,14 @@ const makeDriverColumns = (
   entityIdColumn<User>(),
   { accessorKey: "name", header: "NOME", enableSorting: true },
   { accessorKey: "email", header: "E-MAIL", enableSorting: true },
-  { accessorKey: "role", header: "FUNÇÃO", enableSorting: true },
+  {
+    accessorKey: "role",
+    header: "FUNÇÃO",
+    enableSorting: true,
+    cell: ({ row }) => (
+      <EnumBadge value={row.original.role} labels={USER_ROLE_LABELS} />
+    ),
+  },
   {
     id: "actions",
     header: "AÇÕES",
@@ -133,9 +156,9 @@ const makeDriverColumns = (
 
 const baseTransactionColumns: ColumnDef<VehicleTransaction>[] = [
   entityIdColumn<VehicleTransaction>(),
-  { accessorKey: "plate", header: "PLACA", cell: ({ row }) => row.original.plate ?? "—" },
-  { accessorKey: "context", header: "CONTEXTO" },
-  { accessorKey: "uf", header: "UF", cell: ({ row }) => row.original.uf ?? "—" },
+  transactionPlateColumn<VehicleTransaction>(),
+  transactionContextColumn<VehicleTransaction>(),
+  transactionUfColumn<VehicleTransaction>(),
   {
     accessorKey: "financial_savings_brl",
     header: "ECONOMIA (R$)",
