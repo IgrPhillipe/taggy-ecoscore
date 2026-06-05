@@ -9,14 +9,6 @@ import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { FilterInput } from "@/components/ui/FilterInput";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
   createOrganization,
@@ -25,78 +17,10 @@ import {
   updateOrganization,
 } from "../../api/requests";
 import type { Organization } from "../../api/types";
-
-type OrgFormData = { name: string; cnpj: string };
-
-const defaultForm: OrgFormData = { name: "", cnpj: "" };
-
-const OrgFormDialog = ({
-  open,
-  onClose,
-  initial,
-  onSubmit,
-  title,
-}: {
-  open: boolean;
-  onClose: () => void;
-  initial?: OrgFormData;
-  onSubmit: (data: OrgFormData) => void;
-  title: string;
-}) => {
-  const [form, setForm] = useState<OrgFormData>(initial ?? defaultForm);
-
-  const handleChange = (field: keyof OrgFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    if (field === "cnpj") {
-      const digits = value.replace(/\D/g, "").slice(0, 14);
-      value = digits
-        .replace(/^(\d{2})(\d)/, "$1.$2")
-        .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-        .replace(/\.(\d{3})(\d)/, ".$1/$2")
-        .replace(/(\d{4})(\d)/, "$1-$2");
-    }
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="org-name">Nome *</Label>
-            <Input
-              id="org-name"
-              value={form.name}
-              onChange={handleChange("name")}
-              placeholder="Nome da organização"
-            />
-          </div>
-          <div>
-            <Label htmlFor="org-cnpj">CNPJ</Label>
-            <Input
-              id="org-cnpj"
-              value={form.cnpj}
-              onChange={handleChange("cnpj")}
-              placeholder="00.000.000/0000-00"
-            />
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button
-              onClick={() => { onSubmit(form); onClose(); }}
-              disabled={!form.name.trim()}
-            >
-              Salvar
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-};
+import {
+  OrgFormDialog,
+  type OrgFormData,
+} from "../../components/OrgFormDialog";
 
 export const OrganizationsPage = () => {
   const queryClient = useQueryClient();

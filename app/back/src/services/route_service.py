@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.dto.routes import PlaceRef, RouteAlternative, RouteSuggestResponse
 from src.engine import CalcEngine
+from src.errors import messages as err
 from src.repositories.fuel_prices_repository import FuelPricesRepository
 from src.repositories.taggy_places_repository import TaggyPlacesRepository
 from src.repositories.technical_specs_repository import TechnicalSpecsRepository
@@ -34,7 +35,7 @@ _DEFAULT_AUTONOMY_KM = 12.0
 def _mapbox_token() -> str:
     token = os.environ.get("MAPBOX_ACCESS_TOKEN", "")
     if not token:
-        raise RuntimeError("MAPBOX_ACCESS_TOKEN não configurado.")
+        raise RuntimeError(err.MAPBOX_NOT_CONFIGURED)
     return token
 
 
@@ -57,7 +58,7 @@ async def _geocode(text: str, proximity_lnglat: list[float] | None = None) -> li
         resp.raise_for_status()
     features = resp.json().get("features", [])
     if not features:
-        raise ValueError(f"Endereço não encontrado: {text!r}")
+        raise ValueError(f"Endereço não encontrado: {text}. Selecione uma sugestão da lista.")
     return features[0]["center"]  # [lng, lat]
 
 
@@ -303,7 +304,7 @@ async def suggest_routes(
     # ── 2. Get Mapbox routes ──────────────────────────────────────────────────
     mb_routes = await _directions(origin_coords, dest_coords)
     if not mb_routes:
-        raise ValueError("Nenhuma rota encontrada entre os pontos informados.")
+        raise ValueError(err.ROUTE_NOT_FOUND)
 
     # ── 3. Load vehicle + specs ───────────────────────────────────────────────
     vehicle_repo = VehicleRepository(db)

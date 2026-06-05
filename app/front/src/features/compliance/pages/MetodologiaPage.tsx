@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { AlertTriangle, Download, ExternalLink } from "lucide-react"
+import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser"
 import { PageLayout } from "@/components/layout/PageLayout"
 import { PageSectionHeader } from "@/components/layout/PageSectionHeader"
 import { Badge } from "@/components/ui/badge"
@@ -104,7 +105,12 @@ const ParamRow = ({ label, value, unit, source, year, warn }: ParamRowProps) => 
   </TableRow>
 )
 
+const _API_BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "")
+
 export const MetodologiaPage = () => {
+  const { user } = useCurrentUser()
+  const isAdmin = user?.role === "admin"
+
   const { data: specs } = useQuery({
     queryKey: ["tech-specs-public"],
     queryFn: async () => {
@@ -693,15 +699,24 @@ export const MetodologiaPage = () => {
                 Quer verificar o cálculo completo com fórmulas?
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Baixe a planilha auditável com premissas, passo a passo, análise de sensibilidade e projeção de escala.
+                Baixe a planilha auditável com glossário, premissas, passo a passo, análise de sensibilidade e projeção de escala.
               </p>
             </div>
-            <Button asChild>
-              <a href="/api/reports/calculadora.xlsx?plate=DEMO0001&elapsed_time=30&context=pedagio&uf=SP">
+            {isAdmin ? (
+              <Button
+                onClick={() => {
+                  const url = `${_API_BASE}/api/reports/calculadora.xlsx?plate=DEMO0001&elapsed_time=30&context=pedagio&uf=SP`
+                  window.open(url, "_blank")
+                }}
+              >
                 <Download />
                 Download da Planilha de Cálculo (XLSX)
-              </a>
-            </Button>
+              </Button>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Download disponível apenas para administradores.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

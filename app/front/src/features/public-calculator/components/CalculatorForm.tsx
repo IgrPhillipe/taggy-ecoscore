@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlateInput } from "@/components/ui/PlateInput";
+import { formFieldErrorId } from "@/components/form/FormField";
+import { fieldControlErrorClassName } from "@/lib/field-control";
+import { isValidPlate } from "@/lib/plate-utils";
+import { cn } from "@/lib/utils";
 import type { PublicCalculatorRequest } from "../api/types";
 
 interface Props {
@@ -13,13 +17,17 @@ interface Props {
 
 export function CalculatorForm({ onSubmit, isLoading }: Props) {
   const [plate, setPlate] = useState("");
+  const [plateError, setPlateError] = useState<string | undefined>();
   const [pedagio, setPedagio] = useState(8);
   const [uf, setUf] = useState("SP");
   const [estac, setEstac] = useState(0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!plate.trim()) return;
+    if (!isValidPlate(plate)) {
+      setPlateError("Placa inválida");
+      return;
+    }
     onSubmit({
       plate: plate.trim(),
       monthly_pedagio: pedagio,
@@ -38,11 +46,24 @@ export function CalculatorForm({ onSubmit, isLoading }: Props) {
         <PlateInput
           id="plate"
           value={plate}
-          onChange={setPlate}
+          onChange={(value) => {
+            setPlateError(undefined);
+            setPlate(value);
+          }}
           placeholder="ABC-1234"
-          className="text-lg font-mono tracking-widest text-center h-12"
+          className={cn(
+            "text-lg font-mono tracking-widest text-center h-12",
+            plateError && fieldControlErrorClassName,
+          )}
+          aria-invalid={!!plateError}
+          aria-describedby={plateError ? formFieldErrorId("plate") : undefined}
           required
         />
+        {plateError ? (
+          <p id={formFieldErrorId("plate")} className="text-xs text-destructive">
+            {plateError}
+          </p>
+        ) : null}
         <p className="text-xs text-neutral-500">
           Usamos a placa para identificar o tipo de veículo e combustível.
         </p>
@@ -110,7 +131,7 @@ export function CalculatorForm({ onSubmit, isLoading }: Props) {
 
       <Button
         type="submit"
-        disabled={!plate.trim() || isLoading}
+        disabled={!isValidPlate(plate) || isLoading}
         className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-base"
       >
         {isLoading ? "Calculando..." : "Calcular minha economia"}

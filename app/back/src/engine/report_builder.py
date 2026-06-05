@@ -8,6 +8,8 @@ from __future__ import annotations
 import io
 from typing import Any, Dict
 
+from src.constants.ludic_metaphors import METAPHOR_IDS_ORDER, METAPHOR_LABELS, METAPHOR_SOURCES
+
 try:
     import openpyxl
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -67,6 +69,16 @@ def _cell(ws: "Worksheet", row: int, col: int, value, *,
     c.alignment = Alignment(wrap_text=wrap, vertical="top")
     return c
 
+
+# ── Source URLs — hyperlinks para a coluna Fonte na aba Premissas ─────────────
+_SOURCE_URLS: dict[str, str] = {
+    "emission_factors": "https://fgvcli.fgv.br/ghg",
+    "gwp100":           "https://www.ipcc.ch/report/ar6/wg1/",
+    "blend_factors":    "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2024/lei/l14993.htm",
+    "idle_rates":       "https://www.energy.gov/eere/vehicles/fact-861-february-9-2015-idle-fuel-consumption-selected-gasoline-and-diesel-vehicles",
+    "paper_impact":     "https://ecoinvent.org/database/",
+    "fuel_prices":      "https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/levantamento-de-precos",
+}
 
 # ── Premises list ─────────────────────────────────────────────────────────────
 # (key, label, unit, source_key, warn)
@@ -254,22 +266,91 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: fl
     die_base = round(ef.get("diesel_s10", 0) / (1 - blend_bio), 6) if blend_bio < 1 else ef.get("diesel_s10", 0)
 
     notes_map: dict[str, str] = {
-        "emission_factor_gasolina_c_base":     "Gasolina A pura antes do blend etanol",
-        "emission_factor_gasolina_c_comercial": f"= base × (1 − {round(blend_eth*100,1)}%) blend aplicado",
-        "emission_factor_diesel_s10_base":     "Diesel puro antes do blend biodiesel",
-        "emission_factor_diesel_s10_comercial": f"= base × (1 − {round(blend_bio*100,1)}%) blend aplicado",
-        "emission_factor_etanol":              "CO₂ biogênico — não entra no Escopo 1 (GHG Protocol)",
-        "idle_rate_leve":                      "Proxy U.S. DOE Fact #861 (2015) — sem dado CETESB público",
-        "idle_rate_pesado":                    "Proxy U.S. DOE Fact #861 (2015) — sem dado CETESB público",
-        "idle_rate_gnv":                       "Estimativa por conversão energética",
-        "idle_rate_eletrico":                  "Estimativa — sem fonte disponível",
-        "accel_surge_leve":                    "Extra pelo ciclo freada+aceleração ao pagar manualmente",
-        "accel_surge_pesado":                  "Extra pelo ciclo freada+aceleração ao pagar manualmente",
-        "baseline_pedagio_avg_wait_sec":       "Premissa: pagamento manual ~30-45s + fila estimada",
-        "baseline_estacionamento_avg_wait_sec": "Premissa: emissão de ticket + cancela",
-        "paper_co2_per_ticket":                "Aplica-se apenas a estacionamento",
-        "paper_water_per_ticket":              "Aplica-se apenas a estacionamento",
-        "fuel_price_brl_per_unit":             (f"UF: {(fuel_price_meta or {}).get('uf', '?')} | {(fuel_price_meta or {}).get('unit', 'L')}/R$ | Fonte: {(fuel_price_meta or {}).get('source', 'ANP')}"),
+        "emission_factor_gasolina_c_base": (
+            "Quanto CO₂ é liberado ao queimar 1 litro de gasolina A (pura, sem mistura). "
+            "A gasolina que abastecemos no posto (gasolina C) é uma mistura desta base com etanol."
+        ),
+        "emission_factor_gasolina_c_comercial": (
+            f"Fator já com o blend de {round(blend_eth*100,1)}% de etanol (Lei 14.993/2024 — E30). "
+            "Como etanol é biogênico, o blend reduz o CO₂ fóssil por litro. Este é o valor usado nos cálculos."
+        ),
+        "emission_factor_diesel_s10_base": (
+            "Emissão de CO₂ de 1 litro de diesel puro (sem biodiesel). "
+            "Diesel S10 = baixo teor de enxofre (10 ppm), padrão atual para veículos pesados."
+        ),
+        "emission_factor_diesel_s10_comercial": (
+            f"Fator já com o blend de {round(blend_bio*100,1)}% de biodiesel (B15, Resolução CNPE). "
+            "Biodiesel é renovável e reduz o CO₂ fóssil por litro. Este é o valor usado nos cálculos."
+        ),
+        "emission_factor_etanol": (
+            "CO₂ do etanol é classificado como biogênico (a planta absorveu CO₂ ao crescer). "
+            "Pelo GHG Protocol, emissões biogênicas não contam no Escopo 1 — por isso o fator de Escopo 1 é zero."
+        ),
+        "ch4_factor_gasolina_c":  "Metano (CH4) emitido por litro. Apesar de pequeno em massa, CH4 aquece ~27,9× mais que CO₂ (ver GWP100 abaixo).",
+        "n2o_factor_gasolina_c":  "Óxido nitroso (N2O) emitido por litro. Em massa mínima, mas 273× mais potente que CO₂ em 100 anos.",
+        "ch4_factor_diesel_s10":  "Metano (CH4) emitido por litro de diesel S10.",
+        "n2o_factor_diesel_s10":  "Óxido nitroso (N2O) emitido por litro de diesel S10.",
+        "emission_factor_etanol": "CO₂ biogênico do etanol — Escopo 1 = 0 pelo GHG Protocol (carbono absorvido na fase de cultivo).",
+        "ch4_factor_etanol":      "Metano do etanol — mesmo sendo biogênico, CH4 tem GWP100 alto e entra no CO₂e.",
+        "n2o_factor_etanol":      "Óxido nitroso do etanol.",
+        "emission_factor_gnv": (
+            "GNV = Gás Natural Veicular (metano comprimido). Unidade em m³ (metro cúbico), não litros."
+        ),
+        "ch4_factor_gnv":  "Metano fugitivo do GNV — além do que é queimado, parte escapa como CH4 puro.",
+        "n2o_factor_gnv":  "Óxido nitroso emitido pelo GNV.",
+        "emission_factor_eletrico_kwh": (
+            "Fator da rede elétrica brasileira (SIN) em kg CO₂ por kWh consumido. "
+            "Atualizado anualmente pela FGV/ONS com base na matriz energética. "
+            "Conta como Escopo 2 (emissões indiretas da geração de energia)."
+        ),
+        "gwp100_ch4": (
+            "GWP100 = Potencial de Aquecimento Global em 100 anos. "
+            "1 kg de CH4 = 27,9 kg de CO₂e. Usado para converter CH4 em CO₂ equivalente. Fonte: IPCC AR6 2021."
+        ),
+        "gwp100_n2o": (
+            "GWP100 do N2O. 1 kg de N2O = 273 kg de CO₂e. "
+            "Apesar de emitido em quantidade minúscula, impacta significativamente o total de CO₂e."
+        ),
+        "idle_rate_leve": (
+            "Litros de combustível consumidos por segundo com motor ligado parado (marcha lenta). "
+            "Veículos leves = carros de passeio. Baseado em proxy U.S. DOE 2015 — sem equivalente CETESB/INMETRO público."
+        ),
+        "idle_rate_pesado": (
+            "Mesmo conceito para veículos pesados (caminhões, ônibus). "
+            "Consumo idle é proporcionalmente maior por cilindrada."
+        ),
+        "idle_rate_gnv": "Taxa de consumo idle para veículos GNV, estimada por conversão energética equivalente.",
+        "idle_rate_eletrico": "Consumo elétrico do sistema com veículo parado (ar condicionado, eletrônica). Estimativa — sem fonte oficial.",
+        "accel_surge_leve": (
+            "Combustível extra gasto no ciclo completo de frenagem + aceleração ao parar manualmente. "
+            "Atualmente zerado (conservador) — pode ser atualizado com dados de campo."
+        ),
+        "accel_surge_pesado": (
+            "Mesmo conceito para veículos pesados. A frenagem e retomada de velocidade de um caminhão "
+            "consome significativamente mais combustível que em leves."
+        ),
+        "baseline_pedagio_avg_wait_sec": (
+            "Tempo médio estimado de uma passagem SEM tag no pedágio: "
+            "fila + parar + pagar + troco + partir. Premissa declarada (~180s = 3 min) — sem dado oficial ANTT/ABCR."
+        ),
+        "baseline_estacionamento_avg_wait_sec": (
+            "Tempo estimado para retirar ticket, aguardar cancela abrir e partir. "
+            "Premissa declarada (~120s) — sem dado oficial."
+        ),
+        "paper_co2_per_ticket": (
+            "CO₂ emitido na produção de 1 ticket de papel térmico (estacionamento). "
+            "Aplica-se apenas ao contexto 'estacionamento' com tag digital (sem papel)."
+        ),
+        "paper_water_per_ticket": (
+            "Água consumida na produção de 1 ticket de papel (extração de celulose, branqueamento). "
+            "Aplica-se apenas a estacionamento digital."
+        ),
+        "fuel_price_brl_per_unit": (
+            f"UF: {(fuel_price_meta or {}).get('uf', '?')} | "
+            f"Unidade: {(fuel_price_meta or {}).get('unit', 'L')} | "
+            f"Fonte: {(fuel_price_meta or {}).get('source', 'ANP')}. "
+            "Preço médio ANP por estado — atualizado automaticamente a cada passagem."
+        ),
     }
 
     values_map: dict[str, Any] = {
@@ -323,9 +404,66 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: fl
                 c.fill = fill
             if col == 3 and isinstance(val, float):
                 c.number_format = "0.00######"
+            # Hyperlink na coluna Fonte (col 5)
+            if col == 5 and src_key and src_key in _SOURCE_URLS:
+                c.hyperlink = _SOURCE_URLS[src_key]
+                c.font = Font(name="Calibri", size=10, color="0563C1", underline="single")
+                if fill:
+                    c.fill = fill
 
-    _set_col_widths(ws, [38, 46, 12, 12, 52, 8, 54])
+    _set_col_widths(ws, [38, 50, 12, 12, 52, 8, 60])
     ws.freeze_panes = "A4"
+
+    # ── Seção de Métricas Lúdicas ────────────────────────────────────────────
+    ludic_start = 4 + len(_PREMISES) + 2
+    ws.merge_cells(f"A{ludic_start}:G{ludic_start}")
+    c_h = ws.cell(row=ludic_start, column=1, value="Métricas Lúdicas — Conversões e Fontes")
+    c_h.font = Font(bold=True, name="Calibri", size=12, color=_C_HEADER_FG)
+    c_h.fill = _FILL_HEADER()
+    c_h.border = _THIN()
+    c_h.alignment = Alignment(horizontal="left", vertical="center")
+    ws.row_dimensions[ludic_start].height = 22
+
+    ws.merge_cells(f"A{ludic_start+1}:G{ludic_start+1}")
+    c_note = ws.cell(
+        row=ludic_start + 1, column=1,
+        value="Conversões usadas para traduzir impacto técnico em linguagem cotidiana. "
+              "Valores de conversão vêm do banco de dados (configuráveis). Fontes abaixo.",
+    )
+    c_note.font = Font(name="Calibri", size=9, italic=True, color="555555")
+    c_note.alignment = Alignment(wrap_text=True)
+    ws.row_dimensions[ludic_start + 1].height = 20
+
+    _header_row(ws, ludic_start + 2, ["Eixo", "Metáfora", "Unidade de Conversão", "Valor (BD)", "Fonte", "URL"])
+
+    ludic_units = specs.get("ludic_metaphor_units") or {}
+    row_l = ludic_start + 3
+    for axis, ids in METAPHOR_IDS_ORDER.items():
+        axis_labels = METAPHOR_LABELS.get(axis, {})
+        axis_sources = METAPHOR_SOURCES.get(axis, {})
+        for mid in ids:
+            label = axis_labels.get(mid, mid)
+            val = (ludic_units.get(axis) or {}).get(mid) or (
+                {"carbon": {"tree_year": 15.0, "burger": 2.5, "km_car": 0.12},
+                 "water": {"shower_8min": 60.0, "drinking_day": 2.0, "flush": 6.0},
+                 "paper": {"ream_a4": 500.0, "notebook": 50.0, "toilet_roll": 150.0}
+                 }.get(axis, {}).get(mid, "—")
+            )
+            src_info = axis_sources.get(mid, ("—", None))
+            src_text, src_url = src_info if isinstance(src_info, tuple) else (src_info, None)
+            fill = _FILL_ALT() if row_l % 2 == 0 else None
+            for col, v in enumerate([axis, label, "por unidade da metáfora", val, src_text, src_url or ""], 1):
+                c = ws.cell(row=row_l, column=col, value=v)
+                c.font = Font(name="Calibri", size=10)
+                c.border = _THIN()
+                c.alignment = Alignment(wrap_text=True, vertical="top")
+                if fill:
+                    c.fill = fill
+                if col == 6 and src_url:
+                    c.hyperlink = src_url
+                    c.font = Font(name="Calibri", size=10, color="0563C1", underline="single")
+            row_l += 1
+
     return prem_rows
 
 
@@ -883,6 +1021,131 @@ def _build_scale_sheet(ws: "Worksheet", fleet_size: int = 1) -> None:
     _set_col_widths(ws, [40, 20, 24, 20])
 
 
+# ── Sheet 0: Glossário ───────────────────────────────────────────────────────
+
+_GLOSSARY: list[tuple[str, str, str]] = [
+    # (Termo, Significado simples, Por que importa nesta planilha)
+    (
+        "CO₂e (CO₂ equivalente)",
+        "Unidade que converte todos os gases de efeito estufa em uma escala comum, "
+        "usando o CO₂ como referência. Assim, CH4 e N2O podem ser somados ao CO₂.",
+        "Todos os resultados de emissão nesta planilha estão em kg CO₂e — "
+        "o número já considera CH4 e N2O além do CO₂ puro.",
+    ),
+    (
+        "Escopo 1 (Scope 1)",
+        "Emissões diretas — o que sai diretamente do motor do veículo ao queimar combustível. "
+        "Combustão de gasolina, diesel, etanol ou GNV.",
+        "A maior parte do CO₂e calculado aqui é Escopo 1. "
+        "Veículos elétricos têm Escopo 1 = 0.",
+    ),
+    (
+        "Escopo 2 (Scope 2)",
+        "Emissões indiretas da eletricidade consumida. Para veículos elétricos, "
+        "a usina que gerou o kWh emitiu CO₂ — isso é Escopo 2.",
+        "Aplica-se apenas a veículos elétricos nesta planilha. "
+        "Fator da rede SIN (Brasil) varia com a matriz energética anual.",
+    ),
+    (
+        "GWP100 (Global Warming Potential)",
+        "Potencial de Aquecimento Global em 100 anos. Compara o poder de aquecimento "
+        "de um gás em relação ao CO₂ no período de 100 anos.",
+        "Usado para converter kg CH4 → kg CO₂e (×27,9) e kg N2O → kg CO₂e (×273). "
+        "Fonte: IPCC AR6 2021.",
+    ),
+    (
+        "Fator de Emissão",
+        "Quantidade de CO₂ (ou outro gás) emitida por unidade de combustível queimado. "
+        "Ex: 2,212 kg CO₂ por litro de gasolina C.",
+        "É o multiplicador principal do cálculo. Varia por tipo de combustível e blend.",
+    ),
+    (
+        "Blend / Mistura",
+        "Proporção de biocombustível misturado ao combustível fóssil. "
+        "Gasolina C = gasolina A + etanol (E30 = 30% etanol). "
+        "Diesel S10 = diesel + biodiesel (B15 = 15% biodiesel).",
+        "O blend reduz o fator de emissão fóssil. "
+        "A proporção é definida por lei federal (ANP/CNPE) e muda periodicamente.",
+    ),
+    (
+        "Idle Rate (Taxa de Marcha Lenta)",
+        "Consumo de combustível por segundo com o motor ligado e o veículo parado. "
+        "É o quanto o motor consome enquanto está na fila ou aguardando a cancela.",
+        "Parâmetro central para calcular o combustível economizado ao usar tag. "
+        "⚠️ Baseado em proxy U.S. DOE (2015) — sem dado oficial brasileiro público.",
+    ),
+    (
+        "Baseline (Tempo médio sem tag)",
+        "Estimativa do tempo médio que um veículo leva para passar num pedágio ou "
+        "estacionamento SEM usar tag (parar, pagar, receber troco, partir).",
+        "A diferença entre baseline e o tempo real com tag define o tempo economizado, "
+        "que por sua vez determina o combustível e CO₂e evitados. "
+        "⚠️ Premissa declarada — sem dado oficial ANTT/ABCR.",
+    ),
+    (
+        "CO₂ Biogênico",
+        "CO₂ de origem biológica (plantas, biomassa). O etanol libera CO₂, mas a cana "
+        "absorveu esse mesmo CO₂ ao crescer — ciclo neutro pelo GHG Protocol.",
+        "CO₂ biogênico não entra no Escopo 1 desta planilha. "
+        "Aparece separado para transparência.",
+    ),
+    (
+        "Ecoinvent",
+        "Banco de dados global de inventários de ciclo de vida (LCA). "
+        "Contém dados de impacto ambiental de materiais e processos industriais.",
+        "Fonte do fator de CO₂ e água por ticket de papel térmico (estacionamento).",
+    ),
+    (
+        "ANP (Agência Nacional do Petróleo)",
+        "Agência reguladora brasileira que publica semanalmente os preços médios de "
+        "combustíveis por estado (UF).",
+        "Preço do combustível usado no cálculo de economia financeira vem da ANP.",
+    ),
+    (
+        "SIN (Sistema Interligado Nacional)",
+        "Rede elétrica integrada do Brasil, composta por usinas hidrelétricas, "
+        "térmicas, eólicas e solares.",
+        "O fator de emissão elétrica (Escopo 2) representa a média do SIN, "
+        "calculada anualmente pela FGV/ONS.",
+    ),
+]
+
+
+def _build_glossary_sheet(ws: "Worksheet") -> None:
+    ws.title = "0. Glossário"
+
+    ws.merge_cells("A1:C1")
+    ws["A1"].value = "Glossário — Entendendo os Termos desta Planilha"
+    ws["A1"].font = _FONT_TITLE()
+    ws["A1"].alignment = Alignment(horizontal="left", vertical="center")
+    ws.row_dimensions[1].height = 32
+
+    ws.merge_cells("A2:C2")
+    ws["A2"].value = (
+        "Esta aba explica os conceitos usados nas demais sheets em linguagem acessível. "
+        "Não é necessário conhecer contabilidade de carbono para usar esta calculadora."
+    )
+    ws["A2"].font = Font(name="Calibri", size=10, italic=True, color="555555")
+    ws["A2"].alignment = Alignment(wrap_text=True)
+    ws.row_dimensions[2].height = 28
+
+    _header_row(ws, 3, ["Termo", "O que significa (linguagem simples)", "Por que aparece nesta planilha"])
+
+    for row_i, (term, meaning, relevance) in enumerate(_GLOSSARY, 4):
+        fill = _FILL_ALT() if row_i % 2 == 0 else None
+        for col, v in enumerate([term, meaning, relevance], 1):
+            c = ws.cell(row=row_i, column=col, value=v)
+            c.font = Font(name="Calibri", size=10, bold=(col == 1))
+            c.border = _THIN()
+            c.alignment = Alignment(wrap_text=True, vertical="top")
+            if fill:
+                c.fill = fill
+        ws.row_dimensions[row_i].height = 52
+
+    _set_col_widths(ws, [28, 68, 52])
+    ws.freeze_panes = "A4"
+
+
 # ── Public API ────────────────────────────────────────────────────────────────
 
 def build_audit_workbook(
@@ -904,7 +1167,11 @@ def build_audit_workbook(
         "unit": params.get("fuel_price_unit", "L"),
     }
 
-    ws1 = wb.active
+    # Glossário é a primeira aba (wb.active é criada vazia por padrão)
+    ws0 = wb.active
+    _build_glossary_sheet(ws0)
+
+    ws1 = wb.create_sheet()
     prem_rows = _build_premises_sheet(ws1, specs, fuel_price=fuel_price, fuel_price_meta=fuel_price_meta)
 
     ws2 = wb.create_sheet()

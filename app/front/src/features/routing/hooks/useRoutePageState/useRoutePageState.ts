@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryStates } from "nuqs";
+import { getToastErrorMessage } from "@/lib/api-error";
 import { routePageSearchParams } from "../../search-params";
 import { reverseGeocodeLabel } from "../../lib/geocoding";
 import { routeStopToApiValue, type RouteStop } from "../../lib/route-location";
@@ -41,8 +42,12 @@ export function useRoutePageState() {
             setResult(data);
             setParams({ route: 0 });
           },
-          onError: () => {
-            setValidationError("Não foi possível calcular a rota. Tente novamente.");
+          onError: (error) => {
+            setValidationError(
+              getToastErrorMessage(error, {
+                fallback: "Não foi possível calcular a rota. Tente novamente.",
+              }),
+            );
             setResult(null);
           },
         },
@@ -52,8 +57,16 @@ export function useRoutePageState() {
   );
 
   const handleSearch = useCallback(() => {
-    if (!origin || !destination) {
+    if (!origin && !destination) {
       setValidationError("Selecione origem e destino na lista de sugestões.");
+      return;
+    }
+    if (!origin) {
+      setValidationError("Selecione a origem na lista de sugestões.");
+      return;
+    }
+    if (!destination) {
+      setValidationError("Selecione o destino na lista de sugestões.");
       return;
     }
     runSearch(origin, destination);
@@ -117,7 +130,9 @@ export function useRoutePageState() {
           resolve();
         },
         () => {
-          setValidationError("Não foi possível obter sua localização.");
+          setValidationError(
+            "Não foi possível obter sua localização. Verifique as permissões do navegador.",
+          );
           resolve();
         },
         { timeout: 8000 },

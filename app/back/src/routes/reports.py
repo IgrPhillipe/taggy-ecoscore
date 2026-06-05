@@ -106,51 +106,109 @@ async def export_calculadora(
     """
     Gera planilha auditável com 5 sheets:
     Premissas | Passo a Passo | Comparação | Sensibilidade | Escala
+
+    Quando transaction_id é fornecido, todos os dados (specs, resultado, veículo)
+    vêm do parameters_snapshot salvo na transação — garantindo reprodutibilidade
+    histórica independente de atualizações nas specs do banco.
     """
-    try:
-        specs = await get_all_specs(db)
-    except CalcEngineError as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
+    # ── Modo snapshot: reproduz exatamente a passagem registrada ──────────────
+    if transaction_id is not None:
+        repo = TransactionRepository(db)
+        txn = await repo.get_by_id(transaction_id)
+        if txn is None:
+            raise HTTPException(status_code=404, detail=f"Transação {transaction_id} não encontrada.")
 
-    # Resolve vehicle data
-    if fuel_type and category:
-        vehicle = {"category": category, "fuel_type": fuel_type, "model": ""}
+        snap = txn.parameters_snapshot or {}
+        snap_result = snap.get("result") or snap  # fallback for older snapshots
+
+        # Reconstruct specs dict from snapshot fields
+        specs = {
+            "emission_factors": snap.get("emission_factors", {}),
+            "ch4_factors": snap.get("ch4_factors", {}),
+            "n2o_factors": snap.get("n2o_factors", {}),
+            "gwp100": snap.get("gwp100", {}),
+            "blend": snap.get("blend", {}),
+            "sources": snap.get("sources", {}),
+            "idle_rates": snap.get("idle_rates", {}),
+            "baselines": snap.get("baselines", {}),
+            "paper_impact": snap.get("paper_impact", {}),
+            "accel_surge": snap.get("accel_surge", {}),
+            "fuel_prices_by_uf": snap.get("fuel_prices_by_uf", {}),
+            "ludic_factors": snap.get("ludic_factors", {}),
+            "ludic_metaphor_units": snap.get("ludic_metaphor_units", {}),
+        }
+
+        snap_payload = snap.get("payload") or {}
+        vehicle_snap = snap.get("vehicle_resolution", {}).get("vehicle") or snap_payload.get("vehicle") or {}
+        if not vehicle_snap:
+            vehicle_snap = {"category": "leve", "fuel_type": "gasolina_c", "model": ""}
+
+        pricing_snap = snap.get("pricing_snapshot") or (snap_result.get("metadata") or {}).get("pricing_snapshot") or {}
+        eff_plate    = (snap_payload.get("plate") or plate).upper()
+        eff_elapsed  = snap_payload.get("elapsed_time", elapsed_time)
+        eff_context  = snap_payload.get("context", context)
+        eff_uf       = (snap_payload.get("uf_passagem") or snap_payload.get("uf") or uf).upper()
+        eff_digital  = snap_payload.get("is_digital", is_digital)
+
+        result = snap_result
+        params = {
+            "plate": eff_plate,
+            "elapsed_time": eff_elapsed,
+            "context": eff_context,
+            "uf": eff_uf,
+            "is_digital": eff_digital,
+            "fuel_price_brl_per_unit": pricing_snap.get("fuel_price_brl_per_unit", 0.0),
+            "fuel_price_unit": pricing_snap.get("fuel_unit", "L"),
+            "fuel_price_source": pricing_snap.get("price_source", "ANP"),
+            "fuel_price_uf": pricing_snap.get("uf_applied", eff_uf),
+        }
+        vehicle = vehicle_snap
+
+    # ── Modo cálculo ao vivo (sem transaction_id) ─────────────────────────────
     else:
-        lookup = await resolve_vehicle_from_plate(plate)
-        if lookup["error"] or lookup["vehicle"] is None:
-            # Fallback to sensible demo values
-            vehicle = {"category": "leve", "fuel_type": "gasolina_c", "model": "Veículo demo"}
+        try:
+            specs = await get_all_specs(db)
+        except CalcEngineError as e:
+            raise HTTPException(status_code=422, detail=str(e)) from e
+
+        # Resolve vehicle data
+        if fuel_type and category:
+            vehicle = {"category": category, "fuel_type": fuel_type, "model": ""}
         else:
-            vehicle = lookup["vehicle"]
+            lookup = await resolve_vehicle_from_plate(plate)
+            if lookup["error"] or lookup["vehicle"] is None:
+                vehicle = {"category": "leve", "fuel_type": "gasolina_c", "model": "Veículo demo"}
+            else:
+                vehicle = lookup["vehicle"]
 
-    payload = {
-        "plate": plate.upper(),
-        "elapsed_time": elapsed_time,
-        "context": context,
-        "uf_passagem": uf.upper(),
-        "is_digital": is_digital,
-        "vehicle": vehicle,
-    }
+        payload = {
+            "plate": plate.upper(),
+            "elapsed_time": elapsed_time,
+            "context": context,
+            "uf_passagem": uf.upper(),
+            "is_digital": is_digital,
+            "vehicle": vehicle,
+        }
 
-    try:
-        engine = CalcEngine(specs)
-        orchestrator = TransactionOrchestrator(engine)
-        result = orchestrator.handle_tag_event(payload)
-    except CalcEngineError as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
+        try:
+            engine = CalcEngine(specs)
+            orchestrator = TransactionOrchestrator(engine)
+            result = orchestrator.handle_tag_event(payload)
+        except CalcEngineError as e:
+            raise HTTPException(status_code=422, detail=str(e)) from e
 
-    pricing = (result.get("metadata") or {}).get("pricing_snapshot") or {}
-    params = {
-        "plate": plate.upper(),
-        "elapsed_time": elapsed_time,
-        "context": context,
-        "uf": uf.upper(),
-        "is_digital": is_digital,
-        "fuel_price_brl_per_unit": pricing.get("fuel_price_brl_per_unit", 0.0),
-        "fuel_price_unit": pricing.get("fuel_unit", "L"),
-        "fuel_price_source": pricing.get("price_source", "ANP"),
-        "fuel_price_uf": pricing.get("uf_applied", uf.upper()),
-    }
+        pricing = (result.get("metadata") or {}).get("pricing_snapshot") or {}
+        params = {
+            "plate": plate.upper(),
+            "elapsed_time": elapsed_time,
+            "context": context,
+            "uf": uf.upper(),
+            "is_digital": is_digital,
+            "fuel_price_brl_per_unit": pricing.get("fuel_price_brl_per_unit", 0.0),
+            "fuel_price_unit": pricing.get("fuel_unit", "L"),
+            "fuel_price_source": pricing.get("price_source", "ANP"),
+            "fuel_price_uf": pricing.get("uf_applied", uf.upper()),
+        }
 
     try:
         buffer = build_audit_workbook(result, specs, vehicle, params, fleet_size=fleet_size)

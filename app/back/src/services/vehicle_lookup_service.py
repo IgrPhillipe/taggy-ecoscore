@@ -17,6 +17,8 @@ from typing import Any, Optional
 
 import httpx
 
+from src.errors import messages as err
+
 logger = logging.getLogger(__name__)
 
 _APIBRASIL_URL = "https://gateway.apibrasil.io/api/v2/consulta/veiculos/credits"
@@ -335,6 +337,17 @@ async def resolve_vehicle_from_plate(plate: str) -> dict[str, Any]:
     """
     try:
         result = await lookup_vehicle(plate)
+    except httpx.RequestError as e:
+        logger.error("Vehicle lookup request failed for %s: %s", plate, e)
+        return {
+            "vehicle": None,
+            "resolution": {
+                "plate": _normalise_plate(plate),
+                "source": "apibrasil.io",
+                "confidence": "failed",
+            },
+            "error": err.PLATE_LOOKUP_UNAVAILABLE,
+        }
     except Exception as e:
         logger.error("Vehicle lookup failed for %s: %s", plate, e)
         return {
@@ -344,7 +357,7 @@ async def resolve_vehicle_from_plate(plate: str) -> dict[str, Any]:
                 "source": "apibrasil.io",
                 "confidence": "failed",
             },
-            "error": f"Lookup falhou: {type(e).__name__}. Informe category e fuel_type manualmente.",
+            "error": err.PLATE_LOOKUP_FAILED,
         }
 
     if result is None:
@@ -355,7 +368,7 @@ async def resolve_vehicle_from_plate(plate: str) -> dict[str, Any]:
                 "source": "apibrasil.io",
                 "confidence": "not_found",
             },
-            "error": "Placa não encontrada na base apibrasil/DETRAN. Informe category e fuel_type manualmente.",
+            "error": err.PLATE_NOT_FOUND,
         }
 
     return {

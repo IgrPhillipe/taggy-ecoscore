@@ -15,6 +15,10 @@ import {
 } from "@/components/ui/select";
 import { SectionCard } from "@/features/sustainability/components/MetricCard";
 import { getToastErrorMessage } from "@/lib/api-error";
+import { formFieldErrorId } from "@/components/form/FormField";
+import { fieldControlErrorClassName } from "@/lib/field-control";
+import { isValidPlate } from "@/lib/plate-utils";
+import { cn } from "@/lib/utils";
 import { processTransaction } from "../../api/requests";
 import type { ProcessTransactionBody, ProcessTransactionResult } from "../../api/types";
 import { SimulatorResultPanel, SimulatorResultSkeleton } from "./SimulatorResultPanel";
@@ -36,6 +40,7 @@ export function TransactionSimulatorPage() {
     context: "pedagio",
     uf: "SP",
   });
+  const [plateError, setPlateError] = useState<string | undefined>();
 
   const currentUser = useAuthStore((s) => s.user);
 
@@ -49,6 +54,10 @@ export function TransactionSimulatorPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!isValidPlate(form.plate)) {
+      setPlateError("Placa inválida");
+      return;
+    }
     const body: ProcessTransactionBody = {
       plate: form.plate.trim().toUpperCase(),
       context: form.context,
@@ -87,9 +96,20 @@ export function TransactionSimulatorPage() {
                 id="plate"
                 placeholder="ABC1D23"
                 value={form.plate}
-                onChange={(value) => set("plate", value)}
+                onChange={(value) => {
+                  setPlateError(undefined);
+                  set("plate", value);
+                }}
+                aria-invalid={!!plateError}
+                aria-describedby={plateError ? formFieldErrorId("plate") : undefined}
+                className={cn(plateError && fieldControlErrorClassName)}
                 required
               />
+              {plateError ? (
+                <p id={formFieldErrorId("plate")} className="text-xs text-destructive">
+                  {plateError}
+                </p>
+              ) : null}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -125,7 +145,11 @@ export function TransactionSimulatorPage() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={mutation.isPending}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={mutation.isPending || !isValidPlate(form.plate)}
+            >
               {mutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

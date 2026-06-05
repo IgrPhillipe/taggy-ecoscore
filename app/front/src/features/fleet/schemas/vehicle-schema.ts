@@ -1,11 +1,13 @@
 import { z } from "zod"
 
+import { optionalPlateSchema, plateSchema } from "@/lib/validation-schemas"
+
 export const fuelTypeEnum = z.enum(["diesel_s10", "gasolina_c", "etanol"])
 export const vehicleCategoryEnum = z.enum(["leve", "pesado"])
 
 export const vehicleCreateSchema = z.object({
   id_tag: z.string().min(1, "TAG ID é obrigatório"),
-  license_plate: z.string().min(7, "Placa deve ter ao menos 7 caracteres"),
+  license_plate: plateSchema,
   model: z.string().min(1, "Modelo é obrigatório"),
   fuel_type: fuelTypeEnum,
   category: vehicleCategoryEnum,
@@ -18,6 +20,7 @@ export const vehicleCreateSchema = z.object({
 })
 
 export const vehicleUpdateSchema = vehicleCreateSchema.partial().extend({
+  license_plate: optionalPlateSchema.optional(),
   organization_id: z.number().nullable().optional(),
   fleet_id: z.number().nullable().optional(),
 })

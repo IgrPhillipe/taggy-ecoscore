@@ -184,7 +184,7 @@ async def process_transaction(
         if lookup["error"] or lookup["vehicle"] is None:
             raise HTTPException(
                 status_code=422,
-                detail=lookup["error"] or "Não foi possível resolver dados do veículo pela placa.",
+                detail=lookup["error"] or err.PLATE_LOOKUP_FAILED,
             )
         vehicle_dict = lookup["vehicle"]
         vehicle_resolution = lookup["resolution"]

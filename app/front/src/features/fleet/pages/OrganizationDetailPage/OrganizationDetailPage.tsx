@@ -29,8 +29,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { UsersRelationSelect } from "@/components/form/relation-selects";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { KpiCard } from "@/features/sustainability/components/MetricCard";
 import {
   formatEnvironmentalFinancial,
@@ -49,14 +47,10 @@ import {
   unlinkOrganizationUser,
   updateOrganization,
 } from "../../api/requests";
-
-type OrganizationDetailPageProps = {
-  orgId: number;
-  orgName: string;
-  orgCnpj?: string | null;
-};
-
-type OrgFormData = { name: string; cnpj: string };
+import {
+  OrgFormDialog,
+  type OrgFormData,
+} from "../../components/OrgFormDialog";
 
 const makeUserColumns = (onUnlink: (user: User) => void): ColumnDef<User>[] => [
   entityIdColumn<User>(),
@@ -82,64 +76,10 @@ const makeUserColumns = (onUnlink: (user: User) => void): ColumnDef<User>[] => [
   },
 ];
 
-const EditOrgDialog = ({
-  open,
-  onClose,
-  initial,
-  onSubmit,
-}: {
-  open: boolean;
-  onClose: () => void;
-  initial: OrgFormData;
-  onSubmit: (data: OrgFormData) => void;
-}) => {
-  const [form, setForm] = useState(initial);
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Editar Organização</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="org-name">Nome *</Label>
-            <Input
-              id="org-name"
-              value={form.name}
-              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-            />
-          </div>
-          <div>
-            <Label htmlFor="org-cnpj">CNPJ</Label>
-            <Input
-              id="org-cnpj"
-              value={form.cnpj}
-              onChange={(e) => {
-                const digits = e.target.value.replace(/\D/g, "").slice(0, 14);
-                const masked = digits
-                  .replace(/^(\d{2})(\d)/, "$1.$2")
-                  .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-                  .replace(/\.(\d{3})(\d)/, ".$1/$2")
-                  .replace(/(\d{4})(\d)/, "$1-$2");
-                setForm((prev) => ({ ...prev, cnpj: masked }));
-              }}
-              placeholder="00.000.000/0000-00"
-            />
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button
-              onClick={() => { onSubmit(form); onClose(); }}
-              disabled={!form.name.trim()}
-            >
-              Salvar
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+type OrganizationDetailPageProps = {
+  orgId: number;
+  orgName: string;
+  orgCnpj?: string | null;
 };
 
 export const OrganizationDetailPage = ({
@@ -260,9 +200,10 @@ export const OrganizationDetailPage = ({
         />
       </section>
 
-      <EditOrgDialog
+      <OrgFormDialog
         open={editOpen}
         onClose={() => setEditOpen(false)}
+        title="Editar Organização"
         initial={{ name: orgName, cnpj: orgCnpj ?? "" }}
         onSubmit={(data) => updateMutation.mutate(data)}
       />

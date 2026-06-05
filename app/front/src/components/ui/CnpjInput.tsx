@@ -1,16 +1,16 @@
 import { forwardRef, type ChangeEvent, type ComponentProps } from "react"
 
 import { Input } from "@/components/ui/input"
-import { maskPlate } from "@/lib/plate-utils"
+import { maskCnpj } from "@/lib/document-utils"
 import { cn } from "@/lib/utils"
 
-type PlateInputProps = Omit<ComponentProps<typeof Input>, "onChange"> & {
+type CnpjInputProps = Omit<ComponentProps<typeof Input>, "onChange"> & {
   onChange?: (value: string) => void
 }
 
-export const PlateInput = forwardRef<HTMLInputElement, PlateInputProps>(
+export const CnpjInput = forwardRef<HTMLInputElement, CnpjInputProps>(
   ({ className, value, onChange, onBlur, onClear, ...props }, ref) => {
-    const applyMask = (nextValue: string) => onChange?.(maskPlate(nextValue))
+    const applyMask = (nextValue: string) => onChange?.(maskCnpj(nextValue))
 
     const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
       applyMask(event.target.value)
@@ -30,16 +30,18 @@ export const PlateInput = forwardRef<HTMLInputElement, PlateInputProps>(
       <Input
         ref={ref}
         {...props}
+        inputMode="numeric"
         value={(value as string | undefined) ?? ""}
         onChange={handleChange}
         onBlur={handleBlur}
         onClear={handleClear}
-        className={cn("uppercase", className)}
+        className={cn(className)}
         autoComplete="off"
-        spellCheck={false}
+        placeholder={props.placeholder ?? "00.000.000/0000-00"}
+        maxLength={18}
       />
     )
   },
 )
 
-PlateInput.displayName = "PlateInput"
+CnpjInput.displayName = "CnpjInput"

@@ -33,3 +33,49 @@ DEFAULT_METAPHOR_UNITS: dict[str, dict[str, float]] = {
     "water": {"shower_8min": 60.0, "drinking_day": 2.0, "flush": 6.0},
     "paper": {"ream_a4": 500.0, "notebook": 50.0, "toilet_roll": 150.0},
 }
+
+# (descrição, url) — None para URL quando não há link público direto.
+METAPHOR_SOURCES: dict[str, dict[str, tuple[str, str | None]]] = {
+    "carbon": {
+        "tree_year": (
+            "IPCC SRCCL 2019 / SFB — absorção média árvore tropical brasileira ~15 kg CO₂/ano",
+            "https://www.ipcc.ch/srccl/",
+        ),
+        "burger": (
+            "Poore & Nemecek 2018, Science — pegada carbono média carne bovina ~2,5 kg CO₂e",
+            "https://doi.org/10.1126/science.aaq0216",
+        ),
+        "km_car": (
+            "CETESB Emissões Veiculares 2023 — frota leve brasileira ~120 g CO₂/km",
+            "https://cetesb.sp.gov.br/veicular/relatorios-e-publicacoes/",
+        ),
+    },
+    "water": {
+        "shower_8min": (
+            "SNIS 2022 / PNUMA — chuveiro elétrico médio BR ~60 L em 8 min",
+            "https://snis.gov.br/",
+        ),
+        "drinking_day": (
+            "OMS — recomendação mínima 2 L de água potável por pessoa por dia",
+            "https://www.who.int/news-room/fact-sheets/detail/drinking-water",
+        ),
+        "flush": (
+            "ABNT NBR 15097 / Procel — caixa acoplada padrão certificada 6 L/descarga",
+            "https://www.abntcatalogo.com.br/",
+        ),
+    },
+    "paper": {
+        "ream_a4": (
+            "ABNT — resma A4 padrão 500 folhas (75 g/m²)",
+            None,
+        ),
+        "notebook": (
+            "Padrão mercado BR — caderno universitário 50 folhas (1/10 de resma)",
+            None,
+        ),
+        "toilet_roll": (
+            "Estimativa por equivalência de massa de celulose — ~150 folhas por rolo",
+            None,
+        ),
+    },
+}

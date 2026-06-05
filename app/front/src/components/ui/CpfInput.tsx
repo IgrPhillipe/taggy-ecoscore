@@ -1,16 +1,16 @@
 import { forwardRef, type ChangeEvent, type ComponentProps } from "react"
 
 import { Input } from "@/components/ui/input"
-import { maskPlate } from "@/lib/plate-utils"
+import { maskCpf } from "@/lib/document-utils"
 import { cn } from "@/lib/utils"
 
-type PlateInputProps = Omit<ComponentProps<typeof Input>, "onChange"> & {
+type CpfInputProps = Omit<ComponentProps<typeof Input>, "onChange"> & {
   onChange?: (value: string) => void
 }
 
-export const PlateInput = forwardRef<HTMLInputElement, PlateInputProps>(
+export const CpfInput = forwardRef<HTMLInputElement, CpfInputProps>(
   ({ className, value, onChange, onBlur, onClear, ...props }, ref) => {
-    const applyMask = (nextValue: string) => onChange?.(maskPlate(nextValue))
+    const applyMask = (nextValue: string) => onChange?.(maskCpf(nextValue))
 
     const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
       applyMask(event.target.value)
@@ -30,16 +30,18 @@ export const PlateInput = forwardRef<HTMLInputElement, PlateInputProps>(
       <Input
         ref={ref}
         {...props}
+        inputMode="numeric"
         value={(value as string | undefined) ?? ""}
         onChange={handleChange}
         onBlur={handleBlur}
         onClear={handleClear}
-        className={cn("uppercase", className)}
+        className={cn(className)}
         autoComplete="off"
-        spellCheck={false}
+        placeholder={props.placeholder ?? "000.000.000-00"}
+        maxLength={14}
       />
     )
   },
 )
 
-PlateInput.displayName = "PlateInput"
+CpfInput.displayName = "CpfInput"

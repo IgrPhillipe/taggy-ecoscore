@@ -6,6 +6,8 @@ import {
 } from "react-hook-form";
 
 import { FormField, formFieldErrorId } from "@/components/form/FormField";
+import { CnpjInput } from "@/components/ui/CnpjInput";
+import { CpfInput } from "@/components/ui/CpfInput";
 import { Input } from "@/components/ui/input";
 import { PlateInput } from "@/components/ui/PlateInput";
 import { fieldControlErrorClassName } from "@/lib/field-control";
@@ -19,6 +21,8 @@ type ControlledInputProps<T extends FieldValues> = {
   placeholder?: string;
   disabled?: boolean;
   plate?: boolean;
+  cpf?: boolean;
+  cnpj?: boolean;
 };
 
 export const ControlledInput = <T extends FieldValues>({
@@ -29,6 +33,8 @@ export const ControlledInput = <T extends FieldValues>({
   placeholder,
   disabled,
   plate = false,
+  cpf = false,
+  cnpj = false,
 }: ControlledInputProps<T>) => {
   const id = String(name);
   return (
@@ -37,21 +43,27 @@ export const ControlledInput = <T extends FieldValues>({
       name={name}
       render={({ field, fieldState }) => {
         const errorMsg = fieldState.error?.message;
+        const maskedFieldProps = {
+          id,
+          placeholder,
+          disabled,
+          "aria-invalid": !!errorMsg,
+          "aria-describedby": errorMsg ? formFieldErrorId(id) : undefined,
+          className: cn(errorMsg && fieldControlErrorClassName),
+          value: field.value ?? "",
+          onChange: field.onChange,
+          onBlur: field.onBlur,
+          onClear: () => field.onChange(""),
+        };
+
         return (
           <FormField id={id} label={label} error={errorMsg}>
             {plate ? (
-              <PlateInput
-                id={id}
-                placeholder={placeholder}
-                disabled={disabled}
-                aria-invalid={!!errorMsg}
-                aria-describedby={errorMsg ? formFieldErrorId(id) : undefined}
-                className={cn(errorMsg && fieldControlErrorClassName)}
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                onClear={() => field.onChange("")}
-              />
+              <PlateInput {...maskedFieldProps} />
+            ) : cpf ? (
+              <CpfInput {...maskedFieldProps} />
+            ) : cnpj ? (
+              <CnpjInput {...maskedFieldProps} />
             ) : (
               <Input
                 {...field}

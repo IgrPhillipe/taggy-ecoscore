@@ -38,3 +38,12 @@ USER_STATS_NOT_FOUND = "Estatísticas do usuário não encontradas."
 
 TOKEN_INVALID = "Token inválido ou expirado."
 TOKEN_MISSING_SUB = "Token sem identificador (sub)."
+
+PLATE_NOT_FOUND = "Não encontramos dados para esta placa. Verifique se digitou corretamente."
+PLATE_LOOKUP_UNAVAILABLE = "Consulta de placa indisponível no momento. Tente novamente em alguns minutos."
+PLATE_LOOKUP_FAILED = "Não foi possível consultar a placa. Tente novamente."
+
+ROUTE_ADDRESS_NOT_FOUND = "Endereço não encontrado. Selecione uma sugestão da lista."
+ROUTE_NOT_FOUND = "Não foi possível traçar rota entre origem e destino. Verifique se os pontos estão em vias acessíveis."
+ROUTE_SERVICE_UNAVAILABLE = "Serviço de rotas temporariamente indisponível. Tente novamente em alguns minutos."
+MAPBOX_NOT_CONFIGURED = "Serviço de mapas não configurado. Entre em contato com o administrador."

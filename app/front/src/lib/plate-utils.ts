@@ -41,3 +41,11 @@ export function maskPlate(value: string): string {
 
   return `${raw.slice(0, 3)}-${raw.slice(3)}`
 }
+
+/** Valida placa brasileira completa (padrão antigo ou Mercosul). */
+export function isValidPlate(value: string): boolean {
+  const raw = stripPlate(value)
+  if (raw.length !== 7) return false
+  if (/^[A-Z]{3}[0-9]{4}$/.test(raw)) return true
+  return /^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(raw)
+}
