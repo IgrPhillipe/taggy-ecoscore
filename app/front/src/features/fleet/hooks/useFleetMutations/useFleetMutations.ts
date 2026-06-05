@@ -8,10 +8,12 @@ import {
 } from "@/lib/query-invalidation";
 import {
   createFleet,
+  deleteFleet,
   linkFleetUser,
   linkFleetVehicle,
   unlinkFleetUser,
   unlinkFleetVehicle,
+  updateFleet,
 } from "../../api/requests";
 
 export const useCreateFleet = () => {
@@ -26,6 +28,39 @@ export const useCreateFleet = () => {
     onError: (error) =>
       toast.error(
         getToastErrorMessage(error, { fallback: "Erro ao criar frota." }),
+      ),
+  });
+};
+
+export const useUpdateFleet = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name: string } }) =>
+      updateFleet(id, data),
+    onSuccess: async (_data, { id }) => {
+      await invalidateFleetQueries(queryClient, { id });
+      toast.success("Frota atualizada.");
+    },
+    onError: (error) =>
+      toast.error(
+        getToastErrorMessage(error, { fallback: "Erro ao atualizar frota." }),
+      ),
+  });
+};
+
+export const useDeleteFleet = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => deleteFleet(id),
+    onSuccess: async (_data, id) => {
+      await invalidateFleetQueries(queryClient, { id });
+      toast.success("Frota removida.");
+    },
+    onError: (error) =>
+      toast.error(
+        getToastErrorMessage(error, { fallback: "Erro ao remover frota." }),
       ),
   });
 };
