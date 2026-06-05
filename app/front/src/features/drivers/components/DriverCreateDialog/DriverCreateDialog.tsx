@@ -2,6 +2,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { getToastErrorMessage } from "@/lib/api-error";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -74,7 +75,9 @@ export const DriverCreateDialog = ({ open, onClose }: DriverCreateDialogProps) =
               onClick={handleSave}
               disabled={!name.trim() || !email.trim() || isPending}
             >
-              Salvar
+              <ButtonLoadingContent loading={isPending}>
+                Salvar
+              </ButtonLoadingContent>
             </Button>
           </div>
         </div>

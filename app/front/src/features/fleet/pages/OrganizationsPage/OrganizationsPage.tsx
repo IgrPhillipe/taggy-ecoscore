@@ -125,6 +125,7 @@ export const OrganizationsPage = () => {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         title="Nova Organização"
+        isPending={createMutation.isPending}
         onSubmit={(data) =>
           createMutation.mutate(data, { onSuccess: () => setCreateOpen(false) })
         }
@@ -135,6 +136,7 @@ export const OrganizationsPage = () => {
           open={!!editTarget}
           onClose={() => setEditTarget(null)}
           title="Editar Organização"
+          isPending={updateMutation.isPending}
           initial={{ name: editTarget.name, cnpj: editTarget.cnpj ?? "" }}
           onSubmit={(data) =>
             updateMutation.mutate(

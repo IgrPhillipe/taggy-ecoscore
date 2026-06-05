@@ -18,6 +18,7 @@ import {
 import { getToastErrorMessage } from "@/lib/api-error";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
 import { FormField } from "@/components/form/FormField";
 import { useFilterDraft } from "@/hooks/useFilterDraft";
@@ -352,7 +353,9 @@ export const DriversListPage = () => {
               disabled={isDeleting}
               onClick={handleConfirmDelete}
             >
-              Excluir
+              <ButtonLoadingContent loading={isDeleting}>
+                Excluir
+              </ButtonLoadingContent>
             </Button>
           </DialogFooter>
         </DialogContent>

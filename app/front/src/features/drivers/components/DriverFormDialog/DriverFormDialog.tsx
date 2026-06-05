@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { getToastErrorMessage } from "@/lib/api-error";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ControlledInput } from "@/components/form/ControlledInput";
@@ -176,7 +177,9 @@ export const DriverFormDialog = ({ open, onClose, driver }: DriverFormDialogProp
               Cancelar
             </Button>
             <Button type="submit" disabled={pending}>
-              {pending ? "Salvando…" : "Salvar"}
+              <ButtonLoadingContent loading={pending}>
+                Salvar
+              </ButtonLoadingContent>
             </Button>
           </div>
         </form>

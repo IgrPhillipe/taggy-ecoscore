@@ -5,6 +5,7 @@ import { Link, Navigate, useNavigate, useParams } from "@tanstack/react-router";
 import { Trash } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import {
   Dialog,
   DialogContent,
@@ -173,7 +174,9 @@ export const EditUserPage = () => {
               Cancelar
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Salvando…" : "Salvar"}
+              <ButtonLoadingContent loading={isPending}>
+                Salvar
+              </ButtonLoadingContent>
             </Button>
           </FormActions>
         </form>
@@ -212,7 +215,9 @@ export const EditUserPage = () => {
               disabled={isDeleting}
               onClick={handleDelete}
             >
-              Excluir
+              <ButtonLoadingContent loading={isDeleting}>
+                Excluir
+              </ButtonLoadingContent>
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -10,6 +10,7 @@ import { PageBackLink, PageLayout } from "@/components/layout/PageLayout";
 import { FilterModal } from "@/components/FilterModal";
 import { FilterInput } from "@/components/ui/FilterInput";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import { useFilterDraft } from "@/hooks/useFilterDraft";
 import {
   Dialog,
@@ -382,7 +383,9 @@ export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) =>
                 }
               }}
             >
-              {linkVehicleMutation.isPending ? "Vinculando…" : "Vincular"}
+              <ButtonLoadingContent loading={linkVehicleMutation.isPending}>
+                Vincular
+              </ButtonLoadingContent>
             </Button>
           </div>
         </DialogContent>
@@ -425,7 +428,9 @@ export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) =>
                 }
               }}
             >
-              {linkUserMutation.isPending ? "Vinculando…" : "Vincular"}
+              <ButtonLoadingContent loading={linkUserMutation.isPending}>
+                Vincular
+              </ButtonLoadingContent>
             </Button>
           </div>
         </DialogContent>

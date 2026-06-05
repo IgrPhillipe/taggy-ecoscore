@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Car, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlateInput } from "@/components/ui/PlateInput";
@@ -134,7 +135,9 @@ export function CalculatorForm({ onSubmit, isLoading }: Props) {
         disabled={!isValidPlate(plate) || isLoading}
         className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-base"
       >
-        {isLoading ? "Calculando..." : "Calcular minha economia"}
+        <ButtonLoadingContent loading={isLoading}>
+          Calcular Minha Economia
+        </ButtonLoadingContent>
       </Button>
     </form>
   );

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
 import { Logo } from "@/components/icons/Logo";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import {
   Card,
   CardContent,
@@ -73,14 +73,9 @@ export const LoginPage = ({ redirectTo }: LoginPageProps) => {
               className="w-full"
               disabled={!canSubmit || loginMutation.isPending}
             >
-              {loginMutation.isPending ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Entrando...
-                </>
-              ) : (
-                "Entrar"
-              )}
+              <ButtonLoadingContent loading={loginMutation.isPending}>
+                Entrar
+              </ButtonLoadingContent>
             </Button>
           </form>
           <DevPersonaLoginSection redirectTo={redirectTo} />

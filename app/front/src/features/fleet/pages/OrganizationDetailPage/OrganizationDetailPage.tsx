@@ -18,6 +18,7 @@ import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageBackLink, PageLayout } from "@/components/layout/PageLayout";
 import { FilterInput } from "@/components/ui/FilterInput";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import {
   Dialog,
   DialogContent,
@@ -205,7 +206,9 @@ export const OrganizationDetailPage = ({
                 }
               }}
             >
-              {linkMutation.isPending ? "Vinculando…" : "Vincular"}
+              <ButtonLoadingContent loading={linkMutation.isPending}>
+                Vincular
+              </ButtonLoadingContent>
             </Button>
           </div>
         </DialogContent>

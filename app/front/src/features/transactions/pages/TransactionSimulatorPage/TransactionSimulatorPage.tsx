@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useAuthStore } from "@/features/auth/auth-store";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import { Label } from "@/components/ui/label";
 import { PlateInput } from "@/components/ui/PlateInput";
 import {
@@ -147,14 +148,9 @@ export function TransactionSimulatorPage() {
               className="w-full"
               disabled={mutation.isPending || !isValidPlate(form.plate)}
             >
-              {mutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Calculando…
-                </>
-              ) : (
-                "Simular"
-              )}
+              <ButtonLoadingContent loading={mutation.isPending}>
+                Simular
+              </ButtonLoadingContent>
             </Button>
           </form>
         </SectionCard>

@@ -1,6 +1,7 @@
 import { Crosshair, Loader2, MapPin, Search } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import { cn } from "@/lib/utils";
 import type { RouteStop } from "../../lib/route-location";
 import { AddressField } from "../AddressField";
@@ -122,14 +123,9 @@ export const DestinationSearchPanel = ({
       {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
 
       <Button type="submit" className="w-full" disabled={!canSearch || isLoading}>
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Calculando...
-          </>
-        ) : (
-          "Buscar rotas"
-        )}
+        <ButtonLoadingContent loading={isLoading}>
+          Buscar Rotas
+        </ButtonLoadingContent>
       </Button>
     </form>
   );

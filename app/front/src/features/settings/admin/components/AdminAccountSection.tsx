@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import {
   Card,
   CardContent,
@@ -97,7 +98,7 @@ export const AdminAccountSection = () => {
         </div>
 
         <Button type="button" onClick={handleSaveAccount}>
-          Salvar configurações da conta
+          Salvar Configurações Da Conta
         </Button>
 
         <form
@@ -148,7 +149,9 @@ export const AdminAccountSection = () => {
             ) : null}
           </div>
           <Button type="submit" variant="outline" disabled={isChangingPassword}>
-            {isChangingPassword ? "Alterando..." : "Alterar senha"}
+            <ButtonLoadingContent loading={isChangingPassword}>
+              Alterar Senha
+            </ButtonLoadingContent>
           </Button>
         </form>
       </CardContent>

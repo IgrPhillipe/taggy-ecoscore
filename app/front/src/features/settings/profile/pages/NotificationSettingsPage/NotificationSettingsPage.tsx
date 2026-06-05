@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import {
   Card,
   CardContent,
@@ -123,14 +124,9 @@ export const NotificationSettingsPage = () => {
             onClick={handleSave}
             disabled={mutation.isPending}
           >
-            {mutation.isPending ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              "Salvar preferências"
-            )}
+            <ButtonLoadingContent loading={mutation.isPending}>
+              Salvar Preferências
+            </ButtonLoadingContent>
           </Button>
         </CardContent>
       </Card>

@@ -3,6 +3,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import {
   Dialog,
   DialogContent,
@@ -222,7 +223,9 @@ export const VehicleFormDialog = ({
               Cancelar
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Salvando…" : "Salvar"}
+              <ButtonLoadingContent loading={isPending}>
+                Salvar
+              </ButtonLoadingContent>
             </Button>
           </div>
         </form>

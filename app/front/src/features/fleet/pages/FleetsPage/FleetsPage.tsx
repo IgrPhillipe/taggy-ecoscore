@@ -21,6 +21,7 @@ import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { FilterInput } from "@/components/ui/FilterInput";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import { useFilterDraft } from "@/hooks/useFilterDraft";
 import {
   Dialog,
@@ -121,7 +122,9 @@ const CreateFleetDialog = ({
                 (isAdmin && organizationId == null)
               }
             >
-              {isPending ? "Salvando…" : "Salvar"}
+              <ButtonLoadingContent loading={isPending}>
+                Salvar
+              </ButtonLoadingContent>
             </Button>
           </div>
         </div>

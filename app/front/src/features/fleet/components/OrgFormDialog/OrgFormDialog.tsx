@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ type OrgFormDialogProps = {
   initial?: OrgFormData;
   onSubmit: (data: OrgFormData) => void;
   title: string;
+  isPending?: boolean;
 };
 
 export const OrgFormDialog = ({
@@ -32,6 +34,7 @@ export const OrgFormDialog = ({
   initial,
   onSubmit,
   title,
+  isPending = false,
 }: OrgFormDialogProps) => {
   const [form, setForm] = useState<OrgFormData>(initial ?? defaultForm);
   const [cnpjError, setCnpjError] = useState<string | undefined>();
@@ -51,7 +54,6 @@ export const OrgFormDialog = ({
     }
 
     onSubmit(form);
-    onClose();
   };
 
   return (
@@ -90,11 +92,13 @@ export const OrgFormDialog = ({
             ) : null}
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={onClose} disabled={isPending}>
               Cancelar
             </Button>
-            <Button onClick={handleSubmit} disabled={!form.name.trim()}>
-              Salvar
+            <Button onClick={handleSubmit} disabled={!form.name.trim() || isPending}>
+              <ButtonLoadingContent loading={isPending}>
+                Salvar
+              </ButtonLoadingContent>
             </Button>
           </div>
         </div>

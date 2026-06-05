@@ -3,6 +3,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ButtonLoadingContent } from "@/components/ui/ButtonLoadingContent";
 import {
   Dialog,
   DialogContent,
@@ -133,7 +134,9 @@ export const UserFormDialog = ({ open, onClose, user }: UserFormDialogProps) => 
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={isPending}>
-                  {isPending ? "Salvando…" : isCreate ? "Criar" : "Salvar"}
+                  <ButtonLoadingContent loading={isPending}>
+                    {isCreate ? "Criar" : "Salvar"}
+                  </ButtonLoadingContent>
                 </Button>
               </div>
             </div>
@@ -153,7 +156,9 @@ export const UserFormDialog = ({ open, onClose, user }: UserFormDialogProps) => 
             <DialogFooter>
               <Button variant="outline" onClick={() => setConfirmDelete(false)}>Cancelar</Button>
               <Button variant="destructive" disabled={isDeleting} onClick={handleDelete}>
-                Excluir
+                <ButtonLoadingContent loading={isDeleting}>
+                  Excluir
+                </ButtonLoadingContent>
               </Button>
             </DialogFooter>
           </DialogContent>
