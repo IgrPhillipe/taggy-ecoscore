@@ -39,6 +39,8 @@ import { OrganizationsCombobox } from "../../components/OrganizationsCombobox/Or
 import { createFleet } from "../../api/requests";
 import type { Fleet } from "../../api/types";
 import { useGetFleetsFiltered } from "../../hooks/useGetFleetsFiltered";
+import { ExportButton } from "@/features/reports/components/ExportButton";
+import { buildFleetListExportUrl } from "@/features/reports/lib/export-urls";
 
 const fleetsSearchParams = {
   page: parseAsInteger.withDefault(1),
@@ -289,10 +291,18 @@ export const FleetsPage = () => {
             className="min-w-0 flex-1"
           />
         )}
-        <Button onClick={() => setCreateOpen(true)} className="shrink-0">
-          <Plus className="mr-1 h-4 w-4" />
-          Nova Frota
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <ExportButton
+            url={buildFleetListExportUrl({
+              organizationId: scopedOrgId,
+              search: search ?? undefined,
+            })}
+          />
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-1 h-4 w-4" />
+            Nova Frota
+          </Button>
+        </div>
       </section>
 
       <DataTable

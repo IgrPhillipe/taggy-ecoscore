@@ -41,6 +41,8 @@ import { useCurrentUser } from "@/features/auth";
 import type { UserWithVehicle } from "@/features/users/api/types";
 import { useDeleteUser } from "@/features/users/hooks/useUpdateUser";
 import { useGetDrivers } from "../../hooks/useGetDrivers";
+import { ExportButton } from "@/features/reports/components/ExportButton";
+import { buildDriverListExportUrl } from "@/features/reports/lib/export-urls";
 
 const columns = (
   onDelete: (driver: UserWithVehicle) => void,
@@ -285,10 +287,19 @@ export const DriversListPage = () => {
               </FormField>
               </FilterModal>
             </FilterSearchRow>
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-1 h-4 w-4" />
-              Cadastrar Motorista
-            </Button>
+            <div className="flex items-center gap-2">
+              <ExportButton
+                url={buildDriverListExportUrl({
+                  organizationId: scopedOrgId,
+                  fleetId: fleet ?? undefined,
+                  search: search ?? undefined,
+                })}
+              />
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus className="mr-1 h-4 w-4" />
+                Cadastrar Motorista
+              </Button>
+            </div>
           </section>
 
           <DataTable

@@ -1,4 +1,5 @@
 import { Leaf, Fuel, Download, Coins, Tag, Scroll } from "lucide-react";
+import { EXPORT_LABELS } from "@/features/reports/constants";
 import { useState } from "react";
 import type { DateRange } from "react-day-picker";
 
@@ -207,7 +208,7 @@ export const DashboardPage = () => {
 
         <Button type="button" variant="outline">
           <Download className="h-4 w-4" />
-          Exportar Relatório
+          {EXPORT_LABELS.spreadsheet}
         </Button>
       </section>
 

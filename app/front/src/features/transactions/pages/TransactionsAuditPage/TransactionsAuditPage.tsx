@@ -7,7 +7,6 @@ import {
   useQueryStates,
 } from "nuqs";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
-import { FileSpreadsheet } from "lucide-react";
 import { OrganizationsRelationSelect, FleetsRelationSelect } from "@/components/form/relation-selects";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
@@ -27,6 +26,9 @@ import {
 } from "@/components/ui/sheet";
 import { PAGE_SIZE } from "@/constants";
 import { useCurrentUser } from "@/features/auth";
+import { EXPORT_LABELS } from "@/features/reports/constants";
+import { ExportButton, AuditExportButton } from "@/features/reports/components/ExportButton";
+import { buildTransactionDetailExportUrl, buildTransactionListExportUrl } from "@/features/reports/lib/export-urls";
 import type { Transaction } from "../../api/types";
 import { useGetTransactions } from "../../hooks/useGetTransactions";
 
@@ -38,6 +40,7 @@ const formatDateTime = (value: string) =>
 
 const columns = (
   onViewDetails: (transaction: Transaction) => void,
+  onSelect: (transaction: Transaction) => void,
 ): ColumnDef<Transaction>[] => [
   entityIdColumn<Transaction>(),
   {
@@ -113,16 +116,25 @@ const columns = (
     id: "actions",
     header: "Ações",
     cell: ({ row }) => (
-      <ActionHintPopover label="Ver detalhes técnicos">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onViewDetails(row.original)}
-          aria-label="Ver detalhes técnicos"
-        >
-          <Eye className="h-4 w-4" />
-        </Button>
-      </ActionHintPopover>
+      <div className="flex items-center gap-2">
+        <ActionHintPopover label="Ver detalhes técnicos">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(event) => {
+              event.stopPropagation();
+              onSelect(row.original);
+              onViewDetails(row.original);
+            }}
+            aria-label="Ver detalhes técnicos"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+        </ActionHintPopover>
+        <ActionHintPopover label={EXPORT_LABELS.auditSpreadsheet}>
+          <AuditExportButton transactionId={row.original.id} />
+        </ActionHintPopover>
+      </div>
     ),
   },
 ];
@@ -154,6 +166,9 @@ export const TransactionsAuditPage = () => {
   const debouncedPlate = useDebouncedValue(plateSearch, 300);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
+  const [detailTransaction, setDetailTransaction] =
+    useState<Transaction | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const appliedAuditFilters: AuditModalFilterState = {
     context: filters.context,
@@ -226,6 +241,30 @@ export const TransactionsAuditPage = () => {
     setParams({ page: next.pageIndex + 1 });
   };
 
+  const handleViewDetails = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setDetailTransaction(transaction);
+    setDetailsOpen(true);
+  };
+
+  const handleSelectTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+  };
+
+  const listExportUrl = buildTransactionListExportUrl({
+    organizationId: scopedOrgId,
+    fleetId: fleet ?? undefined,
+    plate: debouncedPlate || undefined,
+    context: filters.context,
+    uf: filters.uf,
+    fromDate: filters.dateRange?.from
+      ? format(filters.dateRange.from, "yyyy-MM-dd")
+      : undefined,
+    toDate: filters.dateRange?.to
+      ? format(filters.dateRange.to, "yyyy-MM-dd")
+      : undefined,
+  });
+
   return (
     <PageLayout
       title="Passagens"
@@ -286,55 +325,49 @@ export const TransactionsAuditPage = () => {
               </FormField>
             </FilterModal>
           </FilterSearchRow>
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-auto flex items-center gap-1.5"
-            disabled={!selectedTransaction}
-            title={!selectedTransaction ? "Selecione uma passagem primeiro" : undefined}
-            onClick={() => {
-              const t = selectedTransaction;
-              const params = new URLSearchParams({
-                plate: t?.plate ?? "DEMO0001",
-                elapsed_time: String(Math.round(t?.elapsed_time_sec ?? 30)),
-                context: t?.context ?? "pedagio",
-                uf: t?.uf ?? "SP",
-                is_digital: String(t?.is_digital ?? true),
-                ...(t?.id != null && { transaction_id: String(t.id) }),
-                ...(t?.created_at && { passage_date: t.created_at.slice(0, 10) }),
-              });
-              window.open(`/api/reports/calculadora.xlsx?${params.toString()}`, "_blank");
-            }}
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            Planilha Auditável
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            <ExportButton url={listExportUrl} />
+          </div>
         </div>
       </section>
 
       <DataTable
-        columns={columns(setSelectedTransaction)}
+        columns={columns(handleViewDetails, handleSelectTransaction)}
         data={data?.items ?? []}
         isLoading={isLoading}
         pageCount={pageCount}
         pagination={pagination}
         onPaginationChange={handlePaginationChange}
+        onRowClick={handleSelectTransaction}
+        isRowSelected={(row) => row.id === selectedTransaction?.id}
       />
 
       <Sheet
-        open={selectedTransaction != null}
-        onOpenChange={(open) => !open && setSelectedTransaction(null)}
+        open={detailsOpen}
+        onOpenChange={(open) => {
+          setDetailsOpen(open);
+          if (!open) setDetailTransaction(null);
+        }}
       >
         <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
           <SheetHeader>
             <SheetTitle>
-              Passagem #{selectedTransaction?.id ?? ""}
+              Passagem #{detailTransaction?.id ?? ""}
             </SheetTitle>
           </SheetHeader>
-          {selectedTransaction && (
-            <pre className="mt-4 overflow-x-auto rounded-md bg-neutral-100 p-4 text-xs">
-              {JSON.stringify(selectedTransaction.parameters_snapshot, null, 2)}
-            </pre>
+          {detailTransaction && (
+            <>
+              <div className="mt-4">
+                <ExportButton
+                  url={buildTransactionDetailExportUrl(detailTransaction.id)}
+                  label={EXPORT_LABELS.auditSpreadsheet}
+                  variant="audit"
+                />
+              </div>
+              <pre className="mt-4 overflow-x-auto rounded-md bg-neutral-100 p-4 text-xs">
+                {JSON.stringify(detailTransaction.parameters_snapshot, null, 2)}
+              </pre>
+            </>
           )}
         </SheetContent>
       </Sheet>

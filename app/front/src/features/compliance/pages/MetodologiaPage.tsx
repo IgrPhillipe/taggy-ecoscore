@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
-import { AlertTriangle, Download, ExternalLink } from "lucide-react"
+import { AlertTriangle, ExternalLink } from "lucide-react"
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser"
+import { ExportButton } from "@/features/reports/components/ExportButton"
+import { EXPORT_LABELS } from "@/features/reports/constants"
 import { PageLayout } from "@/components/layout/PageLayout"
 import { PageSectionHeader } from "@/components/layout/PageSectionHeader"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -104,8 +105,6 @@ const ParamRow = ({ label, value, unit, source, year, warn }: ParamRowProps) => 
     <TableCell className="text-xs text-muted-foreground">{year ?? "—"}</TableCell>
   </TableRow>
 )
-
-const _API_BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "")
 
 export const MetodologiaPage = () => {
   const { user } = useCurrentUser()
@@ -699,22 +698,19 @@ export const MetodologiaPage = () => {
                 Quer verificar o cálculo completo com fórmulas?
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Baixe a planilha auditável com glossário, premissas, passo a passo, análise de sensibilidade e projeção de escala.
+                Exporte a planilha auditável com glossário, premissas, passo a passo, análise de sensibilidade e projeção de escala.
               </p>
             </div>
             {isAdmin ? (
-              <Button
-                onClick={() => {
-                  const url = `${_API_BASE}/api/reports/calculadora.xlsx?plate=DEMO0001&elapsed_time=30&context=pedagio&uf=SP`
-                  window.open(url, "_blank")
-                }}
-              >
-                <Download />
-                Download da Planilha de Cálculo (XLSX)
-              </Button>
+              <ExportButton
+                url="/api/reports/calculadora.xlsx?plate=DEMO0001&elapsed_time=30&context=pedagio&uf=SP"
+                label={EXPORT_LABELS.calculationTemplate}
+                variant="audit"
+                size="default"
+              />
             ) : (
               <p className="text-sm text-muted-foreground">
-                Download disponível apenas para administradores.
+                {EXPORT_LABELS.adminOnly}
               </p>
             )}
           </CardContent>

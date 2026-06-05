@@ -36,6 +36,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { vehicleKeys } from "../../api/query-keys";
 import type { Vehicle } from "../../schemas/vehicle-schema";
 import { VehicleFormDialog } from "../../components/VehicleFormDialog/VehicleFormDialog";
+import { ExportButton } from "@/features/reports/components/ExportButton";
+import { buildVehicleListExportUrl } from "@/features/reports/lib/export-urls";
 
 const VehicleActions = ({
   vehicle,
@@ -296,10 +298,21 @@ export const FleetListPage = () => {
           ) : null}
           </FilterModal>
         </FilterSearchRow>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-1 h-4 w-4" />
-          Cadastrar Veículo
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportButton
+            url={buildVehicleListExportUrl({
+              organizationId: scopedOrgId,
+              fleetId: fleet ?? undefined,
+              search: search ?? undefined,
+              fuelType: fuel_type ?? undefined,
+              semFrota: semFrotaParam,
+            })}
+          />
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-1 h-4 w-4" />
+            Cadastrar Veículo
+          </Button>
+        </div>
       </section>
 
       <DataTable

@@ -28,6 +28,9 @@ import { getVehicle, getVehicleTransactionsFiltered, getVehicleSummary } from ".
 import type { VehicleTransaction } from "../../api/types";
 import { VehicleFormDialog } from "../../components/VehicleFormDialog/VehicleFormDialog";
 import { VEHICLE_CATEGORY_LABELS } from "../../constants";
+import { ExportButton } from "@/features/reports/components/ExportButton";
+import { buildVehicleDetailExportUrl } from "@/features/reports/lib/export-urls";
+import { transactionAuditActionColumn } from "@/features/reports/components/transaction-audit-action-column";
 
 type VehicleDetailPageProps = {
   vehicleId: number;
@@ -71,6 +74,7 @@ const transactionColumns: ColumnDef<VehicleTransaction>[] = [
     header: "DATA",
     cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString("pt-BR"),
   },
+  transactionAuditActionColumn<VehicleTransaction>(),
 ];
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
@@ -147,11 +151,20 @@ export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
       title={vehicleLoading ? "Carregando…" : (vehicle?.model ?? "Veículo")}
       description={vehicle ? `${vehicle.license_plate} · ${fuelLabels[vehicle.fuel_type] ?? vehicle.fuel_type}` : "Detalhes do veículo."}
     >
-      <div className="mb-2">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <Button variant="outline" size="sm" onClick={() => navigate({ to: "/frota" })}>
           <ArrowLeft className="mr-1 h-3 w-3" />
           Veículos
         </Button>
+        <ExportButton
+          url={buildVehicleDetailExportUrl({
+            vehicleId,
+            context: filters.context,
+            uf: filters.uf,
+            fromDate: filters.fromDate,
+            toDate: filters.toDate,
+          })}
+        />
       </div>
 
       <SectionCard title="Informações">

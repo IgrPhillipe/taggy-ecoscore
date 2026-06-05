@@ -28,6 +28,8 @@ type DataTableProps<TData, TValue> = {
   onPaginationChange?: OnChangeFn<PaginationState>
   sorting?: SortingState
   onSortingChange?: OnChangeFn<SortingState>
+  onRowClick?: (row: TData) => void
+  isRowSelected?: (row: TData) => boolean
 }
 
 export const DataTable = <TData, TValue>({
@@ -39,6 +41,8 @@ export const DataTable = <TData, TValue>({
   onPaginationChange,
   sorting,
   onSortingChange,
+  onRowClick,
+  isRowSelected,
 }: DataTableProps<TData, TValue>) => {
   const table = useReactTable({
     data,
@@ -85,7 +89,16 @@ export const DataTable = <TData, TValue>({
           <TableBody>
             {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow
+                  key={row.id}
+                  data-state={isRowSelected?.(row.original) ? "selected" : undefined}
+                  className={onRowClick ? "cursor-pointer" : undefined}
+                  onClick={
+                    onRowClick
+                      ? () => onRowClick(row.original)
+                      : undefined
+                  }
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}

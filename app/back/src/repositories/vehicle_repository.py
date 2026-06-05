@@ -68,6 +68,33 @@ class VehicleRepository:
         )
         return list(result.scalars().all()), total
 
+    async def get_all_filtered(
+        self,
+        search: str | None = None,
+        organization_id: int | None = None,
+        fleet_id: int | None = None,
+        fuel_type: str | None = None,
+        sem_frota: bool | None = None,
+    ) -> list[Vehicle]:
+        query = select(Vehicle)
+        if sem_frota:
+            query = query.where(Vehicle.fleet_id.is_(None))
+        elif fleet_id is not None:
+            query = query.where(Vehicle.fleet_id == fleet_id)
+        elif organization_id is not None:
+            query = query.where(Vehicle.organization_id == organization_id)
+        if search:
+            like = f"%{search}%"
+            query = query.where(
+                Vehicle.license_plate.ilike(like)
+                | Vehicle.model.ilike(like)
+                | Vehicle.id_tag.ilike(like)
+            )
+        if fuel_type:
+            query = query.where(Vehicle.fuel_type == fuel_type)
+        result = await self.session.execute(query.order_by(Vehicle.license_plate))
+        return list(result.scalars().all())
+
     async def create(self, vehicle_in: VehicleIn) -> Vehicle:
         vehicle = Vehicle(**vehicle_in.model_dump())
 

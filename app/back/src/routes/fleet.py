@@ -81,21 +81,33 @@ async def get_fleet_transactions(
     fleet_id: int,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
+    context: str | None = Query(default=None),
+    uf: str | None = Query(default=None),
+    from_date: str | None = Query(default=None),
+    to_date: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    from datetime import date as date_type
+
     fleet = await FleetRepository(db).get_by_id(fleet_id)
     if not fleet:
         raise HTTPException(status_code=404, detail=err.FLEET_NOT_FOUND)
     org_scope = apply_org_scope_for_gestor(current_user, None)
     if org_scope is not None and fleet.organization_id != org_scope:
         raise HTTPException(status_code=403, detail=err.ACCESS_DENIED)
-    vehicles = await FleetRepository(db).get_vehicles(fleet_id)
-    vehicle_ids = [v.id for v in vehicles if v.id is not None]
-    if not vehicle_ids:
-        return {"items": [], "total": 0}
+    parsed_from = date_type.fromisoformat(from_date) if from_date else None
+    parsed_to = date_type.fromisoformat(to_date) if to_date else None
     repo = TransactionRepository(db)
-    items, total = await repo.get_by_vehicle_ids_paginated(vehicle_ids, page, page_size)
+    items, total = await repo.get_paginated(
+        page,
+        page_size,
+        fleet_id=fleet_id,
+        context=context,
+        uf=uf,
+        from_date=parsed_from,
+        to_date=parsed_to,
+    )
     from src.dto.transactions import TransactionPublic
     return {
         "items": [TransactionPublic.model_validate(t) for t in items],

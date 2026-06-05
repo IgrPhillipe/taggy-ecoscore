@@ -51,6 +51,9 @@ import {
 } from "../../api/requests";
 import type { VehicleTransaction } from "../../api/types";
 import type { Vehicle } from "../../schemas/vehicle-schema";
+import { ExportButton } from "@/features/reports/components/ExportButton";
+import { buildFleetDetailExportUrl } from "@/features/reports/lib/export-urls";
+import { transactionAuditActionColumn } from "@/features/reports/components/transaction-audit-action-column";
 
 type FleetDetailPageProps = {
   fleetId: number;
@@ -141,6 +144,7 @@ const transactionColumns: ColumnDef<VehicleTransaction>[] = [
     header: "DATA",
     cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString("pt-BR"),
   },
+  transactionAuditActionColumn<VehicleTransaction>(),
 ];
 
 export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) => {
@@ -278,11 +282,14 @@ export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) =>
 
   return (
     <PageLayout title={`#${fleetId} · ${fleetName}`} description="Detalhes e métricas da frota.">
-      <div className="mb-2">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <Button variant="outline" size="sm" onClick={() => navigate({ to: "/frotas" })}>
           <ArrowLeft className="mr-1 h-3 w-3" />
           Frotas
         </Button>
+        <ExportButton
+          url={buildFleetDetailExportUrl(fleetId)}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-7">

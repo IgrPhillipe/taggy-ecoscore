@@ -29,6 +29,9 @@ import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useFilterDraft } from "@/hooks/useFilterDraft";
 import { api } from "@/lib/http-client";
+import { ExportButton } from "@/features/reports/components/ExportButton";
+import { buildDriverDetailExportUrl } from "@/features/reports/lib/export-urls";
+import { transactionAuditActionColumn } from "@/features/reports/components/transaction-audit-action-column";
 
 type DriverDetailPageProps = {
   driverId: number;
@@ -73,6 +76,7 @@ const transactionColumns: ColumnDef<VehicleTransaction>[] = [
     header: "DATA",
     cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString("pt-BR"),
   },
+  transactionAuditActionColumn<VehicleTransaction>(),
 ];
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
@@ -153,11 +157,21 @@ export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
       title={driverLoading ? "Carregando…" : (driver?.name ?? "Motorista")}
       description="Detalhes e histórico do motorista."
     >
-      <div className="mb-2">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <Button variant="outline" size="sm" onClick={() => navigate({ to: "/motoristas" })}>
           <ArrowLeft className="mr-1 h-3 w-3" />
           Motoristas
         </Button>
+        <ExportButton
+          url={buildDriverDetailExportUrl({
+            driverId,
+            plate: filters.plate,
+            context: filters.context,
+            uf: filters.uf,
+            fromDate: filters.fromDate,
+            toDate: filters.toDate,
+          })}
+        />
       </div>
 
       <SectionCard title="Informações">

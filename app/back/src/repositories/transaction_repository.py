@@ -178,6 +178,70 @@ class TransactionRepository:
         )
         return list(result.scalars().all()), total
 
+    async def get_all_filtered(
+        self,
+        organization_id: int | None = None,
+        fleet_id: int | None = None,
+        vehicle_id: int | None = None,
+        user_id: int | None = None,
+        plate: str | None = None,
+        context: str | None = None,
+        uf: str | None = None,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[Transaction]:
+        query = select(Transaction)
+        if fleet_id is not None:
+            query = query.where(
+                Transaction.vehicle_id.in_(
+                    select(Vehicle.id).where(Vehicle.fleet_id == fleet_id)
+                )
+            )
+        if organization_id is not None:
+            query = query.where(Transaction.organization_id == organization_id)
+        if vehicle_id is not None:
+            query = query.where(Transaction.vehicle_id == vehicle_id)
+        if user_id is not None:
+            query = query.where(Transaction.user_id == user_id)
+        if plate:
+            query = query.where(Transaction.plate.ilike(f"%{plate}%"))
+        if context:
+            query = query.where(Transaction.context == context)
+        if uf:
+            query = query.where(Transaction.uf == uf)
+        if from_date:
+            query = query.where(Transaction.created_at >= from_date)
+        if to_date:
+            query = query.where(Transaction.created_at <= to_date)
+        result = await self.session.execute(
+            query.order_by(Transaction.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def get_by_vehicle_ids_filtered(
+        self,
+        vehicle_ids: list[int],
+        context: str | None = None,
+        uf: str | None = None,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[Transaction]:
+        if not vehicle_ids:
+            return []
+        query = select(Transaction).where(Transaction.vehicle_id.in_(vehicle_ids))
+        if context:
+            query = query.where(Transaction.context == context)
+        if uf:
+            query = query.where(Transaction.uf == uf)
+        if from_date:
+            query = query.where(Transaction.created_at >= from_date)
+        if to_date:
+            query = query.where(Transaction.created_at <= to_date)
+        result = await self.session.execute(
+            query.order_by(Transaction.created_at.desc())
+        )
+        return list(result.scalars().all())
+
     async def get_by_user_in_range(
         self,
         user_id: int,

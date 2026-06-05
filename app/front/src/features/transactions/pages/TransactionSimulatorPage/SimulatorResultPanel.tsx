@@ -4,7 +4,6 @@ import {
   ChevronDown,
   Clock,
   Coins,
-  Download,
   Droplet,
   Fuel,
   Leaf,
@@ -12,6 +11,9 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EXPORT_LABELS } from "@/features/reports/constants";
+import { ExportButton } from "@/features/reports/components/ExportButton";
+import { buildAuditReportUrl } from "@/features/reports/lib/export-urls";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -99,19 +101,6 @@ const COMPARISON_ROWS: { key: keyof CalcComparisonSide; label: string }[] = [
   { key: "estimated_brl", label: "Custo estimado" },
 ];
 
-function buildReportUrl(transaction: Transaction, ufPassagem: string | undefined): string {
-  const params = new URLSearchParams({
-    plate: transaction.plate ?? "DEMO0001",
-    elapsed_time: String(Math.round(transaction.elapsed_time_sec ?? 30)),
-    context: transaction.context,
-    uf: ufPassagem ?? transaction.uf ?? "SP",
-    is_digital: String(transaction.is_digital),
-    transaction_id: String(transaction.id),
-    passage_date: transaction.created_at.slice(0, 10),
-  });
-  return `/api/reports/calculadora.xlsx?${params.toString()}`;
-}
-
 type SimulatorResultPanelProps = {
   result: CalcResult;
   transaction: Transaction;
@@ -136,16 +125,12 @@ export function SimulatorResultPanel({ result, transaction }: SimulatorResultPan
         <Badge variant="secondary" className="text-xs">
           Passagem #{transaction.id}
         </Badge>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="ml-auto flex items-center gap-1.5"
-          onClick={() => window.open(buildReportUrl(transaction, meta.uf_passagem), "_blank")}
-        >
-          <Download className="h-4 w-4" />
-          Baixar relatório
-        </Button>
+        <ExportButton
+          url={buildAuditReportUrl(transaction.id)}
+          label={EXPORT_LABELS.auditSpreadsheet}
+          variant="audit"
+          className="ml-auto"
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
