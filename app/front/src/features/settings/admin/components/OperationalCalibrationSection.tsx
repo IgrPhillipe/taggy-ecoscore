@@ -74,8 +74,10 @@ export const OperationalCalibrationSection = () => {
   const { mutateAsync: syncMctiAsync, isPending: isSyncingMcti } =
     useSyncEmissionFactors();
   const { mutateAsync: updateFuelPriceAsync } = useUpdateFuelPrice();
-  const { data: taggyPlaces, isLoading: isLoadingTaggy } = useGetTaggyPlacesSummary();
-  const { mutateAsync: syncTaggyAsync, isPending: isSyncingTaggy } = useSyncTaggyPlaces();
+  const { data: taggyPlaces, isLoading: isLoadingTaggy } =
+    useGetTaggyPlacesSummary();
+  const { mutateAsync: syncTaggyAsync, isPending: isSyncingTaggy } =
+    useSyncTaggyPlaces();
 
   const [isSavingFuelPrices, setIsSavingFuelPrices] = useState(false);
 
@@ -157,7 +159,9 @@ export const OperationalCalibrationSection = () => {
         loading: "Sincronizando fatores MCTI...",
         success: "Fatores MCTI atualizados!",
         error: (err) =>
-          err instanceof Error ? err.message : "Erro ao sincronizar fatores MCTI.",
+          err instanceof Error
+            ? err.message
+            : "Erro ao sincronizar fatores MCTI.",
       },
     );
   };
@@ -183,9 +187,7 @@ export const OperationalCalibrationSection = () => {
         loading: "Salvando especificações...",
         success: "Especificações técnicas atualizadas!",
         error: (err) =>
-          err instanceof Error
-            ? err.message
-            : "Erro ao salvar especificações.",
+          err instanceof Error ? err.message : "Erro ao salvar especificações.",
       },
     );
   };
@@ -385,7 +387,9 @@ export const OperationalCalibrationSection = () => {
                         aria-label={
                           isRowUnlocked ? "Bloquear linha" : "Desbloquear linha"
                         }
-                        title={isRowUnlocked ? "Bloquear" : "Clique para editar"}
+                        title={
+                          isRowUnlocked ? "Bloquear" : "Clique para editar"
+                        }
                       >
                         {isRowUnlocked ? (
                           <LockOpen className="h-4 w-4" />
@@ -468,7 +472,8 @@ export const OperationalCalibrationSection = () => {
           <div>
             <CardTitle>Rede Taggy</CardTitle>
             <CardDescription>
-              Pedágios e estacionamentos da rede Taggy usados no cálculo da rota.
+              Pedágios e estacionamentos da rede Taggy usados no cálculo da
+              rota.
             </CardDescription>
           </div>
           <Button
@@ -484,8 +489,10 @@ export const OperationalCalibrationSection = () => {
               });
             }}
           >
-            <RefreshCw className={cn("h-4 w-4", isSyncingTaggy && "animate-spin")} />
-            {isSyncingTaggy ? "Sincronizando..." : "Sincronizar Taggy"}
+            <RefreshCw
+              className={cn("h-4 w-4", isSyncingTaggy && "animate-spin")}
+            />
+            {isSyncingTaggy ? "Sincronizando..." : "Sincronizar Rede Taggy"}
           </Button>
         </CardHeader>
         <CardContent>
@@ -494,16 +501,24 @@ export const OperationalCalibrationSection = () => {
           ) : taggyPlaces ? (
             <div className="flex flex-col gap-1.5 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Pedágios cadastrados</span>
+                <span className="text-muted-foreground">
+                  Pedágios cadastrados
+                </span>
                 <span className="font-semibold">{taggyPlaces.toll_count}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Estacionamentos cadastrados</span>
-                <span className="font-semibold">{taggyPlaces.parking_count}</span>
+                <span className="text-muted-foreground">
+                  Estacionamentos cadastrados
+                </span>
+                <span className="font-semibold">
+                  {taggyPlaces.parking_count}
+                </span>
               </div>
               {taggyPlaces.last_synced_at && (
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Última sincronização</span>
+                  <span className="text-muted-foreground">
+                    Última sincronização
+                  </span>
                   <span className="font-medium text-foreground">
                     {formatUtcAsBrasilia(taggyPlaces.last_synced_at)}
                   </span>
