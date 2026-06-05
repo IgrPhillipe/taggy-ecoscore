@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.dto.transactions import TransactionIn, TransactionUpdate
 from src.models.transaction import Transaction
+from src.models.vehicle import Vehicle
 
 
 class TransactionRepository:
@@ -135,6 +136,7 @@ class TransactionRepository:
         page: int = 1,
         page_size: int = 10,
         organization_id: int | None = None,
+        fleet_id: int | None = None,
         vehicle_id: int | None = None,
         user_id: int | None = None,
         plate: str | None = None,
@@ -144,6 +146,12 @@ class TransactionRepository:
         to_date: date | None = None,
     ) -> tuple[list[Transaction], int]:
         query = select(Transaction)
+        if fleet_id is not None:
+            query = query.where(
+                Transaction.vehicle_id.in_(
+                    select(Vehicle.id).where(Vehicle.fleet_id == fleet_id)
+                )
+            )
         if organization_id is not None:
             query = query.where(Transaction.organization_id == organization_id)
         if vehicle_id is not None:

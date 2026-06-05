@@ -2,7 +2,6 @@ import {
   BookOpen,
   Building2,
   ChartLine,
-  FileText,
   FlaskConical,
   Home,
   LucideIcon,
@@ -100,14 +99,6 @@ export const APP_NAV_ITEMS: NavItem[] = [
     exact: true,
     roles: ["admin", "gestor_frota"],
     category: "frota",
-  },
-  {
-    to: "/relatorios",
-    label: "Relatórios",
-    icon: FileText,
-    exact: true,
-    roles: ["admin", "gestor_frota"],
-    category: "analise",
   },
   {
     to: "/rota",

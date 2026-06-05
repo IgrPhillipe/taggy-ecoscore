@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SimuladorRouteImport } from './routes/simulador'
 import { Route as RotaRouteImport } from './routes/rota'
-import { Route as RelatoriosRouteImport } from './routes/relatorios'
 import { Route as PassagensAuditoriaRouteImport } from './routes/passagens-auditoria'
 import { Route as PassagensRouteImport } from './routes/passagens'
 import { Route as MetodologiaRouteImport } from './routes/metodologia'
@@ -49,11 +48,6 @@ const SimuladorRoute = SimuladorRouteImport.update({
 const RotaRoute = RotaRouteImport.update({
   id: '/rota',
   path: '/rota',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RelatoriosRoute = RelatoriosRouteImport.update({
-  id: '/relatorios',
-  path: '/relatorios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PassagensAuditoriaRoute = PassagensAuditoriaRouteImport.update({
@@ -176,7 +170,6 @@ export interface FileRoutesByFullPath {
   '/metodologia': typeof MetodologiaRoute
   '/passagens': typeof PassagensRoute
   '/passagens-auditoria': typeof PassagensAuditoriaRoute
-  '/relatorios': typeof RelatoriosRoute
   '/rota': typeof RotaRoute
   '/simulador': typeof SimuladorRoute
   '/users': typeof UsersRoute
@@ -204,7 +197,6 @@ export interface FileRoutesByTo {
   '/metodologia': typeof MetodologiaRoute
   '/passagens': typeof PassagensRoute
   '/passagens-auditoria': typeof PassagensAuditoriaRoute
-  '/relatorios': typeof RelatoriosRoute
   '/rota': typeof RotaRoute
   '/simulador': typeof SimuladorRoute
   '/users': typeof UsersRoute
@@ -233,7 +225,6 @@ export interface FileRoutesById {
   '/metodologia': typeof MetodologiaRoute
   '/passagens': typeof PassagensRoute
   '/passagens-auditoria': typeof PassagensAuditoriaRoute
-  '/relatorios': typeof RelatoriosRoute
   '/rota': typeof RotaRoute
   '/simulador': typeof SimuladorRoute
   '/users': typeof UsersRoute
@@ -263,7 +254,6 @@ export interface FileRouteTypes {
     | '/metodologia'
     | '/passagens'
     | '/passagens-auditoria'
-    | '/relatorios'
     | '/rota'
     | '/simulador'
     | '/users'
@@ -291,7 +281,6 @@ export interface FileRouteTypes {
     | '/metodologia'
     | '/passagens'
     | '/passagens-auditoria'
-    | '/relatorios'
     | '/rota'
     | '/simulador'
     | '/users'
@@ -319,7 +308,6 @@ export interface FileRouteTypes {
     | '/metodologia'
     | '/passagens'
     | '/passagens-auditoria'
-    | '/relatorios'
     | '/rota'
     | '/simulador'
     | '/users'
@@ -348,7 +336,6 @@ export interface RootRouteChildren {
   MetodologiaRoute: typeof MetodologiaRoute
   PassagensRoute: typeof PassagensRoute
   PassagensAuditoriaRoute: typeof PassagensAuditoriaRoute
-  RelatoriosRoute: typeof RelatoriosRoute
   RotaRoute: typeof RotaRoute
   SimuladorRoute: typeof SimuladorRoute
   UsersRoute: typeof UsersRoute
@@ -389,13 +376,6 @@ declare module '@tanstack/react-router' {
       path: '/rota'
       fullPath: '/rota'
       preLoaderRoute: typeof RotaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/relatorios': {
-      id: '/relatorios'
-      path: '/relatorios'
-      fullPath: '/relatorios'
-      preLoaderRoute: typeof RelatoriosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/passagens-auditoria': {
@@ -564,7 +544,6 @@ const rootRouteChildren: RootRouteChildren = {
   MetodologiaRoute: MetodologiaRoute,
   PassagensRoute: PassagensRoute,
   PassagensAuditoriaRoute: PassagensAuditoriaRoute,
-  RelatoriosRoute: RelatoriosRoute,
   RotaRoute: RotaRoute,
   SimuladorRoute: SimuladorRoute,
   UsersRoute: UsersRoute,

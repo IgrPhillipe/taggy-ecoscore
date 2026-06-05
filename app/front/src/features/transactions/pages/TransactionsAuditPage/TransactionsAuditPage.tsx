@@ -8,7 +8,7 @@ import {
 } from "nuqs";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
 import { FileSpreadsheet } from "lucide-react";
-import { OrganizationsRelationSelect } from "@/components/form/relation-selects";
+import { OrganizationsRelationSelect, FleetsRelationSelect } from "@/components/form/relation-selects";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { TransactionFiltersForm } from "@/components/TransactionFilters/TransactionFilters";
@@ -130,11 +130,13 @@ const columns = (
 const auditSearchParams = {
   page: parseAsInteger.withDefault(1),
   org: parseAsInteger,
+  fleet: parseAsInteger,
 };
 
 const AUDIT_FILTER_DEFAULTS = {
   ...TRANSACTION_MODAL_FILTER_DEFAULTS,
   org: undefined as number | undefined,
+  fleet: undefined as number | undefined,
 };
 
 type AuditModalFilterState = typeof AUDIT_FILTER_DEFAULTS;
@@ -142,7 +144,7 @@ type AuditModalFilterState = typeof AUDIT_FILTER_DEFAULTS;
 export const TransactionsAuditPage = () => {
   const { user } = useCurrentUser();
   const isAdmin = user?.role === "admin";
-  const [{ page, org }, setParams] = useQueryStates(auditSearchParams, {
+  const [{ page, org, fleet }, setParams] = useQueryStates(auditSearchParams, {
     history: "replace",
   });
   const [filters, setFilters] = useState<
@@ -158,6 +160,7 @@ export const TransactionsAuditPage = () => {
     uf: filters.uf,
     dateRange: filters.dateRange,
     org: org ?? undefined,
+    fleet: fleet ?? undefined,
   };
 
   const {
@@ -177,7 +180,7 @@ export const TransactionsAuditPage = () => {
         uf: values.uf,
         dateRange: values.dateRange,
       });
-      setParams({ org: values.org ?? null, page: 1 });
+      setParams({ org: values.org ?? null, fleet: values.fleet ?? null, page: 1 });
     },
   });
 
@@ -188,10 +191,18 @@ export const TransactionsAuditPage = () => {
         ? (org ?? undefined)
         : undefined;
 
+  const draftFleetOrgId =
+    user?.role === "gestor_frota"
+      ? (user.organization_id ?? undefined)
+      : isAdmin
+        ? (draft.org ?? undefined)
+        : undefined;
+
   const { data, isLoading } = useGetTransactions({
     page,
     pageSize: PAGE_SIZE,
     organizationId: scopedOrgId,
+    fleetId: fleet ?? undefined,
     plate: debouncedPlate || undefined,
     context: filters.context,
     uf: filters.uf,
@@ -249,7 +260,11 @@ export const TransactionsAuditPage = () => {
                   <OrganizationsRelationSelect
                     value={draft.org ?? undefined}
                     onValueChange={(value) =>
-                      setDraft((prev) => ({ ...prev, org: value ?? undefined }))
+                      setDraft((prev) => ({
+                        ...prev,
+                        org: value ?? undefined,
+                        fleet: undefined,
+                      }))
                     }
                     placeholder="Todas as organizações"
                     emptyLabel="Todas as organizações"
@@ -257,6 +272,18 @@ export const TransactionsAuditPage = () => {
                   />
                 </FormField>
               ) : null}
+              <FormField id="audit-fleet" label="Frota">
+                <FleetsRelationSelect
+                  value={draft.fleet ?? undefined}
+                  onValueChange={(value) =>
+                    setDraft((prev) => ({ ...prev, fleet: value ?? undefined }))
+                  }
+                  organizationId={draftFleetOrgId}
+                  placeholder="Todas as frotas"
+                  noneLabel="Todas as frotas"
+                  className="w-full"
+                />
+              </FormField>
             </FilterModal>
           </FilterSearchRow>
           <Button

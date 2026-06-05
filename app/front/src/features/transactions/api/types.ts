@@ -21,6 +21,7 @@ export type GetTransactionsParams = {
   page?: number;
   pageSize?: number;
   organizationId?: number;
+  fleetId?: number;
   plate?: string;
   context?: string;
   uf?: string;

@@ -44,6 +44,7 @@ async def list_transactions(
     vehicle_id: int | None = Query(default=None),
     user_id: int | None = Query(default=None),
     organization_id: int | None = Query(default=None),
+    fleet_id: int | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     plate: str | None = Query(default=None),
@@ -64,11 +65,12 @@ async def list_transactions(
         items, total = await repo.get_by_vehicle_paginated(vehicle_id, page, page_size, context=context, uf=uf, from_date=parsed_from, to_date=parsed_to)
     elif user_id is not None:
         items, total = await repo.get_by_user_paginated(user_id, page, page_size, plate=plate, context=context, uf=uf, from_date=parsed_from, to_date=parsed_to)
-    elif paginate or org_scope is not None or plate or context or uf or parsed_from or parsed_to:
+    elif paginate or org_scope is not None or fleet_id is not None or plate or context or uf or parsed_from or parsed_to:
         items, total = await repo.get_paginated(
             page,
             page_size,
             organization_id=org_scope,
+            fleet_id=fleet_id,
             plate=plate,
             context=context,
             uf=uf,

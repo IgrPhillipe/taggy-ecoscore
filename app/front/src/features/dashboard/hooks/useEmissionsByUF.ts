@@ -9,18 +9,21 @@ export type EmissionsByUFItem = {
 
 type UseEmissionsByUFParams = {
   organizationId?: number;
+  fleetId?: number;
 };
 
 export const useEmissionsByUF = ({
   organizationId,
+  fleetId,
 }: UseEmissionsByUFParams = {}) => {
   return useQuery({
-    queryKey: ["dashboard", "emissions-by-uf", organizationId],
+    queryKey: ["dashboard", "emissions-by-uf", organizationId, fleetId],
     queryFn: () =>
       api
         .get("/api/dashboard/emissions-by-uf", {
           searchParams: {
             ...(organizationId != null && { organization_id: organizationId }),
+            ...(fleetId != null && { fleet_id: fleetId }),
           },
         })
         .json<{ items: EmissionsByUFItem[] }>()

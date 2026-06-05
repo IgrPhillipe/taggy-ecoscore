@@ -12,18 +12,21 @@ export type DashboardSummary = {
 
 type UseDashboardSummaryParams = {
   organizationId?: number;
+  fleetId?: number;
 };
 
 export const useDashboardSummary = ({
   organizationId,
+  fleetId,
 }: UseDashboardSummaryParams = {}) => {
   return useQuery({
-    queryKey: ["dashboard", "summary", organizationId],
+    queryKey: ["dashboard", "summary", organizationId, fleetId],
     queryFn: () =>
       api
         .get("/api/dashboard/summary", {
           searchParams: {
             ...(organizationId != null && { organization_id: organizationId }),
+            ...(fleetId != null && { fleet_id: fleetId }),
           },
         })
         .json<DashboardSummary>(),

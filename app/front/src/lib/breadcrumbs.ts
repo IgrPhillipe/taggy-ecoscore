@@ -127,7 +127,6 @@ export function getBreadcrumbs(
   }
 
   const singleSegmentRoutes: Record<string, BreadcrumbItem> = {
-    "/relatorios": { label: "Relatórios", to: "/relatorios" },
     "/rota": { label: "Calcular Rota", to: "/rota" },
     "/passagens": { label: "Minhas Passagens", to: "/passagens" },
     "/passagens-auditoria": { label: "Passagens", to: "/passagens-auditoria" },

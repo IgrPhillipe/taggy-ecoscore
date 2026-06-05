@@ -18,6 +18,7 @@ export async function getTransactions(
         ...(params.organizationId != null && {
           organization_id: params.organizationId,
         }),
+        ...(params.fleetId != null && { fleet_id: params.fleetId }),
         ...(params.plate && { plate: params.plate }),
         ...(params.context && { context: params.context }),
         ...(params.uf && { uf: params.uf }),

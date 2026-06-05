@@ -15,9 +15,29 @@ from src.services.paper_savings import compute_paper_saved_meters
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
+def _fleet_vehicle_ids_subquery(fleet_id: int):
+    return select(Vehicle.id).where(Vehicle.fleet_id == fleet_id)
+
+
+def _apply_transaction_scope(
+    query,
+    *,
+    organization_id: int | None,
+    fleet_id: int | None,
+):
+    if fleet_id is not None:
+        query = query.where(
+            Transaction.vehicle_id.in_(_fleet_vehicle_ids_subquery(fleet_id))
+        )
+    if organization_id is not None:
+        query = query.where(Transaction.organization_id == organization_id)
+    return query
+
+
 @router.get("/summary")
 async def get_dashboard_summary(
     organization_id: int | None = Query(default=None),
+    fleet_id: int | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -34,16 +54,23 @@ async def get_dashboard_summary(
         Transaction.is_digital.is_(True),
     )
 
+    tx_query = _apply_transaction_scope(
+        tx_query,
+        organization_id=organization_id,
+        fleet_id=fleet_id,
+    )
+    digital_query = _apply_transaction_scope(
+        digital_query,
+        organization_id=organization_id,
+        fleet_id=fleet_id,
+    )
+
     if organization_id is not None:
-        tx_query = tx_query.where(
-            Transaction.organization_id == organization_id,
-        )
         vehicle_query = vehicle_query.where(
             Vehicle.organization_id == organization_id,
         )
-        digital_query = digital_query.where(
-            Transaction.organization_id == organization_id,
-        )
+    if fleet_id is not None:
+        vehicle_query = vehicle_query.where(Vehicle.fleet_id == fleet_id)
 
     tx_result = await db.execute(tx_query)
     transaction_count, co2_total, fuel_total, savings_total = tx_result.one()
@@ -72,6 +99,7 @@ async def get_dashboard_summary(
 async def get_daily_stats(
     days: int = Query(default=30, ge=7, le=90),
     organization_id: int | None = Query(default=None),
+    fleet_id: int | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -89,8 +117,11 @@ async def get_daily_stats(
         .order_by(cast(Transaction.created_at, Date))
     )
 
-    if organization_id is not None:
-        query = query.where(Transaction.organization_id == organization_id)
+    query = _apply_transaction_scope(
+        query,
+        organization_id=organization_id,
+        fleet_id=fleet_id,
+    )
 
     result = await db.execute(query)
     rows = result.all()
@@ -112,6 +143,7 @@ async def get_daily_stats(
 @router.get("/emissions-by-uf")
 async def get_emissions_by_uf(
     organization_id: int | None = Query(default=None),
+    fleet_id: int | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -128,8 +160,11 @@ async def get_emissions_by_uf(
         .order_by(Transaction.uf)
     )
 
-    if organization_id is not None:
-        query = query.where(Transaction.organization_id == organization_id)
+    query = _apply_transaction_scope(
+        query,
+        organization_id=organization_id,
+        fleet_id=fleet_id,
+    )
 
     result = await db.execute(query)
     rows = result.all()

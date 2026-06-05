@@ -10,17 +10,19 @@ export type DailyStatItem = {
 type UseDailyStatsParams = {
   days?: number;
   organizationId?: number;
+  fleetId?: number;
 };
 
-export const useDailyStats = ({ days = 30, organizationId }: UseDailyStatsParams = {}) => {
+export const useDailyStats = ({ days = 30, organizationId, fleetId }: UseDailyStatsParams = {}) => {
   return useQuery({
-    queryKey: ["dashboard", "daily-stats", days, organizationId],
+    queryKey: ["dashboard", "daily-stats", days, organizationId, fleetId],
     queryFn: () =>
       api
         .get("/api/dashboard/daily-stats", {
           searchParams: {
             days,
             ...(organizationId != null && { organization_id: organizationId }),
+            ...(fleetId != null && { fleet_id: fleetId }),
           },
         })
         .json<{ items: DailyStatItem[] }>()

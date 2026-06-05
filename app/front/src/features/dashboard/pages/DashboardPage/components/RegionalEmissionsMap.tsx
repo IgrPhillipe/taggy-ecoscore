@@ -21,6 +21,7 @@ const BRAZIL_STATES_GEOJSON_URL =
 
 type Props = {
   organizationId?: number;
+  fleetId?: number;
 };
 
 function interpolateColor(from: string, to: string, t: number): string {
@@ -64,8 +65,8 @@ const LAYER_FILL_ID = "taggy-brazil-fill";
 const LAYER_LINE_ID = "taggy-brazil-line";
 const LAYER_HIT_ID = "taggy-brazil-hit";
 
-export const RegionalEmissionsMap = ({ organizationId }: Props) => {
-  const { data: items = [] } = useEmissionsByUF({ organizationId });
+export const RegionalEmissionsMap = ({ organizationId, fleetId }: Props) => {
+  const { data: items = [] } = useEmissionsByUF({ organizationId, fleetId });
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);

@@ -18,6 +18,7 @@ import {
 } from "@/features/sustainability/lib/kpi";
 import { useCurrentUser } from "@/features/auth";
 import { OrganizationsCombobox } from "@/features/fleet/components/OrganizationsCombobox/OrganizationsCombobox";
+import { FleetsCombobox } from "@/features/fleet/components/FleetsCombobox/FleetsCombobox";
 import { useDashboardFilters } from "@/features/dashboard/hooks/useDashboardFilters";
 import { useDailyStats } from "@/features/dashboard/hooks/useDailyStats";
 import { useDashboardSummary } from "@/features/dashboard/hooks/useDashboardSummary";
@@ -31,12 +32,14 @@ import { RegionalEmissionsMap } from "./components/RegionalEmissionsMap";
 
 type DashboardFilterState = {
   organizationId: number | undefined;
+  fleetId: number | undefined;
   fuelType: string | undefined;
   dateRange: DateRange | undefined;
 };
 
 const DASHBOARD_FILTER_DEFAULTS: DashboardFilterState = {
   organizationId: undefined,
+  fleetId: undefined,
   fuelType: undefined,
   dateRange: undefined,
 };
@@ -47,6 +50,7 @@ export const DashboardPage = () => {
   const [organizationId, setOrganizationId] = useState<number | undefined>(
     user?.role === "gestor_frota" ? user.organization_id ?? undefined : undefined,
   );
+  const [fleetId, setFleetId] = useState<number | undefined>();
 
   const {
     fuelType,
@@ -57,6 +61,7 @@ export const DashboardPage = () => {
 
   const appliedFilters: DashboardFilterState = {
     organizationId,
+    fleetId,
     fuelType,
     dateRange,
   };
@@ -76,6 +81,7 @@ export const DashboardPage = () => {
       if (isAdmin) {
         setOrganizationId(values.organizationId);
       }
+      setFleetId(values.fleetId);
       setFuelType(values.fuelType);
       setDateRange(values.dateRange);
     },
@@ -83,6 +89,7 @@ export const DashboardPage = () => {
       if (isAdmin) {
         setOrganizationId(values.organizationId);
       }
+      setFleetId(values.fleetId);
       setFuelType(values.fuelType);
       setDateRange(values.dateRange);
     },
@@ -95,13 +102,22 @@ export const DashboardPage = () => {
         ? organizationId
         : undefined;
 
+  const draftFleetOrgId =
+    user?.role === "gestor_frota"
+      ? (user.organization_id ?? undefined)
+      : isAdmin
+        ? (draft.organizationId ?? undefined)
+        : undefined;
+
   const { data: dailyStats = [] } = useDailyStats({
     days: 30,
     organizationId: scopedOrgId,
+    fleetId,
   });
 
   const { data: summary } = useDashboardSummary({
     organizationId: scopedOrgId,
+    fleetId,
   });
 
   const METRICS = [
@@ -150,12 +166,27 @@ export const DashboardPage = () => {
               <OrganizationsCombobox
                 value={draft.organizationId}
                 onValueChange={(value) =>
-                  setDraft((prev) => ({ ...prev, organizationId: value }))
+                  setDraft((prev) => ({
+                    ...prev,
+                    organizationId: value,
+                    fleetId: undefined,
+                  }))
                 }
                 placeholder="Todas as organizações"
               />
             </FormField>
           ) : null}
+          <FormField id="dashboard-fleet" label="Frota">
+            <FleetsCombobox
+              value={draft.fleetId}
+              onValueChange={(value) =>
+                setDraft((prev) => ({ ...prev, fleetId: value }))
+              }
+              organizationId={draftFleetOrgId}
+              placeholder="Todas as frotas"
+              noneLabel="Todas as frotas"
+            />
+          </FormField>
           <FormField id="dashboard-fuel" label="Combustível">
             <DashboardFuelSelect
               value={draft.fuelType}
@@ -197,7 +228,7 @@ export const DashboardPage = () => {
       </section>
 
       <section className="grid grid-cols-2 gap-6">
-        <RegionalEmissionsMap organizationId={scopedOrgId} />
+        <RegionalEmissionsMap organizationId={scopedOrgId} fleetId={fleetId} />
         {/* TODO: Integração pendente — dados comparativos mockados */}
         <ComparativeBarChart />
       </section>
