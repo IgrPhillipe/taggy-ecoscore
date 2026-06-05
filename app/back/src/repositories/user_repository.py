@@ -131,6 +131,14 @@ class UserRepository:
 
         return user
 
+    async def update_password(self, id: int, password_hash: str) -> Optional[User]:
+        user = await self.get_by_id(id)
+        if user is None:
+            return None
+        user.password_hash = password_hash
+        await self.session.flush()
+        return user
+
     async def update(
         self,
         id: int,

@@ -54,6 +54,16 @@ const SPEC_FIELDS: {
   { key: "benchmark_kg_co2_per_burger", label: "Benchmark kg CO₂/hambúrguer" },
 ];
 
+const BRASILIA_UTC_OFFSET_MS = 3 * 60 * 60 * 1000;
+
+const formatUtcAsBrasilia = (isoDate: string): string => {
+  const utc = new Date(
+    isoDate.endsWith("Z") || isoDate.includes("+") ? isoDate : `${isoDate}Z`,
+  );
+  const brasilia = new Date(utc.getTime() - BRASILIA_UTC_OFFSET_MS);
+  return brasilia.toLocaleString("pt-BR", { timeZone: "UTC" });
+};
+
 export const OperationalCalibrationSection = () => {
   const { data: bundle, isLoading, isError } = useGetTechnicalSpecs();
   const { data: fuelPrices = {} } = useGetFuelPrices();
@@ -456,9 +466,9 @@ export const OperationalCalibrationSection = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Dados Taggy</CardTitle>
+            <CardTitle>Rede Taggy</CardTitle>
             <CardDescription>
-              Pedágios e estacionamentos da rede Taggy. Usados na rota ecológica.
+              Pedágios e estacionamentos da rede Taggy usados no cálculo da rota.
             </CardDescription>
           </div>
           <Button
@@ -467,10 +477,10 @@ export const OperationalCalibrationSection = () => {
             disabled={isSyncingTaggy}
             onClick={() => {
               toast.promise(syncTaggyAsync(), {
-                loading: "Sincronizando dados Taggy...",
+                loading: "Sincronizando rede Taggy...",
                 success: (d) =>
                   `Sincronizado: ${d.tolls_synced} pedágios, ${d.parking_synced} estacionamentos`,
-                error: "Erro ao sincronizar dados Taggy",
+                error: "Erro ao sincronizar rede Taggy",
               });
             }}
           >
@@ -495,7 +505,7 @@ export const OperationalCalibrationSection = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Última sincronização</span>
                   <span className="font-medium text-foreground">
-                    {new Date(taggyPlaces.last_synced_at).toLocaleString("pt-BR")}
+                    {formatUtcAsBrasilia(taggyPlaces.last_synced_at)}
                   </span>
                 </div>
               )}

@@ -1,8 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
-  ArrowLeft,
   Car,
   Coins,
   Fuel,
@@ -19,7 +17,7 @@ import { toast } from "sonner";
 import { getToastErrorMessage } from "@/lib/api-error";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
-import { PageLayout } from "@/components/layout/PageLayout";
+import { PageBackLink, PageLayout } from "@/components/layout/PageLayout";
 import { FilterInput } from "@/components/ui/FilterInput";
 import { Button } from "@/components/ui/button";
 import {
@@ -87,7 +85,6 @@ export const OrganizationDetailPage = ({
   orgName,
   orgCnpj,
 }: OrganizationDetailPageProps) => {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [userSearch, setUserSearch] = useState("");
   const [linkUserOpen, setLinkUserOpen] = useState(false);
@@ -157,18 +154,14 @@ export const OrganizationDetailPage = ({
     <PageLayout
       title={`#${orgId} · ${orgName}`}
       description={orgCnpj ? `CNPJ: ${orgCnpj}` : "Detalhes da organização."}
-    >
-      <div className="mb-2 flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => navigate({ to: "/organizacoes" })}>
-          <ArrowLeft className="mr-1 h-3 w-3" />
-          Organizações
-        </Button>
+      back={<PageBackLink to="/organizacoes" label="Organizações" />}
+      actions={
         <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
           <Pencil className="mr-1 h-3 w-3" />
           Editar
         </Button>
-      </div>
-
+      }
+    >
       <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-7">
         <KpiCard title={KPI_TITLES.vehicles} value={formatKpiCount(summary?.vehicle_count)} icon={<Car className="text-[#72C215]" size={KPI_ICON_SIZE} />} />
         <KpiCard title={KPI_TITLES.people} value={formatKpiCount(summary?.driver_count)} icon={<Users className="text-[#72C215]" size={KPI_ICON_SIZE} />} />

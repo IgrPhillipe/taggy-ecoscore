@@ -44,12 +44,16 @@ export const OrganizationsPage = () => {
     );
   }, [orgs, search]);
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["organizations"] });
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ["organizations"] });
 
   const createMutation = useMutation({
     mutationFn: (data: OrgFormData) =>
       createOrganization({ name: data.name, cnpj: data.cnpj || undefined }),
-    onSuccess: () => { toast.success("Organização criada."); invalidate(); },
+    onSuccess: () => {
+      toast.success("Organização criada.");
+      invalidate();
+    },
     onError: (error) =>
       toast.error(
         getToastErrorMessage(error, { fallback: "Erro ao criar organização." }),
@@ -59,7 +63,10 @@ export const OrganizationsPage = () => {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: OrgFormData }) =>
       updateOrganization(id, { name: data.name, cnpj: data.cnpj || undefined }),
-    onSuccess: () => { toast.success("Organização atualizada."); invalidate(); },
+    onSuccess: () => {
+      toast.success("Organização atualizada.");
+      invalidate();
+    },
     onError: (error) =>
       toast.error(
         getToastErrorMessage(error, {
@@ -70,21 +77,31 @@ export const OrganizationsPage = () => {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteOrganization(id),
-    onSuccess: () => { toast.success("Organização removida."); invalidate(); },
+    onSuccess: () => {
+      toast.success("Organização removida.");
+      invalidate();
+    },
     onError: (error) =>
       toast.error(
-        getToastErrorMessage(error, { fallback: "Erro ao remover organização." }),
+        getToastErrorMessage(error, {
+          fallback: "Erro ao remover organização.",
+        }),
       ),
   });
 
   const columns: ColumnDef<Organization>[] = [
     entityIdColumn<Organization>(),
     { accessorKey: "name", header: "NOME", enableSorting: true },
-    { accessorKey: "cnpj", header: "CNPJ", cell: ({ row }) => row.original.cnpj ?? "—" },
+    {
+      accessorKey: "cnpj",
+      header: "CNPJ",
+      cell: ({ row }) => row.original.cnpj ?? "—",
+    },
     {
       accessorKey: "created_at",
       header: "CRIADO EM",
-      cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString("pt-BR"),
+      cell: ({ row }) =>
+        new Date(row.original.created_at).toLocaleDateString("pt-BR"),
     },
     {
       id: "actions",
@@ -139,7 +156,6 @@ export const OrganizationsPage = () => {
           value={search}
           debounceMs={300}
           onDebouncedChange={setSearch}
-          className="max-w-md flex-1"
         />
         <Button onClick={() => setCreateOpen(true)}>
           <Plus className="mr-1 h-4 w-4" />
@@ -162,7 +178,9 @@ export const OrganizationsPage = () => {
           onClose={() => setEditTarget(null)}
           title="Editar Organização"
           initial={{ name: editTarget.name, cnpj: editTarget.cnpj ?? "" }}
-          onSubmit={(data) => updateMutation.mutate({ id: editTarget.id, data })}
+          onSubmit={(data) =>
+            updateMutation.mutate({ id: editTarget.id, data })
+          }
         />
       )}
     </PageLayout>

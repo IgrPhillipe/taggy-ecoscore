@@ -1,14 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
-import { ArrowLeft, Car, Coins, Fuel, Leaf, Link2, Scroll, Ticket, Unlink, Users } from "lucide-react";
+import { Car, Coins, Fuel, Leaf, Link2, Scroll, Ticket, Unlink, Users } from "lucide-react";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { getToastErrorMessage } from "@/lib/api-error";
 import { ActionHintPopover } from "@/components/ActionHintPopover";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
-import { PageLayout } from "@/components/layout/PageLayout";
+import { PageBackLink, PageLayout } from "@/components/layout/PageLayout";
 import { FilterModal } from "@/components/FilterModal";
 import { FilterInput } from "@/components/ui/FilterInput";
 import { Button } from "@/components/ui/button";
@@ -150,7 +150,6 @@ const baseTransactionColumns: ColumnDef<VehicleTransaction>[] = [
 ];
 
 export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) => {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [vehicleSearch, setVehicleSearch] = useState("");
   const [driverSearch, setDriverSearch] = useState("");
@@ -298,17 +297,12 @@ export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) =>
   const fleetVehicleIds = fleetVehicles.map((v) => v.id);
 
   return (
-    <PageLayout title={`#${fleetId} · ${fleetName}`} description="Detalhes e métricas da frota.">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <Button variant="outline" size="sm" onClick={() => navigate({ to: "/frotas" })}>
-          <ArrowLeft className="mr-1 h-3 w-3" />
-          Frotas
-        </Button>
-        <ExportButton
-          url={buildFleetDetailExportUrl(fleetId)}
-        />
-      </div>
-
+    <PageLayout
+      title={`#${fleetId} · ${fleetName}`}
+      description="Detalhes e métricas da frota."
+      back={<PageBackLink to="/frotas" label="Frotas" />}
+      actions={<ExportButton url={buildFleetDetailExportUrl(fleetId)} />}
+    >
       <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-7">
         <KpiCard title={KPI_TITLES.vehicles} value={formatKpiCount(summary?.vehicle_count)} icon={<Car className="text-[#72C215]" size={KPI_ICON_SIZE} />} />
         <KpiCard title={KPI_TITLES.drivers} value={formatKpiCount(summary?.driver_count)} icon={<Users className="text-[#72C215]" size={KPI_ICON_SIZE} />} />

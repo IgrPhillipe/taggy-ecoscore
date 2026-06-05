@@ -1,12 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
-import { ArrowLeft, Coins, Fuel, Leaf, Scroll, Ticket } from "lucide-react";
+import { Coins, Fuel, Leaf, Scroll, Ticket } from "lucide-react";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { DriverFormDialog } from "../../components/DriverFormDialog/DriverFormDialog";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
-import { PageLayout } from "@/components/layout/PageLayout";
+import { PageBackLink, PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { PAGE_SIZE } from "@/constants";
 import { getUserById } from "@/features/users/api/requests";
@@ -95,7 +94,6 @@ const roleLabels: Record<string, string> = {
 };
 
 export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
-  const navigate = useNavigate();
   const [txPage, setTxPage] = useState(1);
   const [txFilters, setTxFilters] = useState<
     Pick<TransactionFilterState, "context" | "uf" | "dateRange">
@@ -173,12 +171,8 @@ export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
     <PageLayout
       title={driverLoading ? "Carregando…" : (driver?.name ?? "Motorista")}
       description="Detalhes e histórico do motorista."
-    >
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <Button variant="outline" size="sm" onClick={() => navigate({ to: "/motoristas" })}>
-          <ArrowLeft className="mr-1 h-3 w-3" />
-          Motoristas
-        </Button>
+      back={<PageBackLink to="/motoristas" label="Motoristas" />}
+      actions={
         <ExportButton
           url={buildDriverDetailExportUrl({
             driverId,
@@ -189,8 +183,8 @@ export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
             toDate: filters.toDate,
           })}
         />
-      </div>
-
+      }
+    >
       <SectionCard title="Informações">
         <InfoRow label="Nome" value={driver?.name} />
         <InfoRow label="E-mail" value={driver?.email} />

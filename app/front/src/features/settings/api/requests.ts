@@ -117,7 +117,6 @@ export async function updateFuelPrice(
 
 export type AdminAccountSettings = {
   email: string;
-  twoFactorAuth: boolean;
 };
 
 const ADMIN_SETTINGS_KEY = "taggy-admin-settings";
@@ -127,11 +126,11 @@ export async function loadAdminAccountSettings(
 ): Promise<AdminAccountSettings> {
   try {
     const raw = localStorage.getItem(ADMIN_SETTINGS_KEY);
-    if (!raw) return { email: fallbackEmail, twoFactorAuth: false };
+    if (!raw) return { email: fallbackEmail };
     const plaintext = await decrypt(raw);
     return JSON.parse(plaintext) as AdminAccountSettings;
   } catch {
-    return { email: fallbackEmail, twoFactorAuth: false };
+    return { email: fallbackEmail };
   }
 }
 

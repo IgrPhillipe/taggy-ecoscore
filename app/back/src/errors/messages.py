@@ -8,6 +8,8 @@ ACCESS_DENIED = "Acesso negado."
 
 USER_NOT_FOUND = "Usuário não encontrado."
 INVALID_CREDENTIALS = "E-mail ou senha inválidos."
+CURRENT_PASSWORD_INVALID = "Senha atual incorreta."
+PASSWORD_TOO_SHORT = "A nova senha deve ter ao menos 6 caracteres."
 USER_EMAIL_EXISTS = "Já existe um usuário com este email."
 DRIVER_VEHICLES_ONLY = "Apenas motoristas podem ter veículos vinculados."
 DRIVER_SINGLE_VEHICLE = "Motorista de org só pode ter um veículo."

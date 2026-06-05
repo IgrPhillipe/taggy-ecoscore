@@ -21,3 +21,21 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
     })
     .json<LoginResponse>();
 }
+
+export type ChangePasswordPayload = {
+  currentPassword: string;
+  newPassword: string;
+};
+
+export async function changePassword(
+  payload: ChangePasswordPayload,
+): Promise<{ message: string }> {
+  return api
+    .post("/api/auth/change-password", {
+      json: {
+        current_password: payload.currentPassword,
+        new_password: payload.newPassword,
+      },
+    })
+    .json<{ message: string }>();
+}

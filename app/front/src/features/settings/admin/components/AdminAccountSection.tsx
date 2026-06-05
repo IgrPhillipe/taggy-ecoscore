@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { useCurrentUser } from "@/features/auth";
+import { changePassword } from "@/features/auth/api/requests";
 import {
   loadAdminAccountSettings,
   saveAdminAccountSettings,
@@ -36,7 +36,7 @@ type PasswordFormData = z.infer<typeof passwordSchema>;
 export const AdminAccountSection = () => {
   const { user } = useCurrentUser();
   const [email, setEmail] = useState(user?.email ?? "");
-  const [twoFactorAuth, setTwoFactorAuth] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const passwordForm = useForm<PasswordFormData>({
     resolver: zodResolver(passwordSchema as any),
@@ -51,18 +51,30 @@ export const AdminAccountSection = () => {
     if (!user) return;
     loadAdminAccountSettings(user.email).then((saved) => {
       setEmail(saved.email);
-      setTwoFactorAuth(saved.twoFactorAuth);
     });
   }, [user]);
 
   const handleSaveAccount = async () => {
-    await saveAdminAccountSettings({ email, twoFactorAuth });
+    await saveAdminAccountSettings({ email });
     toast.success("Configurações da conta salvas!");
   };
 
-  const handlePasswordSubmit = (_data: PasswordFormData) => {
-    toast.success("Senha alterada com sucesso (mock).");
-    passwordForm.reset();
+  const handlePasswordSubmit = async (data: PasswordFormData) => {
+    setIsChangingPassword(true);
+    try {
+      await changePassword({
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      });
+      toast.success("Senha alterada com sucesso.");
+      passwordForm.reset();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao alterar senha.",
+      );
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   return (
@@ -70,7 +82,7 @@ export const AdminAccountSection = () => {
       <CardHeader>
         <CardTitle>Conta do Administrador</CardTitle>
         <CardDescription>
-          Gerencie e-mail, senha e autenticação em dois fatores.
+          Gerencie o e-mail da conta e altere sua senha de acesso.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -82,16 +94,6 @@ export const AdminAccountSection = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-        </div>
-
-        <div className="flex items-center justify-between rounded-md border p-4">
-          <div>
-            <p className="text-sm font-medium">Autenticação em dois fatores</p>
-            <p className="text-xs text-muted-foreground">
-              Adiciona uma camada extra de segurança ao login.
-            </p>
-          </div>
-          <Switch checked={twoFactorAuth} onCheckedChange={setTwoFactorAuth} />
         </div>
 
         <Button type="button" onClick={handleSaveAccount}>
@@ -108,6 +110,7 @@ export const AdminAccountSection = () => {
             <Input
               id="current-password"
               type="password"
+              autoComplete="current-password"
               {...passwordForm.register("currentPassword")}
             />
             {passwordForm.formState.errors.currentPassword ? (
@@ -121,6 +124,7 @@ export const AdminAccountSection = () => {
             <Input
               id="new-password"
               type="password"
+              autoComplete="new-password"
               {...passwordForm.register("newPassword")}
             />
             {passwordForm.formState.errors.newPassword ? (
@@ -134,6 +138,7 @@ export const AdminAccountSection = () => {
             <Input
               id="confirm-password"
               type="password"
+              autoComplete="new-password"
               {...passwordForm.register("confirmPassword")}
             />
             {passwordForm.formState.errors.confirmPassword ? (
@@ -142,8 +147,8 @@ export const AdminAccountSection = () => {
               </p>
             ) : null}
           </div>
-          <Button type="submit" variant="outline">
-            Alterar senha
+          <Button type="submit" variant="outline" disabled={isChangingPassword}>
+            {isChangingPassword ? "Alterando..." : "Alterar senha"}
           </Button>
         </form>
       </CardContent>

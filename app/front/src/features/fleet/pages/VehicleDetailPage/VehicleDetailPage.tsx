@@ -1,11 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
-import { ArrowLeft, Clock, Coins, Fuel, Leaf, Scroll, Ticket } from "lucide-react";
+import { Clock, Coins, Fuel, Leaf, Scroll, Ticket } from "lucide-react";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
-import { PageLayout } from "@/components/layout/PageLayout";
+import { PageBackLink, PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
 import { PAGE_SIZE } from "@/constants";
 import { KpiCard, SectionCard } from "@/features/sustainability/components/MetricCard";
@@ -93,7 +92,6 @@ const fuelLabels: Record<string, string> = {
 };
 
 export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [txPage, setTxPage] = useState(1);
   const [txFilters, setTxFilters] = useState<TransactionFilterState>({});
@@ -167,12 +165,8 @@ export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
     <PageLayout
       title={vehicleLoading ? "Carregando…" : (vehicle?.model ?? "Veículo")}
       description={vehicle ? `${vehicle.license_plate} · ${fuelLabels[vehicle.fuel_type] ?? vehicle.fuel_type}` : "Detalhes do veículo."}
-    >
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <Button variant="outline" size="sm" onClick={() => navigate({ to: "/frota" })}>
-          <ArrowLeft className="mr-1 h-3 w-3" />
-          Veículos
-        </Button>
+      back={<PageBackLink to="/frota" label="Veículos" />}
+      actions={
         <ExportButton
           url={buildVehicleDetailExportUrl({
             vehicleId,
@@ -182,8 +176,8 @@ export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
             toDate: filters.toDate,
           })}
         />
-      </div>
-
+      }
+    >
       <SectionCard title="Informações">
         <InfoRow label="TAG ID" value={vehicle?.id_tag} />
         <InfoRow label="Placa" value={vehicle?.license_plate} />
