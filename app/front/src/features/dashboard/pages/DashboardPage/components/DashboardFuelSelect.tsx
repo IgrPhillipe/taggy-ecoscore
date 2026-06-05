@@ -22,7 +22,6 @@ export const DashboardFuelSelect = ({
       onValueChange={(next) => onValueChange(next || undefined)}
     >
       <SelectTrigger
-        className="w-[220px]"
         clearable
         hasValue={Boolean(value)}
         onClear={() => onValueChange(undefined)}

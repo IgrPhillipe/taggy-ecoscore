@@ -1,13 +1,15 @@
-import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
+import type {
+  ColumnDef,
+  OnChangeFn,
+  PaginationState,
+} from "@tanstack/react-table";
 import { format } from "date-fns";
-import { Eye } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { parseAsInteger, useQueryStates } from "nuqs";
 import {
-  parseAsInteger,
-  useQueryStates,
-} from "nuqs";
-import { ActionHintPopover } from "@/components/ActionHintPopover";
-import { OrganizationsRelationSelect, FleetsRelationSelect } from "@/components/form/relation-selects";
+  OrganizationsRelationSelect,
+  FleetsRelationSelect,
+} from "@/components/form/relation-selects";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { TransactionFiltersForm } from "@/components/TransactionFilters/TransactionFilters";
@@ -17,18 +19,12 @@ import { FilterModal, FilterSearchRow } from "@/components/FilterModal";
 import { FormField } from "@/components/form/FormField";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useFilterDraft } from "@/hooks/useFilterDraft";
-import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { PAGE_SIZE } from "@/constants";
 import { useCurrentUser } from "@/features/auth";
-import { EXPORT_LABELS } from "@/features/reports/constants";
-import { ExportButton, AuditExportButton } from "@/features/reports/components/ExportButton";
-import { buildTransactionDetailExportUrl, buildTransactionListExportUrl } from "@/features/reports/lib/export-urls";
+import { ExportButton } from "@/features/reports/components/ExportButton";
+import { transactionActionsColumn } from "@/features/reports/components/transaction-audit-action-column";
+import { buildTransactionListExportUrl } from "@/features/reports/lib/export-urls";
+import { TransactionDetailsDialog } from "../../components/TransactionDetails";
 import type { Transaction } from "../../api/types";
 import { useGetTransactions } from "../../hooks/useGetTransactions";
 
@@ -38,10 +34,7 @@ const formatNumber = (value: number | null, digits = 2) =>
 const formatDateTime = (value: string) =>
   new Date(value).toLocaleString("pt-BR");
 
-const columns = (
-  onViewDetails: (transaction: Transaction) => void,
-  onSelect: (transaction: Transaction) => void,
-): ColumnDef<Transaction>[] => [
+const baseColumns: ColumnDef<Transaction>[] = [
   entityIdColumn<Transaction>(),
   {
     accessorKey: "created_at",
@@ -112,31 +105,6 @@ const columns = (
     header: "Org ID",
     cell: ({ row }) => row.original.organization_id ?? "—",
   },
-  {
-    id: "actions",
-    header: "Ações",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <ActionHintPopover label="Ver detalhes técnicos">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(event) => {
-              event.stopPropagation();
-              onSelect(row.original);
-              onViewDetails(row.original);
-            }}
-            aria-label="Ver detalhes técnicos"
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-        </ActionHintPopover>
-        <ActionHintPopover label={EXPORT_LABELS.auditSpreadsheet}>
-          <AuditExportButton transactionId={row.original.id} />
-        </ActionHintPopover>
-      </div>
-    ),
-  },
 ];
 
 const auditSearchParams = {
@@ -170,6 +138,20 @@ export const TransactionsAuditPage = () => {
     useState<Transaction | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
+  const columns = useMemo(
+    () => [
+      ...baseColumns,
+      transactionActionsColumn<Transaction>({
+        onViewDetails: (transaction) => {
+          setSelectedTransaction(transaction);
+          setDetailTransaction(transaction);
+          setDetailsOpen(true);
+        },
+      }),
+    ],
+    [],
+  );
+
   const appliedAuditFilters: AuditModalFilterState = {
     context: filters.context,
     uf: filters.uf,
@@ -195,7 +177,11 @@ export const TransactionsAuditPage = () => {
         uf: values.uf,
         dateRange: values.dateRange,
       });
-      setParams({ org: values.org ?? null, fleet: values.fleet ?? null, page: 1 });
+      setParams({
+        org: values.org ?? null,
+        fleet: values.fleet ?? null,
+        page: 1,
+      });
     },
   });
 
@@ -239,12 +225,6 @@ export const TransactionsAuditPage = () => {
   const handlePaginationChange: OnChangeFn<PaginationState> = (updater) => {
     const next = typeof updater === "function" ? updater(pagination) : updater;
     setParams({ page: next.pageIndex + 1 });
-  };
-
-  const handleViewDetails = (transaction: Transaction) => {
-    setSelectedTransaction(transaction);
-    setDetailTransaction(transaction);
-    setDetailsOpen(true);
   };
 
   const handleSelectTransaction = (transaction: Transaction) => {
@@ -332,7 +312,7 @@ export const TransactionsAuditPage = () => {
       </section>
 
       <DataTable
-        columns={columns(handleViewDetails, handleSelectTransaction)}
+        columns={columns}
         data={data?.items ?? []}
         isLoading={isLoading}
         pageCount={pageCount}
@@ -342,35 +322,14 @@ export const TransactionsAuditPage = () => {
         isRowSelected={(row) => row.id === selectedTransaction?.id}
       />
 
-      <Sheet
+      <TransactionDetailsDialog
         open={detailsOpen}
-        onOpenChange={(open) => {
+        onOpenChange={(open: boolean) => {
           setDetailsOpen(open);
           if (!open) setDetailTransaction(null);
         }}
-      >
-        <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-          <SheetHeader>
-            <SheetTitle>
-              Passagem #{detailTransaction?.id ?? ""}
-            </SheetTitle>
-          </SheetHeader>
-          {detailTransaction && (
-            <>
-              <div className="mt-4">
-                <ExportButton
-                  url={buildTransactionDetailExportUrl(detailTransaction.id)}
-                  label={EXPORT_LABELS.auditSpreadsheet}
-                  variant="audit"
-                />
-              </div>
-              <pre className="mt-4 overflow-x-auto rounded-md bg-neutral-100 p-4 text-xs">
-                {JSON.stringify(detailTransaction.parameters_snapshot, null, 2)}
-              </pre>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+        transaction={detailTransaction}
+      />
     </PageLayout>
   );
 };

@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any
 
 from src.constants.workbook_exports import (
+    DASHBOARD_SLUG,
     FROTA_SLUG,
     FROTAS_SLUG,
     MOTORISTA_SLUG,
@@ -406,6 +407,70 @@ def build_driver_detail_workbook(
         template_slug=MOTORISTA_SLUG,
         headers=_TRANSACTION_HEADERS,
         rows=[_transaction_row(t) for t in transactions],
+    )
+
+    return _save_workbook(wb)
+
+
+def build_dashboard_workbook(data: dict[str, Any]) -> io.BytesIO:
+    _require_openpyxl()
+    wb = openpyxl.Workbook()
+    summary = data["summary"]
+    filters = data["filters"]
+
+    ws_summary = wb.active
+    ws_summary.title = "Resumo"
+    _write_key_value_sheet(
+        ws_summary,
+        title="Dashboard — Taggy EcoScore",
+        subtitle="Indicadores consolidados conforme filtros aplicados na plataforma.",
+        template_slug=DASHBOARD_SLUG,
+        pairs=[
+            ("Organização ID", filters.get("organization_id") or "Todas"),
+            ("Frota ID", filters.get("fleet_id") or "Todas"),
+            ("Período (início)", filters.get("from_date") or filters.get("daily_period_start")),
+            ("Período (fim)", filters.get("to_date") or filters.get("daily_period_end")),
+            ("CO₂ evitado total (kg)", round(summary["total_co2_avoided_kg"], 3)),
+            ("Combustível economizado (L)", round(summary["total_fuel_saved_liters"], 3)),
+            ("Papel economizado (m)", round(summary["paper_saved_meters"], 2)),
+            ("Economia acumulada (R$)", round(summary["accumulated_economy"], 2)),
+            ("Tags ativos", summary["active_tags"]),
+            ("Total de passagens", summary["transaction_count"]),
+        ],
+    )
+
+    ws_daily = wb.create_sheet("Evolução Diária")
+    _write_table_sheet(
+        ws_daily,
+        title="Evolução Diária",
+        subtitle="Passagens e CO₂ evitado por dia no período selecionado.",
+        template_slug=DASHBOARD_SLUG,
+        headers=["Data", "Passagens", "CO₂ Evitado (kg)"],
+        rows=[
+            [
+                item["day"],
+                item["transaction_count"],
+                round(item["co2_total_kg"], 4),
+            ]
+            for item in data["daily_stats"]
+        ],
+    )
+
+    ws_uf = wb.create_sheet("Emissões por UF")
+    _write_table_sheet(
+        ws_uf,
+        title="Emissões por UF",
+        subtitle="CO₂ evitado e volume de passagens agrupados por unidade federativa.",
+        template_slug=DASHBOARD_SLUG,
+        headers=["UF", "CO₂ Evitado (kg)", "Passagens"],
+        rows=[
+            [
+                item["uf"],
+                round(item["co2_total_kg"], 4),
+                item["transaction_count"],
+            ]
+            for item in data["emissions_by_uf"]
+        ],
     )
 
     return _save_workbook(wb)

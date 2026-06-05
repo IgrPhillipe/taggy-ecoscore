@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronUp, Clock, Droplet, Leaf, Zap } from "lucide-react"
+import { TransactionViewButton } from "@/features/transactions/components/TransactionDetails"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import type { Co2eBreakdown } from "../../schemas/sustainability-schema"
@@ -42,11 +43,13 @@ export type PassageListItemData = {
 type PassageListItemProps = {
   passage: PassageListItemData
   showBorder?: boolean
+  onViewDetails?: (id: number) => void
 }
 
 export const PassageListItem = ({
   passage,
   showBorder = true,
+  onViewDetails,
 }: PassageListItemProps) => {
   const [expanded, setExpanded] = useState(false)
   const bd = passage.co2eBreakdown
@@ -96,8 +99,15 @@ export const PassageListItem = ({
             </div>
           </div>
 
+          {onViewDetails && (
+            <TransactionViewButton
+              compact
+              onClick={() => onViewDetails(passage.id)}
+            />
+          )}
           {hasBreakdown && (
             <button
+              type="button"
               onClick={() => setExpanded((v) => !v)}
               className="flex items-center gap-0.5 rounded border border-border bg-muted px-2 py-1 text-[10px] font-medium text-muted-foreground hover:bg-accent transition-colors"
               aria-label={expanded ? "Ocultar breakdown" : "Ver breakdown CO₂e"}

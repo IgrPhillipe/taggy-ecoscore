@@ -55,6 +55,27 @@ export function buildTransactionDetailExportUrl(transactionId: number): string {
   return `/api/reports/transactions/${transactionId}.xlsx`;
 }
 
+export type DashboardExportParams = {
+  organizationId?: number;
+  fleetId?: number;
+  days?: number;
+  fromDate?: string;
+  toDate?: string;
+};
+
+export function buildDashboardExportUrl(params: DashboardExportParams = {}): string {
+  const searchParams = new URLSearchParams();
+  appendSearchParams(searchParams, {
+    organization_id: params.organizationId,
+    fleet_id: params.fleetId,
+    days: params.days,
+    from_date: params.fromDate,
+    to_date: params.toDate,
+  });
+  const query = searchParams.toString();
+  return `/api/reports/dashboard.xlsx${query ? `?${query}` : ""}`;
+}
+
 export type FleetListExportParams = {
   organizationId?: number;
   search?: string;

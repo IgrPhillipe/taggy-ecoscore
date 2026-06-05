@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
 import { ArrowLeft, Clock, Coins, Fuel, Leaf, Scroll, Ticket } from "lucide-react";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/button";
@@ -30,13 +30,16 @@ import { VehicleFormDialog } from "../../components/VehicleFormDialog/VehicleFor
 import { VEHICLE_CATEGORY_LABELS } from "../../constants";
 import { ExportButton } from "@/features/reports/components/ExportButton";
 import { buildVehicleDetailExportUrl } from "@/features/reports/lib/export-urls";
-import { transactionAuditActionColumn } from "@/features/reports/components/transaction-audit-action-column";
+import { transactionActionsColumn } from "@/features/reports/components/transaction-audit-action-column";
+import { TransactionDetailsDialog } from "@/features/transactions/components/TransactionDetails";
+import type { Transaction } from "@/features/transactions/api/types";
+import { vehicleTransactionToTransaction } from "@/features/transactions/lib/vehicle-transaction-to-transaction";
 
 type VehicleDetailPageProps = {
   vehicleId: number;
 };
 
-const transactionColumns: ColumnDef<VehicleTransaction>[] = [
+const baseTransactionColumns: ColumnDef<VehicleTransaction>[] = [
   entityIdColumn<VehicleTransaction>(),
   {
     accessorKey: "plate",
@@ -74,7 +77,6 @@ const transactionColumns: ColumnDef<VehicleTransaction>[] = [
     header: "DATA",
     cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString("pt-BR"),
   },
-  transactionAuditActionColumn<VehicleTransaction>(),
 ];
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
@@ -96,6 +98,21 @@ export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
   const [txPage, setTxPage] = useState(1);
   const [txFilters, setTxFilters] = useState<TransactionFilterState>({});
   const [editOpen, setEditOpen] = useState(false);
+  const [detailTx, setDetailTx] = useState<Transaction | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const transactionColumns = useMemo(
+    () => [
+      ...baseTransactionColumns,
+      transactionActionsColumn<VehicleTransaction>({
+        onViewDetails: (tx) => {
+          setDetailTx(vehicleTransactionToTransaction(tx));
+          setDetailsOpen(true);
+        },
+      }),
+    ],
+    [],
+  );
 
   const { data: vehicle, isLoading: vehicleLoading } = useQuery({
     queryKey: ["vehicles", vehicleId],
@@ -266,6 +283,15 @@ export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
           onPaginationChange={handleTxPaginationChange}
         />
       </SectionCard>
+
+      <TransactionDetailsDialog
+        open={detailsOpen}
+        onOpenChange={(open) => {
+          setDetailsOpen(open);
+          if (!open) setDetailTx(null);
+        }}
+        transaction={detailTx}
+      />
     </PageLayout>
   );
 };

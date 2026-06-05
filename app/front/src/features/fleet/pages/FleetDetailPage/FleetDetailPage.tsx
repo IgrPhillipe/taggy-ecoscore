@@ -53,7 +53,10 @@ import type { VehicleTransaction } from "../../api/types";
 import type { Vehicle } from "../../schemas/vehicle-schema";
 import { ExportButton } from "@/features/reports/components/ExportButton";
 import { buildFleetDetailExportUrl } from "@/features/reports/lib/export-urls";
-import { transactionAuditActionColumn } from "@/features/reports/components/transaction-audit-action-column";
+import { transactionActionsColumn } from "@/features/reports/components/transaction-audit-action-column";
+import { TransactionDetailsDialog } from "@/features/transactions/components/TransactionDetails";
+import type { Transaction } from "@/features/transactions/api/types";
+import { vehicleTransactionToTransaction } from "@/features/transactions/lib/vehicle-transaction-to-transaction";
 
 type FleetDetailPageProps = {
   fleetId: number;
@@ -126,7 +129,7 @@ const makeDriverColumns = (
   },
 ];
 
-const transactionColumns: ColumnDef<VehicleTransaction>[] = [
+const baseTransactionColumns: ColumnDef<VehicleTransaction>[] = [
   entityIdColumn<VehicleTransaction>(),
   { accessorKey: "plate", header: "PLACA", cell: ({ row }) => row.original.plate ?? "—" },
   { accessorKey: "context", header: "CONTEXTO" },
@@ -144,7 +147,6 @@ const transactionColumns: ColumnDef<VehicleTransaction>[] = [
     header: "DATA",
     cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString("pt-BR"),
   },
-  transactionAuditActionColumn<VehicleTransaction>(),
 ];
 
 export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) => {
@@ -156,8 +158,23 @@ export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) =>
   const [txFilters, setTxFilters] = useState<TransactionFilterState>({});
   const [linkVehicleOpen, setLinkVehicleOpen] = useState(false);
   const [linkUserOpen, setLinkUserOpen] = useState(false);
+  const [detailTx, setDetailTx] = useState<Transaction | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedLinkVehicleId, setSelectedLinkVehicleId] = useState<number | undefined>();
   const [selectedLinkUserId, setSelectedLinkUserId] = useState<number | undefined>();
+
+  const transactionColumns = useMemo(
+    () => [
+      ...baseTransactionColumns,
+      transactionActionsColumn<VehicleTransaction>({
+        onViewDetails: (tx) => {
+          setDetailTx(vehicleTransactionToTransaction(tx));
+          setDetailsOpen(true);
+        },
+      }),
+    ],
+    [],
+  );
 
   const { data: summary } = useQuery({
     queryKey: ["fleets", fleetId, "summary"],
@@ -454,6 +471,15 @@ export const FleetDetailPage = ({ fleetId, fleetName }: FleetDetailPageProps) =>
           </div>
         </DialogContent>
       </Dialog>
+
+      <TransactionDetailsDialog
+        open={detailsOpen}
+        onOpenChange={(open) => {
+          setDetailsOpen(open);
+          if (!open) setDetailTx(null);
+        }}
+        transaction={detailTx}
+      />
     </PageLayout>
   );
 };

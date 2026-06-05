@@ -4,6 +4,7 @@ import openpyxl
 import pytest
 
 from src.engine.export_builder import (
+    build_dashboard_workbook,
     build_fleet_detail_workbook,
     build_fleets_list_workbook,
     build_transactions_list_workbook,
@@ -31,6 +32,53 @@ def _sample_transaction(transaction_id: int = 1) -> Transaction:
         parameters_snapshot={},
         created_at=datetime(2025, 6, 1, 12, 0, tzinfo=timezone.utc),
     )
+
+
+def test_build_dashboard_workbook_has_expected_tabs():
+    buffer = build_dashboard_workbook(
+        {
+            "filters": {
+                "organization_id": 1,
+                "fleet_id": None,
+                "from_date": None,
+                "to_date": None,
+                "daily_period_start": "2025-06-01",
+                "daily_period_end": "2025-06-02",
+            },
+            "summary": {
+                "total_co2_avoided_kg": 10.5,
+                "total_fuel_saved_liters": 2.3,
+                "accumulated_economy": 100.0,
+                "active_tags": 5,
+                "paper_saved_meters": 1.2,
+                "transaction_count": 20,
+            },
+            "daily_stats": [
+                {
+                    "day": "2025-06-01",
+                    "transaction_count": 10,
+                    "co2_total_kg": 5.0,
+                },
+                {
+                    "day": "2025-06-02",
+                    "transaction_count": 10,
+                    "co2_total_kg": 5.5,
+                },
+            ],
+            "emissions_by_uf": [
+                {
+                    "uf": "SP",
+                    "co2_total_kg": 8.0,
+                    "transaction_count": 15,
+                }
+            ],
+        }
+    )
+    wb = openpyxl.load_workbook(buffer)
+    assert wb.sheetnames == ["Resumo", "Evolução Diária", "Emissões por UF"]
+    assert "Template: taggy_ecoscore_dashboard" in str(wb["Resumo"]["A3"].value)
+    assert wb["Evolução Diária"]["A5"].value == "2025-06-01"
+    assert wb["Emissões por UF"]["A5"].value == "SP"
 
 
 def test_build_fleets_list_workbook_has_expected_sheet():

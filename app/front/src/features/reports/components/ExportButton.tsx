@@ -1,4 +1,4 @@
-import { Download, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import { useState, type ComponentProps } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -14,19 +14,21 @@ type ExportButtonProps = {
   className?: string;
   disabled?: boolean;
   title?: string;
+  "aria-label"?: string;
 };
 
 export const ExportButton = ({
   url,
   label = EXPORT_LABELS.spreadsheet,
-  variant = "download",
+  variant: _variant = "download",
   size = "sm",
   className,
   disabled,
   title,
+  "aria-label": ariaLabel,
 }: ExportButtonProps) => {
   const [loading, setLoading] = useState(false);
-  const Icon = loading ? Loader2 : variant === "audit" ? FileSpreadsheet : Download;
+  const Icon = loading ? Loader2 : Download;
 
   const handleClick = async () => {
     setLoading(true);
@@ -49,6 +51,7 @@ export const ExportButton = ({
       className={className}
       disabled={disabled || loading}
       title={title}
+      aria-label={ariaLabel}
       onClick={() => void handleClick()}
     >
       <Icon className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -59,15 +62,13 @@ export const ExportButton = ({
 
 export const AuditExportButton = ({
   transactionId,
-  title = EXPORT_LABELS.auditSpreadsheet,
 }: {
   transactionId: number;
-  title?: string;
 }) => (
   <ExportButton
     url={`/api/reports/calculadora.xlsx?transaction_id=${transactionId}`}
     label=""
     variant="audit"
-    title={title}
+    aria-label={EXPORT_LABELS.auditSpreadsheet}
   />
 );

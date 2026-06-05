@@ -1,6 +1,7 @@
 from datetime import date
 
 from src.constants.workbook_exports import (
+    build_dashboard_filename,
     build_fleet_detail_filename,
     build_fleets_list_filename,
     build_transaction_detail_filename,
@@ -8,6 +9,15 @@ from src.constants.workbook_exports import (
     build_vehicle_detail_filename,
     build_vehicles_list_filename,
 )
+
+
+def test_build_dashboard_filename_with_range():
+    filename = build_dashboard_filename(
+        export_date=date(2025, 6, 5),
+        from_date=date(2025, 3, 1),
+        to_date=date(2025, 6, 1),
+    )
+    assert filename == "taggy_ecoscore_dashboard_20250605_20250301_20250601_v1.xlsx"
 
 
 def test_build_fleets_list_filename_includes_export_date():

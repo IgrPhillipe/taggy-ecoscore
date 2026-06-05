@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
 import { ArrowLeft, Coins, Fuel, Leaf, Scroll, Ticket } from "lucide-react";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { DriverFormDialog } from "../../components/DriverFormDialog/DriverFormDialog";
 import { DataTable, entityIdColumn } from "@/components/DataTable";
 import { PageLayout } from "@/components/layout/PageLayout";
@@ -31,7 +31,10 @@ import { useFilterDraft } from "@/hooks/useFilterDraft";
 import { api } from "@/lib/http-client";
 import { ExportButton } from "@/features/reports/components/ExportButton";
 import { buildDriverDetailExportUrl } from "@/features/reports/lib/export-urls";
-import { transactionAuditActionColumn } from "@/features/reports/components/transaction-audit-action-column";
+import { transactionActionsColumn } from "@/features/reports/components/transaction-audit-action-column";
+import { TransactionDetailsDialog } from "@/features/transactions/components/TransactionDetails";
+import type { Transaction } from "@/features/transactions/api/types";
+import { vehicleTransactionToTransaction } from "@/features/transactions/lib/vehicle-transaction-to-transaction";
 
 type DriverDetailPageProps = {
   driverId: number;
@@ -46,7 +49,7 @@ type UserStats = {
   paper_saved_meters: number;
 };
 
-const transactionColumns: ColumnDef<VehicleTransaction>[] = [
+const baseTransactionColumns: ColumnDef<VehicleTransaction>[] = [
   entityIdColumn<VehicleTransaction>(),
   {
     accessorKey: "plate",
@@ -76,7 +79,6 @@ const transactionColumns: ColumnDef<VehicleTransaction>[] = [
     header: "DATA",
     cell: ({ row }) => new Date(row.original.created_at).toLocaleDateString("pt-BR"),
   },
-  transactionAuditActionColumn<VehicleTransaction>(),
 ];
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
@@ -101,6 +103,21 @@ export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
   const [plateSearch, setPlateSearch] = useState("");
   const debouncedPlate = useDebouncedValue(plateSearch, 300);
   const [editOpen, setEditOpen] = useState(false);
+  const [detailTx, setDetailTx] = useState<Transaction | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const transactionColumns = useMemo(
+    () => [
+      ...baseTransactionColumns,
+      transactionActionsColumn<VehicleTransaction>({
+        onViewDetails: (tx) => {
+          setDetailTx(vehicleTransactionToTransaction(tx));
+          setDetailsOpen(true);
+        },
+      }),
+    ],
+    [],
+  );
 
   const { data: driver, isLoading: driverLoading } = useQuery({
     queryKey: ["users", driverId],
@@ -258,6 +275,15 @@ export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
           onPaginationChange={handleTxPaginationChange}
         />
       </SectionCard>
+
+      <TransactionDetailsDialog
+        open={detailsOpen}
+        onOpenChange={(open) => {
+          setDetailsOpen(open);
+          if (!open) setDetailTx(null);
+        }}
+        transaction={detailTx}
+      />
     </PageLayout>
   );
 };

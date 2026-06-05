@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.constants.workbook_exports import (
     build_audit_workbook_filename,
+    build_dashboard_filename,
     build_driver_detail_filename,
     build_drivers_list_filename,
     build_fleet_detail_filename,
@@ -24,6 +25,7 @@ from src.engine import CalcEngine, CalcEngineError, TransactionOrchestrator
 from src.engine.export_builder import (
     build_driver_detail_workbook,
     build_drivers_list_workbook,
+    build_dashboard_workbook,
     build_fleet_detail_workbook,
     build_fleets_list_workbook,
     build_transaction_detail_workbook,
@@ -42,6 +44,7 @@ from src.repositories.fleet_repository import FleetRepository
 from src.repositories.transaction_repository import TransactionRepository
 from src.repositories.user_repository import UserRepository
 from src.repositories.vehicle_repository import VehicleRepository
+from src.services.dashboard_export import collect_dashboard_export_data
 from src.services.paper_savings import compute_paper_saved_meters
 from src.services.technical_specs import get_all_specs
 from src.services.transaction_audit import reconstruct_transaction_audit_context
@@ -195,6 +198,33 @@ async def export_transactions_legacy(
         to_date=to_date,
     )
     return _xlsx_response(buffer, filename)
+
+
+@router.get("/dashboard.xlsx")
+async def export_dashboard(
+    organization_id: int | None = Query(default=None),
+    fleet_id: int | None = Query(default=None),
+    days: int = Query(default=30, ge=7, le=90),
+    from_date: str | None = Query(default=None),
+    to_date: str | None = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> StreamingResponse:
+    org_scope = apply_org_scope_for_gestor(current_user, organization_id)
+    parsed_from, parsed_to = _parse_dates(from_date, to_date)
+    data = await collect_dashboard_export_data(
+        db,
+        organization_id=org_scope,
+        fleet_id=fleet_id,
+        days=days,
+        from_date=parsed_from,
+        to_date=parsed_to,
+    )
+    buffer = build_dashboard_workbook(data)
+    return _xlsx_response(
+        buffer,
+        build_dashboard_filename(from_date=parsed_from, to_date=parsed_to),
+    )
 
 
 @router.get("/fleets.xlsx")

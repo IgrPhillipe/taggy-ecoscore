@@ -17,6 +17,7 @@ MOTORISTAS_SLUG = "motoristas"
 MOTORISTA_SLUG = "motorista"
 PASSAGENS_SLUG = "passagens"
 PASSAGEM_SLUG = "passagem"
+DASHBOARD_SLUG = "dashboard"
 
 
 def workbook_export_version_label() -> str:
@@ -189,6 +190,17 @@ def build_transactions_list_filename(
     segments: list[str | int] = [_export_date_segment(export_date)]
     segments.extend(_date_range_segments(from_date, to_date))
     return build_workbook_export_filename(PASSAGENS_SLUG, *segments)
+
+
+def build_dashboard_filename(
+    *,
+    export_date: date | None = None,
+    from_date: date | None = None,
+    to_date: date | None = None,
+) -> str:
+    segments: list[str | int] = [_export_date_segment(export_date)]
+    segments.extend(_date_range_segments(from_date, to_date))
+    return build_workbook_export_filename(DASHBOARD_SLUG, *segments)
 
 
 def build_transaction_detail_filename(

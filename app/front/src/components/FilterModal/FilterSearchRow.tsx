@@ -28,11 +28,11 @@ export const FilterSearchRow = ({
     <FilterInput
       id={searchId}
       placeholder={placeholder}
-      value={searchValue}
       debounceMs={debounceMs}
       onDebouncedChange={onDebouncedSearchChange}
       plate={plate}
-      className="min-w-0 flex-1"
+      className={cn("min-w-0 flex-1")}
+      value={plate ? searchValue.toUpperCase() : searchValue}
     />
     {children}
   </div>

@@ -3,7 +3,6 @@ import type { ComponentProps } from "react";
 
 import { Input } from "@/components/ui/input";
 import { maskPlate } from "@/lib/plate-utils";
-import { cn } from "@/lib/utils";
 
 type FilterInputProps = ComponentProps<typeof Input> & {
   debounceMs?: number;
@@ -30,12 +29,17 @@ export const FilterInput = ({
 
   useEffect(() => {
     if (!debounceMs || !onDebouncedChange) return;
-    const timer = setTimeout(() => onDebouncedChange(internalValue), debounceMs);
+    const timer = setTimeout(
+      () => onDebouncedChange(internalValue),
+      debounceMs,
+    );
     return () => clearTimeout(timer);
   }, [internalValue, debounceMs, onDebouncedChange]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const nextValue = plate ? maskPlate(event.target.value) : event.target.value;
+    const nextValue = plate
+      ? maskPlate(event.target.value)
+      : event.target.value;
     setInternalValue(nextValue);
     onChange?.({
       ...event,
@@ -46,7 +50,7 @@ export const FilterInput = ({
   return (
     <Input
       {...props}
-      className={cn(plate && "uppercase", className)}
+      className={className}
       autoComplete={plate ? "off" : props.autoComplete}
       spellCheck={plate ? false : props.spellCheck}
       value={debounceMs != null ? internalValue : value}

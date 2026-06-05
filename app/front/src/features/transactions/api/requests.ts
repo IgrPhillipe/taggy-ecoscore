@@ -4,6 +4,7 @@ import type {
   GetTransactionsResponse,
   ProcessTransactionBody,
   ProcessTransactionResult,
+  Transaction,
 } from "./types";
 
 export async function getTransactions(
@@ -27,6 +28,10 @@ export async function getTransactions(
       },
     })
     .json<GetTransactionsResponse>();
+}
+
+export async function getTransaction(id: number): Promise<Transaction> {
+  return api.get(`/api/transactions/${id}`).json<Transaction>();
 }
 
 export async function processTransaction(

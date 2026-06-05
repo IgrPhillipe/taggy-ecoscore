@@ -1,12 +1,11 @@
-import { Leaf, Fuel, Download, Coins, Tag, Scroll } from "lucide-react";
-import { EXPORT_LABELS } from "@/features/reports/constants";
+import { Leaf, Fuel, Coins, Tag, Scroll } from "lucide-react";
+import { format } from "date-fns";
 import { useState } from "react";
 import type { DateRange } from "react-day-picker";
 
 import { FilterModal } from "@/components/FilterModal";
 import { FormField } from "@/components/form/FormField";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { Button } from "@/components/ui/button";
 import { KpiCard } from "@/features/sustainability/components/MetricCard";
 import {
   formatKpiCo2,
@@ -24,6 +23,8 @@ import { useDashboardFilters } from "@/features/dashboard/hooks/useDashboardFilt
 import { useDailyStats } from "@/features/dashboard/hooks/useDailyStats";
 import { useDashboardSummary } from "@/features/dashboard/hooks/useDashboardSummary";
 import { useFilterDraft } from "@/hooks/useFilterDraft";
+import { ExportButton } from "@/features/reports/components/ExportButton";
+import { buildDashboardExportUrl } from "@/features/reports/lib/export-urls";
 import { ComparativeBarChart } from "./components/ComparativeBarChart";
 import { DashboardDateRangePicker } from "./components/DashboardDateRangePicker";
 import { DashboardFuelSelect } from "./components/DashboardFuelSelect";
@@ -149,6 +150,15 @@ export const DashboardPage = () => {
     },
   ];
 
+  const dashboardExportUrl = buildDashboardExportUrl({
+    organizationId: scopedOrgId,
+    fleetId,
+    fromDate: dateRange?.from
+      ? format(dateRange.from, "yyyy-MM-dd")
+      : undefined,
+    toDate: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined,
+  });
+
   return (
     <PageLayout
       title="Dashboard"
@@ -206,10 +216,7 @@ export const DashboardPage = () => {
           </FormField>
         </FilterModal>
 
-        <Button type="button" variant="outline">
-          <Download className="h-4 w-4" />
-          {EXPORT_LABELS.spreadsheet}
-        </Button>
+        <ExportButton url={dashboardExportUrl} />
       </section>
 
       <section className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">

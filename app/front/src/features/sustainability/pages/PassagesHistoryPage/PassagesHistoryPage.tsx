@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardDateRangePicker } from "@/features/dashboard/pages/DashboardPage/components/DashboardDateRangePicker";
 import { MetricCard } from "@/features/sustainability/components/MetricCard";
 import { PassageListItem } from "@/features/sustainability/components/PassageListItem";
+import { TransactionDetailsDialog } from "@/features/transactions/components/TransactionDetails";
 import { StatCard } from "@/features/sustainability/components/StatCard";
 import { useFilterDraft } from "@/hooks/useFilterDraft";
 import { useGetPassages } from "../../hooks/useGetPassages";
@@ -18,6 +19,8 @@ const FILTER_DEFAULTS = { dateRange: undefined as DateRange | undefined };
 
 export const PassagesHistoryPage = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [selectedPassageId, setSelectedPassageId] = useState<number | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const {
     open: filterOpen,
@@ -108,6 +111,10 @@ export const PassagesHistoryPage = () => {
                     key={passage.id}
                     passage={passage}
                     showBorder={index !== passages.length - 1}
+                    onViewDetails={(id) => {
+                      setSelectedPassageId(id);
+                      setDetailsOpen(true);
+                    }}
                   />
                 ))}
               </div>
@@ -115,6 +122,15 @@ export const PassagesHistoryPage = () => {
           </MetricCard>
         )}
       </section>
+
+      <TransactionDetailsDialog
+        open={detailsOpen}
+        onOpenChange={(open) => {
+          setDetailsOpen(open);
+          if (!open) setSelectedPassageId(null);
+        }}
+        transactionId={selectedPassageId}
+      />
     </PageLayout>
   );
 };

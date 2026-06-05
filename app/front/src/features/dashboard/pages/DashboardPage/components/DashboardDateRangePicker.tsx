@@ -31,7 +31,7 @@ export const DashboardDateRangePicker = ({
         <FieldTrigger
           showClear={hasValue}
           onClear={() => onDateChange(undefined)}
-          className={cn("w-[280px]", !hasValue && "text-muted-foreground")}
+          className={cn(!hasValue && "text-muted-foreground")}
         >
           <span className="flex min-w-0 items-center gap-2">
             <CalendarIcon className="h-4 w-4 shrink-0" />

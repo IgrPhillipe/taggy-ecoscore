@@ -84,13 +84,20 @@ export type UpdateVehicleVariables = {
 
 export type VehicleTransaction = {
   id: number;
+  user_id?: number | null;
+  vehicle_id?: number | null;
+  organization_id?: number | null;
   plate: string | null;
   context: string;
   uf: string | null;
+  elapsed_time_sec: number | null;
+  is_digital: boolean;
   financial_savings_brl: number | null;
   co2_avoided_kg: number | null;
   fuel_saved_liters: number | null;
   time_saved_sec: number | null;
+  water_saved_liters: number | null;
+  parameters_snapshot: Record<string, unknown>;
   created_at: string;
 };
 
