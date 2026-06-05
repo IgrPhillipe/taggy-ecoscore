@@ -103,7 +103,14 @@ export type CalcResult = {
     delta?: CalcComparisonSide;
   };
   metadata?: CalcMetadata;
-  storytelling?: Record<string, unknown>;
+  storytelling?: {
+    legacy?: { trees_saved: number };
+    by_axis?: {
+      carbon: Array<{ id: string; label: string; value: number }>;
+      water: Array<{ id: string; label: string; value: number }>;
+      paper: Array<{ id: string; label: string; value: number }>;
+    };
+  };
   sensitivity?: Record<string, unknown>;
 };
 

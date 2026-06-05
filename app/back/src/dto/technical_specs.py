@@ -46,8 +46,6 @@ class TechnicalSpecsDTO(BaseModel):
     paper_water_per_ticket: float
     # Ludic
     ludic_tree_year_absorption: float
-    ludic_phone_charge_factor: float
-    ludic_coffee_factor: float
     ludic_metaphor_units: dict[str, Any]
     # Baselines
     baseline_pedagio_avg_wait_sec: int
@@ -57,9 +55,6 @@ class TechnicalSpecsDTO(BaseModel):
     maint_cost_pesado: float
     accel_surge_leve: float
     accel_surge_pesado: float
-    # Benchmarks
-    benchmark_kg_co2_per_km_car: float
-    benchmark_kg_co2_per_burger: float
     # Source attribution
     emission_factors_source: str
     emission_factors_year: int
@@ -100,8 +95,6 @@ class TechnicalSpecsCreate(BaseModel):
     paper_co2_per_ticket: float = 0.0
     paper_water_per_ticket: float = 0.0
     ludic_tree_year_absorption: float = 0.0
-    ludic_phone_charge_factor: float = 0.0
-    ludic_coffee_factor: float = 0.0
     ludic_metaphor_units: dict[str, Any]
     baseline_pedagio_avg_wait_sec: int = 0
     baseline_estacionamento_avg_wait_sec: int = 0
@@ -109,8 +102,6 @@ class TechnicalSpecsCreate(BaseModel):
     maint_cost_pesado: float = 0.0
     accel_surge_leve: float = 0.0
     accel_surge_pesado: float = 0.0
-    benchmark_kg_co2_per_km_car: float = 0.0
-    benchmark_kg_co2_per_burger: float = 0.0
     emission_factors_source: str = ""
     emission_factors_year: int = 2023
     idle_rates_source: str = ""
@@ -147,8 +138,6 @@ class TechnicalSpecsUpdate(BaseModel):
     paper_co2_per_ticket: Optional[float] = None
     paper_water_per_ticket: Optional[float] = None
     ludic_tree_year_absorption: Optional[float] = None
-    ludic_phone_charge_factor: Optional[float] = None
-    ludic_coffee_factor: Optional[float] = None
     ludic_metaphor_units: Optional[dict] = None
     baseline_pedagio_avg_wait_sec: Optional[int] = None
     baseline_estacionamento_avg_wait_sec: Optional[int] = None
@@ -156,8 +145,6 @@ class TechnicalSpecsUpdate(BaseModel):
     maint_cost_pesado: Optional[float] = None
     accel_surge_leve: Optional[float] = None
     accel_surge_pesado: Optional[float] = None
-    benchmark_kg_co2_per_km_car: Optional[float] = None
-    benchmark_kg_co2_per_burger: Optional[float] = None
     emission_factors_source: Optional[str] = None
     emission_factors_year: Optional[int] = None
     idle_rates_source: Optional[str] = None
@@ -201,8 +188,6 @@ def technical_specs_row_to_dto(row: TechnicalSpecs) -> TechnicalSpecsDTO:
         paper_co2_per_ticket=float(row.paper_co2_per_ticket),
         paper_water_per_ticket=float(row.paper_water_per_ticket),
         ludic_tree_year_absorption=float(row.ludic_tree_year_absorption),
-        ludic_phone_charge_factor=float(row.ludic_phone_charge_factor),
-        ludic_coffee_factor=float(row.ludic_coffee_factor),
         ludic_metaphor_units=dict(row.ludic_metaphor_units or {}),
         baseline_pedagio_avg_wait_sec=int(row.baseline_pedagio_avg_wait_sec),
         baseline_estacionamento_avg_wait_sec=int(row.baseline_estacionamento_avg_wait_sec),
@@ -210,8 +195,6 @@ def technical_specs_row_to_dto(row: TechnicalSpecs) -> TechnicalSpecsDTO:
         maint_cost_pesado=float(row.maint_cost_pesado),
         accel_surge_leve=float(row.accel_surge_leve),
         accel_surge_pesado=float(row.accel_surge_pesado),
-        benchmark_kg_co2_per_km_car=float(row.benchmark_kg_co2_per_km_car),
-        benchmark_kg_co2_per_burger=float(row.benchmark_kg_co2_per_burger),
         emission_factors_source=row.emission_factors_source or "",
         emission_factors_year=int(row.emission_factors_year),
         idle_rates_source=row.idle_rates_source or "",
@@ -338,8 +321,6 @@ def technical_specs_to_engine_dict(
         },
         "ludic_factors": {
             "tree_year_absorption": float(row.ludic_tree_year_absorption),
-            "phone_charge_factor": float(row.ludic_phone_charge_factor),
-            "coffee_factor": float(row.ludic_coffee_factor),
         },
         "ludic_metaphors": ludic_metaphors,
         "baselines": {
@@ -359,10 +340,6 @@ def technical_specs_to_engine_dict(
         "accel_surge": {
             "leve": float(row.accel_surge_leve),
             "pesado": float(row.accel_surge_pesado),
-        },
-        "benchmarks": {
-            "kg_co2_per_km_car": float(row.benchmark_kg_co2_per_km_car),
-            "kg_co2_per_burger": float(row.benchmark_kg_co2_per_burger),
         },
         "fuel_prices_by_uf": fuel_prices_by_uf,
         "fuel_prices_meta": {

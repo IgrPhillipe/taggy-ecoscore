@@ -39,8 +39,6 @@ const SPEC_FIELDS: {
     key: "ludic_tree_year_absorption",
     label: "Absorção anual árvore (lúdico)",
   },
-  { key: "ludic_phone_charge_factor", label: "Fator carga celular (lúdico)" },
-  { key: "ludic_coffee_factor", label: "Fator café (lúdico)" },
   { key: "baseline_pedagio_avg_wait_sec", label: "Espera média pedágio (s)" },
   {
     key: "baseline_estacionamento_avg_wait_sec",
@@ -50,8 +48,6 @@ const SPEC_FIELDS: {
   { key: "maint_cost_pesado", label: "Custo manutenção pesado" },
   { key: "accel_surge_leve", label: "Surto aceleração leve" },
   { key: "accel_surge_pesado", label: "Surto aceleração pesado" },
-  { key: "benchmark_kg_co2_per_km_car", label: "Benchmark kg CO₂/km carro" },
-  { key: "benchmark_kg_co2_per_burger", label: "Benchmark kg CO₂/hambúrguer" },
 ];
 
 const BRASILIA_UTC_OFFSET_MS = 3 * 60 * 60 * 1000;

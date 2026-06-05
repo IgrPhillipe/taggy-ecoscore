@@ -520,9 +520,9 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: fl
         for mid in ids:
             label = axis_labels.get(mid, mid)
             val = (ludic_units.get(axis) or {}).get(mid) or (
-                {"carbon": {"tree_year": 15.0, "burger": 2.5, "km_car": 0.12},
-                 "water": {"shower_8min": 60.0, "drinking_day": 2.0, "flush": 6.0},
-                 "paper": {"ream_a4": 500.0, "notebook": 50.0, "toilet_roll": 150.0}
+                {"carbon": {"tree_year": 15.0},
+                 "water": {"shower_8min": 60.0},
+                 "paper": {"ream_a4": 500.0}
                  }.get(axis, {}).get(mid, "—")
             )
             src_info = axis_sources.get(mid, ("—", None))

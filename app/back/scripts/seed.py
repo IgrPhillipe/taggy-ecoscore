@@ -139,8 +139,6 @@ _TECHNICAL_SPECS_VALUES = {
 
     # ── Metáforas lúdicas ──
     "ludic_tree_year_absorption": 15.0,
-    "ludic_phone_charge_factor": 120.0,
-    "ludic_coffee_factor": 10.0,
     "ludic_metaphor_units": default_ludic_metaphor_units(),
 
     # ── Tempos baseline (premissas declaradas — sem fonte oficial pública) ──
@@ -161,10 +159,6 @@ _TECHNICAL_SPECS_VALUES = {
     # ── Accel surge (mantido no DB; engine usa apenas idle_rate) ──
     "accel_surge_leve": 0.0,
     "accel_surge_pesado": 0.0,
-
-    # ── Benchmarks ──
-    "benchmark_kg_co2_per_km_car": 0.12,
-    "benchmark_kg_co2_per_burger": 2.5,
 
     # ── Source attribution ──
     "emission_factors_source": "FGV GHG Protocol Tool / BEN 2023 / MCTIC 2016",

@@ -63,20 +63,10 @@ def validate_engine_specs(specs: dict[str, Any]) -> None:
     lf = specs.get("ludic_factors")
     if not isinstance(lf, dict):
         raise CalcEngineError("ludic_factors em falta ou inválido.")
-    for key in ("tree_year_absorption", "phone_charge_factor", "coffee_factor"):
-        if key not in lf:
-            raise CalcEngineError(f"ludic_factors sem {key}.")
+    if "tree_year_absorption" not in lf:
+        raise CalcEngineError("ludic_factors sem tree_year_absorption.")
     if float(lf["tree_year_absorption"]) <= 0:
         raise CalcEngineError("ludic_factors.tree_year_absorption deve ser > 0.")
-
-    bench = specs.get("benchmarks")
-    if not isinstance(bench, dict):
-        raise CalcEngineError("benchmarks em falta ou inválido.")
-    for key in ("kg_co2_per_km_car", "kg_co2_per_burger"):
-        if key not in bench:
-            raise CalcEngineError(f"benchmarks sem {key}.")
-        if float(bench[key]) <= 0:
-            raise CalcEngineError(f"benchmarks[{key}] deve ser > 0.")
 
     bl = specs.get("baselines")
     if not isinstance(bl, dict):
@@ -94,9 +84,9 @@ def validate_engine_specs(specs: dict[str, Any]) -> None:
         raise CalcEngineError("ludic_metaphors em falta ou inválido.")
     for axis in _LUDIC_AXES:
         items = lm.get(axis)
-        if not isinstance(items, list) or len(items) < 3:
+        if not isinstance(items, list) or len(items) < 1:
             raise CalcEngineError(
-                f"ludic_metaphors[{axis}] deve ser lista com pelo menos 3 entradas."
+                f"ludic_metaphors[{axis}] deve ser lista com pelo menos 1 entrada."
             )
         ukey = _UNIT_KEY[axis]
         for i, m in enumerate(items):

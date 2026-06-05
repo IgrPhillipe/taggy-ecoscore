@@ -20,8 +20,6 @@ export interface PublicCalculatorResponse {
   category: string;
   ludic: {
     trees_saved?: number;
-    smartphone_charges?: number;
-    coffee_filters?: number;
     [key: string]: number | undefined;
   };
   vehicle_fallback: boolean;

@@ -41,6 +41,13 @@ except ImportError:
 
 _CONTEXT_LABELS = {"pedagio": "Pedágio", "estacionamento": "Estacionamento"}
 
+# Absorção média árvore tropical brasileira ~15 kg CO₂/ano (IPCC SRCCL 2019).
+_TREE_ABSORPTION_KG = 15.0
+
+
+def _trees_equiv(co2_kg: float) -> float:
+    return round(co2_kg / _TREE_ABSORPTION_KG, 1)
+
 _TRANSACTION_HEADERS = [
     "ID",
     "Placa",
@@ -49,6 +56,7 @@ _TRANSACTION_HEADERS = [
     "Digital",
     "Tempo (s)",
     "CO₂ Evitado (kg)",
+    "Árvores Equiv.",
     "Combustível (L)",
     "Tempo Econ. (min)",
     "Economia (R$)",
@@ -80,6 +88,7 @@ def _transaction_row(t: Transaction) -> list[Any]:
         "Sim" if t.is_digital else "Não",
         round(t.elapsed_time_sec or 0, 0),
         round(t.co2_avoided_kg or 0, 4),
+        _trees_equiv(t.co2_avoided_kg or 0),
         round(t.fuel_saved_liters or 0, 4),
         round((t.time_saved_sec or 0) / 60, 2),
         round(t.financial_savings_brl or 0, 2),
@@ -198,6 +207,7 @@ def build_fleet_detail_workbook(
             ("Motoristas", summary.get("driver_count")),
             ("Passagens", summary.get("transaction_count")),
             ("CO₂ total (kg)", round(summary.get("co2_total_kg") or 0, 3)),
+            ("Árvores equiv. (~1 ano)", _trees_equiv(summary.get("co2_total_kg") or 0)),
             ("Combustível total (L)", round(summary.get("fuel_total_liters") or 0, 3)),
             ("Economia total (R$)", round(summary.get("total_savings_brl") or 0, 2)),
             ("Papel economizado (m)", round(summary.get("paper_saved_meters") or 0, 2)),
@@ -320,6 +330,7 @@ def build_vehicle_detail_workbook(
             ("Frota ID", vehicle.fleet_id),
             ("Passagens", summary.get("transaction_count")),
             ("CO₂ total (kg)", round(summary.get("co2_total_kg") or 0, 3)),
+            ("Árvores equiv. (~1 ano)", _trees_equiv(summary.get("co2_total_kg") or 0)),
             ("Combustível total (L)", round(summary.get("fuel_total_liters") or 0, 3)),
             ("Economia total (R$)", round(summary.get("financial_total_brl") or 0, 2)),
             ("Tempo total (h)", round((summary.get("time_total_sec") or 0) / 3600, 2)),
@@ -392,6 +403,7 @@ def build_driver_detail_workbook(
             ("Org ID", driver.organization_id),
             ("Passagens", stats.get("transactions_count")),
             ("CO₂ total (kg)", round(stats.get("co2_total_kg") or 0, 3)),
+            ("Árvores equiv. (~1 ano)", _trees_equiv(stats.get("co2_total_kg") or 0)),
             ("Combustível total (L)", round(stats.get("fuel_total_liters") or 0, 3)),
             ("Economia total (R$)", round(stats.get("financial_total_brl") or 0, 2)),
             ("Tempo economizado (h)", round((stats.get("total_time_saved_sec") or 0) / 3600, 2)),
@@ -431,6 +443,7 @@ def build_dashboard_workbook(data: dict[str, Any]) -> io.BytesIO:
             ("Período (início)", filters.get("from_date") or filters.get("daily_period_start")),
             ("Período (fim)", filters.get("to_date") or filters.get("daily_period_end")),
             ("CO₂ evitado total (kg)", round(summary["total_co2_avoided_kg"], 3)),
+            ("Árvores equiv. (~1 ano)", _trees_equiv(summary["total_co2_avoided_kg"])),
             ("Combustível economizado (L)", round(summary["total_fuel_saved_liters"], 3)),
             ("Papel economizado (m)", round(summary["paper_saved_meters"], 2)),
             ("Economia acumulada (R$)", round(summary["accumulated_economy"], 2)),

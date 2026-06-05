@@ -1,11 +1,9 @@
 import {
   AlertTriangle,
   Clock,
-  Coffee,
   Fuel,
   Leaf,
   RotateCcw,
-  Smartphone,
   TreePine,
 } from "lucide-react";
 import {
@@ -133,42 +131,22 @@ export function CalculatorResults({ result, onReset }: Props) {
         />
       </div>
 
-      {ludic.trees_saved || ludic.smartphone_charges || ludic.coffee_filters ? (
+      {ludic.trees_saved != null && (
         <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4 space-y-3">
           <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">
             O que isso significa por ano?
           </p>
-          <div className="grid grid-cols-3 gap-3 text-center">
-            {ludic.trees_saved != null && (
-              <div className="space-y-1">
-                <TreePine className="mx-auto h-6 w-6 text-emerald-600" />
-                <p className="text-lg font-bold text-neutral-900">
-                  {ludic.trees_saved.toFixed(1)}
-                </p>
-                <p className="text-xs text-neutral-500">árvores/ano</p>
-              </div>
-            )}
-            {ludic.smartphone_charges != null && (
-              <div className="space-y-1">
-                <Smartphone className="mx-auto h-6 w-6 text-neutral-600" />
-                <p className="text-lg font-bold text-neutral-900">
-                  {ludic.smartphone_charges}
-                </p>
-                <p className="text-xs text-neutral-500">cargas de celular</p>
-              </div>
-            )}
-            {ludic.coffee_filters != null && (
-              <div className="space-y-1">
-                <Coffee className="mx-auto h-6 w-6 text-amber-700" />
-                <p className="text-lg font-bold text-neutral-900">
-                  {ludic.coffee_filters}
-                </p>
-                <p className="text-xs text-neutral-500">filtros de café</p>
-              </div>
-            )}
+          <div className="flex justify-center text-center">
+            <div className="space-y-1">
+              <TreePine className="mx-auto h-6 w-6 text-emerald-600" />
+              <p className="text-lg font-bold text-neutral-900">
+                {ludic.trees_saved.toFixed(1)}
+              </p>
+              <p className="text-xs text-neutral-500">árvores/ano</p>
+            </div>
           </div>
         </div>
-      ) : null}
+      )}
 
       <a
         href="https://taggy.com.br"

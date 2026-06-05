@@ -13,16 +13,12 @@ export const MOCK_TECHNICAL_SPECS: TechnicalSpecs = {
   paper_co2_per_ticket: 0.005,
   paper_water_per_ticket: 10,
   ludic_tree_year_absorption: 22,
-  ludic_phone_charge_factor: 0.008,
-  ludic_coffee_factor: 0.05,
   baseline_pedagio_avg_wait_sec: 45,
   baseline_estacionamento_avg_wait_sec: 120,
   maint_cost_leve: 0.35,
   maint_cost_pesado: 0.55,
   accel_surge_leve: 1.15,
   accel_surge_pesado: 1.25,
-  benchmark_kg_co2_per_km_car: 0.12,
-  benchmark_kg_co2_per_burger: 3.5,
 };
 
 const UFS = [

@@ -53,8 +53,8 @@ sequenceDiagram
 | `resolve_fuel_price_brl_per_liter(fuel_type, uf)` | Retorna o preço do litro de combustível para o estado da passagem |
 | `calculate_financial_savings(category, fuel_type, uf)` | Calcula a economia em R$ por passagem (combustível + manutenção) |
 | `build_comparison(category, fuel_type, uf, is_digital)` | Monta o cenário "com tag" vs "sem tag" para exibir no dashboard |
-| `get_ludic_metrics(co2_kg, water_l, paper_g)` | Transforma os números em métricas gamificadas (árvores, cafés, carregamentos de celular) |
-| `get_ludic_metrics_by_axis(co2_kg, water_l, paper_g)` | Mesmo que acima, organizado por eixo: carbono / água / papel |
+| `get_ludic_metrics(co2_kg)` | Retorna `trees_saved` — árvores equivalentes por CO₂ evitado |
+| `get_ludic_metrics_by_axis(co2_kg, water_l, paper_tickets)` | Mesmo que acima, organizado por eixo (carbono/água/papel): 1 metáfora por eixo (árvore, chuveiro, resma A4) |
 | `calculate_payback_snapshot(accumulated, monthly_fee, billing_months)` | Calcula em quantos meses a tag "se paga" com as economias acumuladas |
 | `process_transaction(payload, specs)` | **Método principal** — orquestra todos os cálculos e monta o JSON de resposta |
 

@@ -126,8 +126,8 @@
 
 | ID        | Atividade                          | Tipo  | Status | O que fazer                                                                                                                                                            |
 | --------- | ---------------------------------- | ----- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AT01-US01 | Utilitário de Metáforas Visuais    | Back  | ✅     | `CalcEngine.get_ludic_metrics()` retorna `trees_saved`, `smartphone_charges`, `coffee_filters` — `constants/ludic_metaphors.py` com os fatores                         |
-| AT02-US01 | Galeria de Cards de Impacto Lúdico | Front | ✅     | Seção na tela de resultado (AT02-US02) com cards visuais: ícone + número + descrição por metáfora (ex: "🌳 2,3 árvores salvas") — dados de `ludic_metrics` no response |
+| AT01-US01 | Utilitário de Metáforas Visuais    | Back  | ✅     | `CalcEngine.get_ludic_metrics()` retorna `trees_saved` — `constants/ludic_metaphors.py` com 1 metáfora por eixo (árvore, chuveiro, resma A4)                           |
+| AT02-US01 | Galeria de Cards de Impacto Lúdico | Front | ✅     | LudicCards no dashboard usa dados reais via `useGetImpactMetrics` — árvores, litros de água, metros de papel                                                            |
 
 ---
 
@@ -201,7 +201,7 @@
 
 | ID        | Atividade                               | Tipo  | Status | O que fazer                                                                                                                                                                                                                                                                               |
 | --------- | --------------------------------------- | ----- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AT01-US08 | Algoritmo de Estimativa de CO2 por Rota | Back  | ⬜     | `services/route_optimizer.py` + `POST /api/routes/suggest` recebendo `{origin, destination, distance_km, vehicle_id}` — calcula CO2 do veículo real via `emission_factor[fuel_type]` vs. benchmark `kg_co2_per_km_car`; retorna `{vehicle_co2_kg, benchmark_co2_kg, delta_kg, delta_pct}` |
+| AT01-US08 | Algoritmo de Estimativa de CO2 por Rota | Back  | ⬜     | `services/route_optimizer.py` + `POST /api/routes/suggest` recebendo `{origin, destination, distance_km, vehicle_id}` — calcula CO2 do veículo real via `emission_factor[fuel_type]` vs. média BR (0.12 kg/km); retorna `{vehicle_co2_kg, benchmark_co2_kg, delta_kg, delta_pct}` |
 | AT02-US08 | Formulário de Busca de Rota Sustentável | Front | ⬜     | Página ou modal em `/mapa` com inputs de origem, destino, distância (km) e seleção de veículo; após submit exibe comparativo "Carro Médio (X kg CO2)" vs. "Seu Veículo (Y kg CO2)" com percentual de redução                                                                              |
 
 ---

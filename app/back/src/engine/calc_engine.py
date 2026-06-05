@@ -266,8 +266,6 @@ class CalcEngine:
             raise CalcEngineError("ludic_factors.tree_year_absorption deve ser > 0.")
         return {
             "trees_saved": round(total_co2_avoided / tree, 2),
-            "smartphone_charges": int(total_co2_avoided * float(factors["phone_charge_factor"])),
-            "coffee_filters": int(total_co2_avoided * float(factors["coffee_factor"])),
         }
 
     def get_ludic_metrics_by_axis(
@@ -516,16 +514,12 @@ class CalcEngine:
         raise CalcEngineError(f"Unidade desconhecida para convert_to_co2: {unit!r}.")
 
     def convert_from_co2(self, co2_kg: float, target_unit: str) -> float:
-        bench = self.specs["benchmarks"]
         factors = self.specs["ludic_factors"]
         cpt = float(self.specs["paper_impact"]["co2_per_ticket"])
         wpt = float(self.specs["paper_impact"]["water_per_ticket"])
         mapping: Dict[str, float] = {
             "trees": co2_kg / float(factors["tree_year_absorption"]),
             "water": (co2_kg / cpt) * wpt,
-            "smartphone": co2_kg * float(factors["phone_charge_factor"]),
-            "km_driven": co2_kg / float(bench["kg_co2_per_km_car"]),
-            "burgers": co2_kg / float(bench["kg_co2_per_burger"]),
         }
         if target_unit not in mapping:
             raise CalcEngineError(

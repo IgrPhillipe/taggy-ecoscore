@@ -11,16 +11,12 @@ export type TechnicalSpecs = {
   paper_co2_per_ticket: number;
   paper_water_per_ticket: number;
   ludic_tree_year_absorption: number;
-  ludic_phone_charge_factor: number;
-  ludic_coffee_factor: number;
   baseline_pedagio_avg_wait_sec: number;
   baseline_estacionamento_avg_wait_sec: number;
   maint_cost_leve: number;
   maint_cost_pesado: number;
   accel_surge_leve: number;
   accel_surge_pesado: number;
-  benchmark_kg_co2_per_km_car: number;
-  benchmark_kg_co2_per_burger: number;
 };
 
 export type FuelPriceByUF = {
