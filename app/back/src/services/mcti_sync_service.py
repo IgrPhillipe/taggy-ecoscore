@@ -1,5 +1,10 @@
 """
-Sincroniza fatores de emissão de combustível com a planilha oficial do MCTI/SIRENE.
+Sincroniza fatores de emissão de combustível com a planilha oficial do Programa
+Brasileiro GHG Protocol (FGV EAESP).
+
+Nota: O MCTI/SIRENE publica fatores de emissão do SIN (eletricidade), não de
+combustíveis líquidos. Os fatores de combustíveis (gasolina, diesel, etanol) vêm
+da Ferramenta de Cálculo do Programa GHG Protocol (FGV EAESP).
 
 URL configurável via env var MCTI_EMISSION_FACTORS_URL.
 Estrutura esperada: planilha Excel com coluna de nome do combustível e coluna
@@ -20,11 +25,13 @@ from src.repositories.technical_specs_repository import TechnicalSpecsRepository
 
 logger = logging.getLogger(__name__)
 
-# URL padrão: planilha de fatores de emissão por combustível do SIRENE/MCTI.
+# URL padrão: Ferramenta de Cálculo do Programa Brasileiro GHG Protocol v2026.0.1 (FGV EAESP).
+# Contém fatores de emissão CO₂, CH4 e N2O para gasolina, diesel e etanol.
 # Substituível via env var MCTI_EMISSION_FACTORS_URL.
+# Página do programa: https://eaesp.fgv.br/centros/centro-estudos-sustentabilidade/projetos/programa-brasileiro-ghg-protocol
 _DEFAULT_MCTI_URL = (
-    "https://www.gov.br/mcti/pt-br/acompanhe-o-mcti/sirene/dados-e-ferramentas"
-    "/fatores-de-emissao/arquivos/fatores-de-emissao-combustiveis.xlsx"
+    "https://eaesp.fgv.br/sites/eaesp.fgv.br/files/u1087"
+    "/ferramenta_ghg_protocol_v2026.0.1.xlsx"
 )
 
 # Mapeamento de palavras-chave para nome interno do combustível.

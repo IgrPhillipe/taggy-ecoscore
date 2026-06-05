@@ -270,7 +270,7 @@ export const MetodologiaPage = () => {
     {
       name: "FGV GHG Protocol Tool",
       desc: "Fatores CO₂, CH4, N2O por combustível — BEN 2023 / MCTIC 2016",
-      url: "https://bibliotecadigital.fgv.br/dspace/handle/10438/30248",
+      url: "https://eaesp.fgv.br/centros/centro-estudos-sustentabilidade/projetos/programa-brasileiro-ghg-protocol",
     },
     {
       name: "IPCC AR6 (2021) — Tabela 7.SM.7",
@@ -283,9 +283,9 @@ export const MetodologiaPage = () => {
       url: "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2024/lei/l14993.htm",
     },
     {
-      name: "CNPE Resolução 2024 — Biodiesel",
-      desc: "Blend diesel: B14 → B15 (em vigor desde ago/2025)",
-      url: "https://www.gov.br/mdic/pt-br/assuntos/bioeconomia/bioenergia",
+      name: "ANP — Especificação do Biodiesel (B15)",
+      desc: "Blend diesel: B14 → B15 (em vigor desde ago/2025) — especificação ANP",
+      url: "https://www.gov.br/anp/pt-br/assuntos/producao-e-fornecimento-de-biocombustiveis/biodiesel/especificacao-do-biodiesel",
     },
     {
       name: "Edenred Mobilidade — Impacto da condução no consumo de combustível",
@@ -294,7 +294,7 @@ export const MetodologiaPage = () => {
     },
     {
       name: "Contele Rastreador — Consumo em marcha lenta",
-      desc: "Idle fuel consumption — 1,5 L/h para veículos leves (referência brasileira)",
+      desc: "Idle fuel consumption — ~1,5 L/h para veículos leves (faixa 1–3 L/h, referência brasileira)",
       url: "https://blog.contelerastreador.com.br/consumo-em-marcha-lenta/",
     },
     {

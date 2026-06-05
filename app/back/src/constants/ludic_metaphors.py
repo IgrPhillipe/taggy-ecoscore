@@ -43,7 +43,7 @@ METAPHOR_SOURCES: dict[str, dict[str, tuple[str, str | None]]] = {
         ),
         "burger": (
             "Poore & Nemecek 2018, Science — pegada carbono média carne bovina ~2,5 kg CO₂e",
-            "https://doi.org/10.1126/science.aaq0216",
+            "https://www.science.org/doi/10.1126/science.aaq0216",
         ),
         "km_car": (
             "CETESB Emissões Veiculares 2023 — frota leve brasileira ~120 g CO₂/km",

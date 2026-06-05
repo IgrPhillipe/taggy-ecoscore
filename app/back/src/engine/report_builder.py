@@ -389,7 +389,7 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: fl
         ),
         "idle_rate_leve": (
             "Litros de combustível consumidos por segundo com motor ligado parado (marcha lenta). "
-            "Veículos leves = carros de passeio. Fonte: Contele Rastreador (BR) — 1,5 L/h para frota leve brasileira."
+            "Veículos leves = carros de passeio. Fonte: Contele Rastreador (BR) — ~1,5 L/h estimado (faixa reportada: 1–3 L/h)."
         ),
         "idle_rate_pesado": (
             "Mesmo conceito para veículos pesados (caminhões, ônibus). "
