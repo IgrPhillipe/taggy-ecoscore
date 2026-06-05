@@ -3,7 +3,6 @@ import { LucideIcon } from "lucide-react";
 import { getNavCategoriesForRole } from "@/constants/nav";
 import { useCurrentUser } from "@/features/auth";
 import { cn } from "@/lib/utils";
-import { PersonaSwitcherPopover } from "./PersonaSwitcherPopover";
 
 type SidebarLinkProps = {
   to: string;
@@ -69,9 +68,6 @@ export const SidebarNav = ({ onLinkClick }: SidebarNavProps) => {
             </div>
           </div>
         ))}
-      </div>
-      <div className="border-t pt-2">
-        <PersonaSwitcherPopover onSelect={onLinkClick} />
       </div>
     </nav>
   );

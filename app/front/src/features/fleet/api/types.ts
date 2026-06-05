@@ -26,6 +26,7 @@ export type Fleet = {
   name: string;
   organization_id: number;
   created_at: string;
+  vehicle_count: number;
 };
 
 export type OrganizationSummary = {

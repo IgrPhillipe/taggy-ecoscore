@@ -115,7 +115,16 @@ const EditOrgDialog = ({
             <Input
               id="org-cnpj"
               value={form.cnpj}
-              onChange={(e) => setForm((prev) => ({ ...prev, cnpj: e.target.value }))}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, "").slice(0, 14);
+                const masked = digits
+                  .replace(/^(\d{2})(\d)/, "$1.$2")
+                  .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+                  .replace(/\.(\d{3})(\d)/, ".$1/$2")
+                  .replace(/(\d{4})(\d)/, "$1-$2");
+                setForm((prev) => ({ ...prev, cnpj: masked }));
+              }}
+              placeholder="00.000.000/0000-00"
             />
           </div>
           <div className="flex justify-end gap-2">

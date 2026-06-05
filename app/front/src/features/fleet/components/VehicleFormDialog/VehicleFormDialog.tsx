@@ -18,6 +18,7 @@ import {
   VEHICLE_CATEGORY_OPTIONS,
   VEHICLE_FUEL_OPTIONS,
 } from "../../constants";
+import { useCurrentUser } from "@/features/auth";
 import { useCreateVehicle } from "../../hooks/useCreateVehicle";
 import { useUpdateVehicle } from "../../hooks/useUpdateVehicle";
 import {
@@ -45,6 +46,8 @@ export const VehicleFormDialog = ({
   defaultOrganizationId,
 }: VehicleFormDialogProps) => {
   const isEdit = !!vehicle;
+  const { user } = useCurrentUser();
+  const isAdmin = user?.role === "admin";
   const { mutate: createVehicle, isPending: isCreating } = useCreateVehicle();
   const { mutate: updateVehicle, isPending: isUpdating } = useUpdateVehicle();
   const isPending = isCreating || isUpdating;
@@ -130,8 +133,9 @@ export const VehicleFormDialog = ({
     }
   });
 
-  const orgIdForFleet =
-    form.watch("organization_id") ?? defaultOrganizationId ?? undefined;
+  const orgIdForFleet = isAdmin
+    ? undefined
+    : (form.watch("organization_id") ?? defaultOrganizationId ?? undefined);
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>

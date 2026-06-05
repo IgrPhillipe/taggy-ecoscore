@@ -16,18 +16,30 @@ class FleetRepository:
         result = await self.session.execute(select(Fleet).where(Fleet.id == fleet_id))
         return result.scalar_one_or_none()
 
+    def _vehicle_count_sq(self):
+        return (
+            select(func.count())
+            .where(Vehicle.fleet_id == Fleet.id)
+            .correlate(Fleet)
+            .scalar_subquery()
+        )
+
     async def get_all(
         self,
         organization_id: int | None = None,
         search: str | None = None,
-    ) -> list[Fleet]:
-        query = select(Fleet)
+    ) -> list[dict]:
+        vc = self._vehicle_count_sq()
+        query = select(Fleet, vc.label("vehicle_count"))
         if organization_id is not None:
             query = query.where(Fleet.organization_id == organization_id)
         if search:
             query = query.where(Fleet.name.ilike(f"%{search}%"))
         result = await self.session.execute(query.order_by(Fleet.name))
-        return list(result.scalars().all())
+        return [
+            {**{c.key: getattr(fleet, c.key) for c in Fleet.__table__.columns}, "vehicle_count": vc}
+            for fleet, vc in result.all()
+        ]
 
     async def get_paginated(
         self,
@@ -35,16 +47,26 @@ class FleetRepository:
         page_size: int,
         organization_id: int | None = None,
         search: str | None = None,
-    ) -> tuple[list[Fleet], int]:
-        query = select(Fleet)
+    ) -> tuple[list[dict], int]:
+        vc = self._vehicle_count_sq()
+        base = select(Fleet)
+        if organization_id is not None:
+            base = base.where(Fleet.organization_id == organization_id)
+        if search:
+            base = base.where(Fleet.name.ilike(f"%{search}%"))
+        total = (await self.session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
+        query = select(Fleet, vc.label("vehicle_count"))
         if organization_id is not None:
             query = query.where(Fleet.organization_id == organization_id)
         if search:
             query = query.where(Fleet.name.ilike(f"%{search}%"))
-        total = (await self.session.execute(select(func.count()).select_from(query.subquery()))).scalar_one()
         offset = (page - 1) * page_size
         result = await self.session.execute(query.order_by(Fleet.name).offset(offset).limit(page_size))
-        return list(result.scalars().all()), total
+        rows = [
+            {**{c.key: getattr(fleet, c.key) for c in Fleet.__table__.columns}, "vehicle_count": vc}
+            for fleet, vc in result.all()
+        ]
+        return rows, total
 
     async def create(self, name: str, organization_id: int) -> Fleet:
         fleet = Fleet(name=name, organization_id=organization_id)

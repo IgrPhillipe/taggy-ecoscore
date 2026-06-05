@@ -148,6 +148,12 @@ const columns: ColumnDef<Fleet>[] = [
     cell: ({ row }) => row.original.organization_id ?? "—",
   },
   {
+    accessorKey: "vehicle_count",
+    header: "Veículos",
+    enableSorting: false,
+    cell: ({ row }) => row.original.vehicle_count,
+  },
+  {
     id: "actions",
     header: "Ações",
     enableSorting: false,

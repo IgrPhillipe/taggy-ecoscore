@@ -6,7 +6,7 @@ from src.database.connection import get_db
 from src.errors import messages as err
 from src.middleware.auth import get_current_user
 from src.middleware.dev_auth import apply_org_scope_for_gestor
-from src.models.fleet import FleetPublic
+from src.models.fleet import FleetPublic, FleetWithCount
 from src.models.user import User, UserPublic
 from src.models.vehicle import VehiclePublic
 from src.repositories.fleet_repository import FleetRepository
@@ -39,11 +39,11 @@ async def list_fleets(
     if paginate:
         items, total = await repo.get_paginated(page, page_size, org_scope, search)
         return {
-            "items": [FleetPublic.model_validate(f) for f in items],
+            "items": [FleetWithCount.model_validate(f) for f in items],
             "total": total,
         }
     fleets = await repo.get_all(org_scope, search)
-    return {"data": [FleetPublic.model_validate(f) for f in fleets]}
+    return {"data": [FleetWithCount.model_validate(f) for f in fleets]}
 
 
 @router.get("/{fleet_id}")
