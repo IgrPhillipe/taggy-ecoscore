@@ -1,4 +1,10 @@
-# EcoScore Calc Engine — Documentação Técnica
+# EcoScore Calc Engine — Modelo de Cálculo
+
+Documentação detalhada das fórmulas, fatores de emissão e premissas do `CalcEngine`.
+
+Para fluxo HTTP, módulos e checklist de implementação, ver [engine.md](engine.md).
+
+---
 
 ## 0. Fluxo de dados
 
@@ -9,8 +15,8 @@ flowchart TD
 
     B --> D["⚙️ CalcEngine"]
 
-    D --> E["tempo_salvo\n= baseline_avg_wait_sec − elapsed_avg_sec\n(ambos: premissas declaradas)"]
-    E --> F["combustível_evitado\n= tempo_salvo × idle_rate[categoria]"]
+    D --> E["tempo_salvo\n= baseline_avg_wait_sec − with_tag_avg_sec\n(ambos: TechnicalSpecs)"]
+    E --> F["combustível_evitado\n= idle + surge de aceleração"]
 
     F --> G["co2_fossil\n= comb × fator_CO₂[combustível]"]
     F --> H["ch4_co2e\n= comb × CH4_factor × GWP100_CH4"]
@@ -52,13 +58,14 @@ Emissões evitadas = Emissões (cenário sem tag) − Emissões (cenário com ta
 
 | Campo | Tipo | Descrição |
 |---|---|---|
-| `plate` | `str` | Placa do veículo (resolve automaticamente via apibrasil.io) |
-| `elapsed_time` | `int (s)` | Tempo real da passagem com tag |
+| `plate` | `str` | Placa do veículo (resolve via apibrasil.io quando não vem no payload) |
 | `context` | `"pedagio" \| "estacionamento"` | Tipo de passagem |
 | `uf` | `str (2 letras)` | Estado — usado para preço do combustível |
 | `is_digital` | `bool` | Se a tag é digital (evita emissão de ticket de papel) |
 | `vehicle.category` | `"leve" \| "pesado"` | Define a taxa de consumo em idle |
 | `vehicle.fuel_type` | ver abaixo | Define o fator de emissão |
+
+Os tempos de espera (`avg_wait_sec`, `with_tag_avg_sec`) vêm de `TechnicalSpecs.baselines` — configuráveis via admin — e não do payload da transação.
 
 **`fuel_type` suportados:**
 - `gasolina_c` — gasolina comercial (E30 blend, em vigor desde ago/2025)
@@ -73,9 +80,11 @@ Emissões evitadas = Emissões (cenário sem tag) − Emissões (cenário com ta
 ## 3. Fórmula central
 
 ```
-tempo_salvo       = max(0, baseline_sem_tag − elapsed_time)
+tempo_salvo       = max(0, baseline_sem_tag − with_tag_avg_sec)
 
-combustivel_saved = tempo_salvo × idle_rate[categoria]  [L, m³ ou kWh]
+idle_fuel_saved   = tempo_salvo × idle_rate[categoria, fuel_type]
+accel_fuel_saved  = surge fixo por categoria/combustível (_accel_surge_fuel)
+combustivel_saved = idle_fuel_saved + accel_fuel_saved   [L, m³ ou kWh]
 
 co2_fossil        = combustivel_saved × emission_factor[fuel_type]
 

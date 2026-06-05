@@ -99,3 +99,7 @@ O agregador `APIRouter` principal está em `src/routes/__init__.py`; routers por
 4. **Registo** — Inclua o novo router em `src/routes/__init__.py` com `router.include_router(...)`.
 
 No arranque, `create_db_and_tables()` cria tabelas em modo desenvolvimento; para produção prefira **migrações Alembic** em vez de `create_all` implícito.
+
+## Documentação
+
+Motor de cálculo e fórmulas GHG: [docs/tecnico/engine.md](../../docs/tecnico/engine.md) e [docs/tecnico/engine-calculo.md](../../docs/tecnico/engine-calculo.md).
