@@ -166,7 +166,7 @@ def build_fleets_list_workbook(fleets: list[dict[str, Any]]) -> io.BytesIO:
     ws.title = "Frotas"
     _write_table_sheet(
         ws,
-        title="Relatório de Frotas — Taggy EcoScore",
+        title="Relatório de Frotas: Taggy EcoScore",
         subtitle="Listagem exportada com os filtros aplicados na plataforma.",
         template_slug=FROTAS_SLUG,
         headers=["ID", "Nome", "Organização ID", "Qtd. Veículos", "Criado em"],
@@ -198,7 +198,7 @@ def build_fleet_detail_workbook(
     ws_fleet.title = "Frota"
     _write_key_value_sheet(
         ws_fleet,
-        title=f"Frota #{fleet['id']} — {fleet['name']}",
+        title=f"Frota #{fleet['id']}: {fleet['name']}",
         subtitle="Resumo consolidado da frota, incluindo KPIs de impacto.",
         template_slug=FROTA_SLUG,
         pairs=[
@@ -281,7 +281,7 @@ def build_vehicles_list_workbook(vehicles: list[Vehicle]) -> io.BytesIO:
     ws.title = "Veículos"
     _write_table_sheet(
         ws,
-        title="Relatório de Veículos — Taggy EcoScore",
+        title="Relatório de Veículos: Taggy EcoScore",
         subtitle="Listagem exportada com os filtros aplicados na plataforma.",
         template_slug=VEICULOS_SLUG,
         headers=[
@@ -323,7 +323,7 @@ def build_vehicle_detail_workbook(
     ws_info.title = "Veículo"
     _write_key_value_sheet(
         ws_info,
-        title=f"Veículo #{vehicle.id} — {vehicle.license_plate}",
+        title=f"Veículo #{vehicle.id}: {vehicle.license_plate}",
         subtitle="Dados cadastrais e KPIs consolidados do veículo.",
         template_slug=VEICULO_SLUG,
         pairs=[
@@ -351,7 +351,7 @@ def build_vehicle_detail_workbook(
     ws_tx = wb.create_sheet("Passagens")
     _write_table_sheet(
         ws_tx,
-        title=f"Passagens — {vehicle.license_plate}",
+        title=f"Passagens: {vehicle.license_plate}",
         subtitle="Histórico de passagens do veículo conforme filtros aplicados.",
         template_slug=VEICULO_SLUG,
         headers=_TRANSACTION_HEADERS,
@@ -372,7 +372,7 @@ def build_drivers_list_workbook(
     ws.title = "Motoristas"
     _write_table_sheet(
         ws,
-        title="Relatório de Motoristas — Taggy EcoScore",
+        title="Relatório de Motoristas: Taggy EcoScore",
         subtitle="Listagem exportada com os filtros aplicados na plataforma.",
         template_slug=MOTORISTAS_SLUG,
         headers=["ID", "Nome", "E-mail", "Placa", "Org ID"],
@@ -402,7 +402,7 @@ def build_driver_detail_workbook(
     ws_info.title = "Motorista"
     _write_key_value_sheet(
         ws_info,
-        title=f"Motorista #{driver.id} — {driver.name}",
+        title=f"Motorista #{driver.id}: {driver.name}",
         subtitle="Dados cadastrais e KPIs consolidados do motorista.",
         template_slug=MOTORISTA_SLUG,
         pairs=[
@@ -427,7 +427,7 @@ def build_driver_detail_workbook(
     ws_tx = wb.create_sheet("Passagens")
     _write_table_sheet(
         ws_tx,
-        title=f"Passagens — {driver.name}",
+        title=f"Passagens: {driver.name}",
         subtitle="Histórico de passagens do motorista conforme filtros aplicados.",
         template_slug=MOTORISTA_SLUG,
         headers=_TRANSACTION_HEADERS,
@@ -447,7 +447,7 @@ def build_dashboard_workbook(data: dict[str, Any]) -> io.BytesIO:
     ws_summary.title = "Resumo"
     _write_key_value_sheet(
         ws_summary,
-        title="Dashboard — Taggy EcoScore",
+        title="Dashboard: Taggy EcoScore",
         subtitle="Indicadores consolidados conforme filtros aplicados na plataforma.",
         template_slug=DASHBOARD_SLUG,
         pairs=[
@@ -519,7 +519,7 @@ def build_transactions_list_workbook(transactions: list[Transaction]) -> io.Byte
     ws.title = "Passagens"
     _write_table_sheet(
         ws,
-        title="Relatório de Passagens — Taggy EcoScore",
+        title="Relatório de Passagens: Taggy EcoScore",
         subtitle="Listagem exportada com os filtros aplicados na plataforma.",
         template_slug=PASSAGENS_SLUG,
         headers=_TRANSACTION_HEADERS,

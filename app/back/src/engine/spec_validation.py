@@ -42,13 +42,6 @@ def validate_engine_specs(specs: dict[str, Any]) -> None:
         if float(idle[k]) < 0:
             raise CalcEngineError(f"idle_rates[{k}] não pode ser negativo.")
 
-    maint = specs.get("maint_costs")
-    if not isinstance(maint, dict):
-        raise CalcEngineError("maint_costs em falta ou inválido.")
-    for k in _REQUIRED_CATEGORIES:
-        if k not in maint:
-            raise CalcEngineError(f"maint_costs sem chave obrigatória: {k}")
-
     pi = specs.get("paper_impact")
     if not isinstance(pi, dict):
         raise CalcEngineError("paper_impact em falta ou inválido.")

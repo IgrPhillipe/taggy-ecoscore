@@ -50,11 +50,11 @@ class TechnicalSpecsDTO(BaseModel):
     # Baselines
     baseline_pedagio_avg_wait_sec: int
     baseline_estacionamento_avg_wait_sec: int
-    # Costs
-    maint_cost_leve: float
-    maint_cost_pesado: float
+    elapsed_pedagio_avg_sec: int
+    elapsed_estacionamento_avg_sec: int
     accel_surge_leve: float
     accel_surge_pesado: float
+    accel_surge_source: str
     # Source attribution
     emission_factors_source: str
     emission_factors_year: int
@@ -98,10 +98,11 @@ class TechnicalSpecsCreate(BaseModel):
     ludic_metaphor_units: dict[str, Any]
     baseline_pedagio_avg_wait_sec: int = 0
     baseline_estacionamento_avg_wait_sec: int = 0
-    maint_cost_leve: float = 0.0
-    maint_cost_pesado: float = 0.0
-    accel_surge_leve: float = 0.0
-    accel_surge_pesado: float = 0.0
+    elapsed_pedagio_avg_sec: int = 15
+    elapsed_estacionamento_avg_sec: int = 30
+    accel_surge_leve: float = 0.0125
+    accel_surge_pesado: float = 0.05
+    accel_surge_source: str = ""
     emission_factors_source: str = ""
     emission_factors_year: int = 2023
     idle_rates_source: str = ""
@@ -141,10 +142,11 @@ class TechnicalSpecsUpdate(BaseModel):
     ludic_metaphor_units: Optional[dict] = None
     baseline_pedagio_avg_wait_sec: Optional[int] = None
     baseline_estacionamento_avg_wait_sec: Optional[int] = None
-    maint_cost_leve: Optional[float] = None
-    maint_cost_pesado: Optional[float] = None
+    elapsed_pedagio_avg_sec: Optional[int] = None
+    elapsed_estacionamento_avg_sec: Optional[int] = None
     accel_surge_leve: Optional[float] = None
     accel_surge_pesado: Optional[float] = None
+    accel_surge_source: Optional[str] = None
     emission_factors_source: Optional[str] = None
     emission_factors_year: Optional[int] = None
     idle_rates_source: Optional[str] = None
@@ -191,10 +193,11 @@ def technical_specs_row_to_dto(row: TechnicalSpecs) -> TechnicalSpecsDTO:
         ludic_metaphor_units=dict(row.ludic_metaphor_units or {}),
         baseline_pedagio_avg_wait_sec=int(row.baseline_pedagio_avg_wait_sec),
         baseline_estacionamento_avg_wait_sec=int(row.baseline_estacionamento_avg_wait_sec),
-        maint_cost_leve=float(row.maint_cost_leve),
-        maint_cost_pesado=float(row.maint_cost_pesado),
+        elapsed_pedagio_avg_sec=int(row.elapsed_pedagio_avg_sec),
+        elapsed_estacionamento_avg_sec=int(row.elapsed_estacionamento_avg_sec),
         accel_surge_leve=float(row.accel_surge_leve),
         accel_surge_pesado=float(row.accel_surge_pesado),
+        accel_surge_source=row.accel_surge_source or "",
         emission_factors_source=row.emission_factors_source or "",
         emission_factors_year=int(row.emission_factors_year),
         idle_rates_source=row.idle_rates_source or "",
@@ -333,10 +336,6 @@ def technical_specs_to_engine_dict(
                 "with_tag_avg_sec": int(row.elapsed_estacionamento_avg_sec),
             },
         },
-        "maint_costs": {
-            "leve": float(row.maint_cost_leve),
-            "pesado": float(row.maint_cost_pesado),
-        },
         "accel_surge": {
             "leve": float(row.accel_surge_leve),
             "pesado": float(row.accel_surge_pesado),
@@ -357,5 +356,6 @@ def technical_specs_to_engine_dict(
             "blend_factors_year": int(row.blend_factors_year),
             "paper_impact": row.paper_impact_source or "",
             "grid_factor": row.grid_factor_source or "",
+            "accel_surge": row.accel_surge_source or "",
         },
     }

@@ -263,6 +263,11 @@ async def process_transaction(
             "gwp100": specs.get("gwp100"),
             "blend": specs.get("blend"),
             "sources": specs.get("sources"),
+            "idle_rates": specs.get("idle_rates"),
+            "accel_surge": specs.get("accel_surge"),
+            "baselines": specs.get("baselines"),
+            "paper_impact": specs.get("paper_impact"),
+            "ludic_metaphor_units": specs.get("ludic_metaphor_units"),
             "vehicle_resolution": vehicle_resolution,
             "pricing_snapshot": {
                 "fuel_prices_by_uf": specs.get("fuel_prices_by_uf"),

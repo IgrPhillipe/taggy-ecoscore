@@ -1,5 +1,5 @@
 """
-Planilha auditável — valores calculados usam fórmulas Excel que referenciam
+Planilha auditável: valores calculados usam fórmulas Excel que referenciam
 as premissas. Altere qualquer premissa e todos os resultados se atualizam.
 """
 
@@ -81,6 +81,7 @@ _SOURCE_URLS: dict[str, str] = {
     "gwp100":           "https://www.ipcc.ch/report/ar6/wg1/",
     "blend_factors":    "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2024/lei/l14993.htm",
     "idle_rates":       "https://blog.edenredmobilidade.com.br/gestao-de-frotas/impacto-da-conducao-no-consumo-de-combustivel/",
+    "accel_surge":      "https://blog.edenredmobilidade.com.br/gestao-de-frete/pedagio-eletronico-e-tradicional/",
     "paper_impact":     "https://ecoinvent.org/database/",
     "fuel_prices":      "https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/levantamento-de-precos",
 }
@@ -98,23 +99,23 @@ _PREMISES: list[tuple] = [
     ("emission_factor_diesel_s10_comercial",  "Fator CO₂ diesel S10 comercial (blendado)",         "kg CO₂/L",   "emission_factors", False),
     ("ch4_factor_diesel_s10",                 "Fator CH4 diesel S10 (blendado)",                   "kg CH4/L",   "emission_factors", False),
     ("n2o_factor_diesel_s10",                 "Fator N2O diesel S10 (blendado)",                   "kg N2O/L",   "emission_factors", False),
-    ("emission_factor_etanol",                "Fator CO₂ etanol (biogênico — Escopo 1 = 0)",       "kg CO₂/L",   "emission_factors", False),
+    ("emission_factor_etanol",                "Fator CO₂ etanol (biogênico: Escopo 1 = 0)",       "kg CO₂/L",   "emission_factors", False),
     ("ch4_factor_etanol",                     "Fator CH4 etanol",                                  "kg CH4/L",   "emission_factors", False),
     ("n2o_factor_etanol",                     "Fator N2O etanol",                                  "kg N2O/L",   "emission_factors", False),
     ("emission_factor_gnv",                   "Fator CO₂ GNV",                                    "kg CO₂/m³",  "emission_factors", False),
     ("ch4_factor_gnv",                        "Fator CH4 GNV",                                    "kg CH4/m³",  "emission_factors", False),
     ("n2o_factor_gnv",                        "Fator N2O GNV",                                    "kg N2O/m³",  "emission_factors", False),
     ("emission_factor_eletrico_kwh",          "Fator CO₂ rede SIN (veículo elétrico)",             "kg CO₂/kWh", "emission_factors", False),
-    ("gwp100_ch4",                            "GWP100 CH4 (IPCC AR6)",                            "—",          "gwp100",           False),
-    ("gwp100_n2o",                            "GWP100 N2O (IPCC AR6)",                            "—",          "gwp100",           False),
-    ("idle_rate_leve",                        "Taxa consumo idle — leve (L/s)",                    "L/s",        "idle_rates",       True),
-    ("idle_rate_pesado",                      "Taxa consumo idle — pesado (L/s)",                  "L/s",        "idle_rates",       True),
-    ("idle_rate_gnv",                         "Taxa consumo idle — GNV (m³/s)",                   "m³/s",       "idle_rates",       True),
-    ("idle_rate_eletrico",                    "Taxa consumo idle — elétrico (kWh/s)",              "kWh/s",      "idle_rates",       True),
-    ("accel_surge_leve",                      "Combustível extra freada+aceleração — leve",        "L",          None,               True),
-    ("accel_surge_pesado",                    "Combustível extra freada+aceleração — pesado",      "L",          None,               True),
-    ("baseline_pedagio_avg_wait_sec",         "Tempo médio sem tag — pedágio",                    "s",          None,               True),
-    ("baseline_estacionamento_avg_wait_sec",  "Tempo médio sem tag — estacionamento",             "s",          None,               True),
+    ("gwp100_ch4",                            "GWP100 CH4 (IPCC AR6)",                            "",          "gwp100",           False),
+    ("gwp100_n2o",                            "GWP100 N2O (IPCC AR6)",                            "",          "gwp100",           False),
+    ("idle_rate_leve",                        "Taxa consumo idle: leve (L/s)",                    "L/s",        "idle_rates",       True),
+    ("idle_rate_pesado",                      "Taxa consumo idle: pesado (L/s)",                  "L/s",        "idle_rates",       True),
+    ("idle_rate_gnv",                         "Taxa consumo idle: GNV (m³/s)",                   "m³/s",       "idle_rates",       True),
+    ("idle_rate_eletrico",                    "Taxa consumo idle: elétrico (kWh/s)",              "kWh/s",      "idle_rates",       True),
+    ("accel_surge_leve",                      "Combustível extra freada+aceleração: leve",        "L",          "accel_surge",      True),
+    ("accel_surge_pesado",                    "Combustível extra freada+aceleração: pesado",      "L",          "accel_surge",      True),
+    ("baseline_pedagio_avg_wait_sec",         "Tempo médio sem tag: pedágio",                    "s",          None,               True),
+    ("baseline_estacionamento_avg_wait_sec",  "Tempo médio sem tag: estacionamento",             "s",          None,               True),
     ("paper_co2_per_ticket",                  "CO₂ por ticket de papel (estacionamento)",         "kg CO₂",     "paper_impact",     False),
     ("paper_water_per_ticket",                "Água por ticket de papel (estacionamento)",        "L",          "paper_impact",     False),
     ("fuel_price_brl_per_unit",               "Preço médio do combustível (ANP/UF)",              "R$/unid.",   "fuel_prices",      False),
@@ -298,7 +299,7 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: fl
     ws.title = "1. Premissas"
 
     ws.merge_cells("A1:G1")
-    ws["A1"].value = "Premissas e Fontes — Valores Brutos (altere aqui para atualizar todos os cálculos)"
+    ws["A1"].value = "Premissas e Fontes: Valores Brutos (altere aqui para atualizar todos os cálculos)"
     ws["A1"].font = _FONT_TITLE()
     ws["A1"].alignment = Alignment(horizontal="left", vertical="center")
     ws.row_dimensions[1].height = 30
@@ -306,7 +307,7 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: fl
     ws.merge_cells("A2:G2")
     ws["A2"].value = (
         "⚠️  Linhas em amarelo = estimativa sem fonte pública oficial brasileira. "
-        "Todas as outras sheets usam fórmulas que referenciam a coluna C desta sheet — "
+        "Todas as outras sheets usam fórmulas que referenciam a coluna C desta sheet: "
         "altere qualquer valor e os resultados se atualizam automaticamente."
     )
     ws["A2"].font = Font(name="Calibri", size=9, italic=True, color="7D6608")
@@ -329,11 +330,11 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: fl
 
     def _src(sk: str | None) -> tuple[str, str]:
         if not sk:
-            return ("Premissa declarada — sem dado público disponível", "—")
+            return ("Premissa declarada: sem dado público disponível", "")
         if sk == "fuel_prices":
             fmeta = fuel_price_meta or {}
-            return (fmeta.get("source", "ANP"), "—")
-        return (src.get(sk, "—"), str(src.get(f"{sk}_year", "—")))
+            return (fmeta.get("source", "ANP"), "")
+        return (src.get(sk, ""), str(src.get(f"{sk}_year", "")))
 
     blend_eth = blend.get("etanol_pct", 0.27)
     blend_bio = blend.get("biodiesel_pct", 0.14)
@@ -347,7 +348,7 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: fl
             "A gasolina que abastecemos no posto (gasolina C) é uma mistura desta base com etanol."
         ),
         "emission_factor_gasolina_c_comercial": (
-            f"Fator já com o blend de {round(blend_eth*100,1)}% de etanol (Lei 14.993/2024 — E30). "
+            f"Fator já com o blend de {round(blend_eth*100,1)}% de etanol (Lei 14.993/2024: E30). "
             "Como etanol é biogênico, o blend reduz o CO₂ fóssil por litro. Este é o valor usado nos cálculos."
         ),
         "emission_factor_diesel_s10_base": (
@@ -360,19 +361,19 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: fl
         ),
         "emission_factor_etanol": (
             "CO₂ do etanol é classificado como biogênico (a planta absorveu CO₂ ao crescer). "
-            "Pelo GHG Protocol, emissões biogênicas não contam no Escopo 1 — por isso o fator de Escopo 1 é zero."
+            "Pelo GHG Protocol, emissões biogênicas não contam no Escopo 1: por isso o fator de Escopo 1 é zero."
         ),
         "ch4_factor_gasolina_c":  "Metano (CH4) emitido por litro. Apesar de pequeno em massa, CH4 aquece ~27,9× mais que CO₂ (ver GWP100 abaixo).",
         "n2o_factor_gasolina_c":  "Óxido nitroso (N2O) emitido por litro. Em massa mínima, mas 273× mais potente que CO₂ em 100 anos.",
         "ch4_factor_diesel_s10":  "Metano (CH4) emitido por litro de diesel S10.",
         "n2o_factor_diesel_s10":  "Óxido nitroso (N2O) emitido por litro de diesel S10.",
-        "emission_factor_etanol": "CO₂ biogênico do etanol — Escopo 1 = 0 pelo GHG Protocol (carbono absorvido na fase de cultivo).",
-        "ch4_factor_etanol":      "Metano do etanol — mesmo sendo biogênico, CH4 tem GWP100 alto e entra no CO₂e.",
+        "emission_factor_etanol": "CO₂ biogênico do etanol: Escopo 1 = 0 pelo GHG Protocol (carbono absorvido na fase de cultivo).",
+        "ch4_factor_etanol":      "Metano do etanol: mesmo sendo biogênico, CH4 tem GWP100 alto e entra no CO₂e.",
         "n2o_factor_etanol":      "Óxido nitroso do etanol.",
         "emission_factor_gnv": (
             "GNV = Gás Natural Veicular (metano comprimido). Unidade em m³ (metro cúbico), não litros."
         ),
-        "ch4_factor_gnv":  "Metano fugitivo do GNV — além do que é queimado, parte escapa como CH4 puro.",
+        "ch4_factor_gnv":  "Metano fugitivo do GNV: além do que é queimado, parte escapa como CH4 puro.",
         "n2o_factor_gnv":  "Óxido nitroso emitido pelo GNV.",
         "emission_factor_eletrico_kwh": (
             "Fator da rede elétrica brasileira (SIN) em kg CO₂ por kWh consumido. "
@@ -389,29 +390,29 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: fl
         ),
         "idle_rate_leve": (
             "Litros de combustível consumidos por segundo com motor ligado parado (marcha lenta). "
-            "Veículos leves = carros de passeio. Fonte: Contele Rastreador (BR) — ~1,5 L/h estimado (faixa reportada: 1–3 L/h)."
+            "Veículos leves = carros de passeio. Fonte: Contele Rastreador (BR): ~1,5 L/h estimado (faixa reportada: 1–3 L/h)."
         ),
         "idle_rate_pesado": (
             "Mesmo conceito para veículos pesados (caminhões, ônibus). "
-            "Fonte: Edenred Mobilidade (BR) — 4 L/h para veículos pesados. Consumo idle é proporcionalmente maior por cilindrada."
+            "Fonte: Edenred Mobilidade (BR): 4 L/h para veículos pesados. Consumo idle é proporcionalmente maior por cilindrada."
         ),
         "idle_rate_gnv": "Taxa de consumo idle para veículos GNV, estimada por conversão energética equivalente.",
-        "idle_rate_eletrico": "Consumo elétrico do sistema com veículo parado (ar condicionado, eletrônica). Estimativa — sem fonte oficial.",
+        "idle_rate_eletrico": "Consumo elétrico do sistema com veículo parado (ar condicionado, eletrônica). Estimativa: sem fonte oficial.",
         "accel_surge_leve": (
-            "Combustível extra gasto no ciclo completo de frenagem + aceleração ao parar manualmente. "
-            "Atualmente zerado (conservador) — pode ser atualizado com dados de campo."
+            "Combustível extra no ciclo frenagem + aceleração ao parar manualmente. "
+            "Derivado: 30s × idle leve (Contele 1,5 L/h) = 0,0125 L."
         ),
         "accel_surge_pesado": (
-            "Mesmo conceito para veículos pesados. A frenagem e retomada de velocidade de um caminhão "
-            "consome significativamente mais combustível que em leves."
+            "Mesmo conceito para veículos pesados. "
+            "Derivado: 45s × idle pesado (Edenred 4 L/h) = 0,05 L."
         ),
         "baseline_pedagio_avg_wait_sec": (
             "Tempo médio estimado de uma passagem SEM tag no pedágio: "
-            "fila + parar + pagar + troco + partir. Premissa declarada (~180s = 3 min) — sem dado oficial ANTT/ABCR."
+            "fila + parar + pagar + troco + partir. Premissa declarada (~180s = 3 min): sem dado oficial ANTT/ABCR."
         ),
         "baseline_estacionamento_avg_wait_sec": (
             "Tempo estimado para retirar ticket, aguardar cancela abrir e partir. "
-            "Premissa declarada (~120s) — sem dado oficial."
+            "Premissa declarada (~120s): sem dado oficial."
         ),
         "paper_co2_per_ticket": (
             "CO₂ emitido na produção de 1 ticket de papel térmico (estacionamento). "
@@ -425,7 +426,7 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: fl
             f"UF: {(fuel_price_meta or {}).get('uf', '?')} | "
             f"Unidade: {(fuel_price_meta or {}).get('unit', 'L')} | "
             f"Fonte: {(fuel_price_meta or {}).get('source', 'ANP')}. "
-            "Preço médio ANP por estado — atualizado automaticamente a cada passagem."
+            "Preço médio ANP por estado: atualizado automaticamente a cada passagem."
         ),
     }
 
@@ -493,7 +494,7 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: fl
     # ── Seção de Métricas Lúdicas ────────────────────────────────────────────
     ludic_start = 4 + len(_PREMISES) + 2
     ws.merge_cells(f"A{ludic_start}:G{ludic_start}")
-    c_h = ws.cell(row=ludic_start, column=1, value="Métricas Lúdicas — Conversões e Fontes")
+    c_h = ws.cell(row=ludic_start, column=1, value="Métricas Lúdicas: Conversões e Fontes")
     c_h.font = Font(bold=True, name="Calibri", size=12, color=_C_HEADER_FG)
     c_h.fill = _FILL_HEADER()
     c_h.border = _THIN()
@@ -523,9 +524,9 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: fl
                 {"carbon": {"tree_year": 15.0},
                  "water": {"shower_8min": 60.0},
                  "paper": {"ream_a4": 500.0}
-                 }.get(axis, {}).get(mid, "—")
+                 }.get(axis, {}).get(mid, "")
             )
-            src_info = axis_sources.get(mid, ("—", None))
+            src_info = axis_sources.get(mid, ("", None))
             src_text, src_url = src_info if isinstance(src_info, tuple) else (src_info, None)
             fill = _FILL_ALT() if row_l % 2 == 0 else None
             for col, v in enumerate([axis, label, "por unidade da metáfora", val, src_text, src_url or ""], 1):
@@ -595,7 +596,7 @@ def _build_steps_sheet(
 
         ("tempo_com_tag",
          "Tempo real da passagem com tag (input do sistema)",
-         "Parâmetro da requisição — medido",
+         "Parâmetro da requisição: medido",
          elapsed,
          "s"),
 
@@ -618,7 +619,7 @@ def _build_steps_sheet(
          "kg CO₂"),
 
         ("ch4_absoluto",
-         "CH4 evitado (massa) — 0 para elétrico",
+         "CH4 evitado (massa): 0 para elétrico",
          f"E{R['fuel']} × ch4_factor(combustível)",
          f"=E{R['fuel']}*{ch4_ref}",
          "kg CH4"),
@@ -630,7 +631,7 @@ def _build_steps_sheet(
          "kg CO₂e"),
 
         ("n2o_absoluto",
-         "N2O evitado (massa) — 0 para elétrico",
+         "N2O evitado (massa): 0 para elétrico",
          f"E{R['fuel']} × n2o_factor(combustível)",
          f"=E{R['fuel']}*{n2o_ref}",
          "kg N2O"),
@@ -648,7 +649,7 @@ def _build_steps_sheet(
          "kg CO₂e"),
 
         ("co2e_scope2",
-         "CO₂e Escopo 2 (rede elétrica — só EV, 0 para outros)",
+         "CO₂e Escopo 2 (rede elétrica: só EV, 0 para outros)",
          f"E{R['fuel']} × ef_eletrico se combustível=eletrico, senão 0",
          f"=E{R['fuel']}*{_dyn_scope2_ref(prem_rows, _FUEL)}",
          "kg CO₂e"),
@@ -668,14 +669,14 @@ def _build_steps_sheet(
 
     # ── Row 1: title ─────────────────────────────────────────────────────────
     ws.merge_cells("A1:F1")
-    ws["A1"].value = "Passo a Passo — Emissões Evitadas por Passagem com Tag"
+    ws["A1"].value = "Passo a Passo: Emissões Evitadas por Passagem com Tag"
     ws["A1"].font = _FONT_TITLE()
     ws["A1"].alignment = Alignment(horizontal="left", vertical="center")
     ws.row_dimensions[1].height = 28
 
     # ── Rows 2-5: Parâmetros editáveis ───────────────────────────────────────
     ws.merge_cells("A2:F2")
-    ws["A2"].value = "⚙️  Parâmetros de Simulação — altere os valores abaixo e todas as fórmulas recalculam"
+    ws["A2"].value = "⚙️  Parâmetros de Simulação: altere os valores abaixo e todas as fórmulas recalculam"
     ws["A2"].font = Font(name="Calibri", size=10, bold=True, color="7D6608")
     ws["A2"].fill = PatternFill("solid", fgColor="FFF9E6")
     ws["A2"].alignment = Alignment(horizontal="left", vertical="center")
@@ -755,7 +756,7 @@ def _build_steps_sheet(
     ws["A7"].value = (
         f"Veículo: {vehicle.get('model') or 'N/A'} | UF: {params.get('uf','?')} | "
         f"Tempo passagem: {elapsed}s  |  "
-        f"(valores padrão acima refletem os dados do veículo — editáveis para simulação)"
+        f"(valores padrão acima refletem os dados do veículo: editáveis para simulação)"
     )
     ws["A7"].font = _FONT_SMALL()
     ws.row_dimensions[7].height = 20
@@ -830,7 +831,7 @@ def _build_comparison_sheet(
     water_com = "=0"
 
     ws.merge_cells("A1:D1")
-    ws["A1"].value = "Cenário Sem Tag vs. Com Tag — Comparação"
+    ws["A1"].value = "Cenário Sem Tag vs. Com Tag: Comparação"
     ws["A1"].font = _FONT_TITLE()
     ws["A1"].alignment = Alignment(horizontal="left")
     ws.row_dimensions[1].height = 28
@@ -865,7 +866,7 @@ def _build_comparison_sheet(
          co2e1_com,
          None),
 
-        ("CO₂e Escopo 2 — só EV (kg)",
+        ("CO₂e Escopo 2: só EV (kg)",
          co2e2_sem,
          co2e2_com,
          None),
@@ -875,12 +876,12 @@ def _build_comparison_sheet(
          with_t.get("co2_biogenic_kg", 0),
          delta.get("co2_biogenic_kg", 0)),
 
-        ("Água (L) — ticket de papel",
+        ("Água (L): ticket de papel",
          water_sem,
          water_com,
          None),
 
-        ("Custo estimado (R$) — combustível",
+        ("Custo estimado (R$): combustível",
          f"=B5*{_S2_PRICE}",
          f"=C5*{_S2_PRICE}",
          None),
@@ -962,15 +963,15 @@ def _build_sensitivity_sheet(
         return f"={_s2e(R['total'])}"
 
     sens_params: list[tuple] = [
-        ("idle",     "idle_rate — Taxa idle motor ligado (varia com combustível/categoria)",  True),
-        ("baseline", "baseline_wait_sec — Tempo médio sem tag (varia com contexto)",          True),
-        ("ef",       "ef_scope1 — Fator CO₂ (0 para etanol/elétrico; varia com combustível)", False),
-        ("gwp_ch4",  "gwp100_ch4 — GWP100 CH4 (IPCC AR6)",                                   False),
-        ("gwp_n2o",  "gwp100_n2o — GWP100 N2O (IPCC AR6)",                                   False),
+        ("idle",     "idle_rate: Taxa idle motor ligado (varia com combustível/categoria)",  True),
+        ("baseline", "baseline_wait_sec: Tempo médio sem tag (varia com contexto)",          True),
+        ("ef",       "ef_scope1: Fator CO₂ (0 para etanol/elétrico; varia com combustível)", False),
+        ("gwp_ch4",  "gwp100_ch4: GWP100 CH4 (IPCC AR6)",                                   False),
+        ("gwp_n2o",  "gwp100_n2o: GWP100 N2O (IPCC AR6)",                                   False),
     ]
 
     ws.merge_cells("A1:F1")
-    ws["A1"].value = "Análise de Sensibilidade — Variação ±20% e ±50% nos Parâmetros Principais"
+    ws["A1"].value = "Análise de Sensibilidade: Variação ±20% e ±50% nos Parâmetros Principais"
     ws["A1"].font = _FONT_TITLE()
     ws["A1"].alignment = Alignment(horizontal="left")
     ws.row_dimensions[1].height = 28
@@ -979,7 +980,7 @@ def _build_sensitivity_sheet(
     ws["A2"].value = (
         f"CO₂e base = {_S2}!E{R['total']} kg | "
         "Cada linha recalcula o total variando apenas aquele parâmetro. "
-        "⚠️ = premissa sem fonte pública — maior incerteza."
+        "⚠️ = premissa sem fonte pública: maior incerteza."
     )
     ws["A2"].font = _FONT_SMALL()
 
@@ -1030,7 +1031,7 @@ def _build_scale_sheet(ws: "Worksheet", fleet_size: int = 1) -> None:
     R = _SR
 
     ws.merge_cells("A1:C1")
-    ws["A1"].value = "Projeção de Escala — Emissões Evitadas por Período"
+    ws["A1"].value = "Projeção de Escala: Emissões Evitadas por Período"
     ws["A1"].font = _FONT_TITLE()
     ws["A1"].alignment = Alignment(horizontal="left")
     ws.row_dimensions[1].height = 28
@@ -1125,12 +1126,12 @@ _GLOSSARY: list[tuple[str, str, str]] = [
         "CO₂e (CO₂ equivalente)",
         "Unidade que converte todos os gases de efeito estufa em uma escala comum, "
         "usando o CO₂ como referência. Assim, CH4 e N2O podem ser somados ao CO₂.",
-        "Todos os resultados de emissão nesta planilha estão em kg CO₂e — "
+        "Todos os resultados de emissão nesta planilha estão em kg CO₂e: "
         "o número já considera CH4 e N2O além do CO₂ puro.",
     ),
     (
         "Escopo 1 (Scope 1)",
-        "Emissões diretas — o que sai diretamente do motor do veículo ao queimar combustível. "
+        "Emissões diretas: o que sai diretamente do motor do veículo ao queimar combustível. "
         "Combustão de gasolina, diesel, etanol ou GNV.",
         "A maior parte do CO₂e calculado aqui é Escopo 1. "
         "Veículos elétricos têm Escopo 1 = 0.",
@@ -1138,7 +1139,7 @@ _GLOSSARY: list[tuple[str, str, str]] = [
     (
         "Escopo 2 (Scope 2)",
         "Emissões indiretas da eletricidade consumida. Para veículos elétricos, "
-        "a usina que gerou o kWh emitiu CO₂ — isso é Escopo 2.",
+        "a usina que gerou o kWh emitiu CO₂: isso é Escopo 2.",
         "Aplica-se apenas a veículos elétricos nesta planilha. "
         "Fator da rede SIN (Brasil) varia com a matriz energética anual.",
     ),
@@ -1176,12 +1177,12 @@ _GLOSSARY: list[tuple[str, str, str]] = [
         "estacionamento SEM usar tag (parar, pagar, receber troco, partir).",
         "A diferença entre baseline e o tempo real com tag define o tempo economizado, "
         "que por sua vez determina o combustível e CO₂e evitados. "
-        "⚠️ Premissa declarada — sem dado oficial ANTT/ABCR.",
+        "⚠️ Premissa declarada: sem dado oficial ANTT/ABCR.",
     ),
     (
         "CO₂ Biogênico",
         "CO₂ de origem biológica (plantas, biomassa). O etanol libera CO₂, mas a cana "
-        "absorveu esse mesmo CO₂ ao crescer — ciclo neutro pelo GHG Protocol.",
+        "absorveu esse mesmo CO₂ ao crescer: ciclo neutro pelo GHG Protocol.",
         "CO₂ biogênico não entra no Escopo 1 desta planilha. "
         "Aparece separado para transparência.",
     ),
@@ -1211,7 +1212,7 @@ def _build_glossary_sheet(ws: "Worksheet") -> None:
     ws.title = "0. Glossário"
 
     ws.merge_cells("A1:C1")
-    ws["A1"].value = "Glossário — Entendendo os Termos desta Planilha"
+    ws["A1"].value = "Glossário: Entendendo os Termos desta Planilha"
     ws["A1"].font = _FONT_TITLE()
     ws["A1"].alignment = Alignment(horizontal="left", vertical="center")
     ws.row_dimensions[1].height = 32

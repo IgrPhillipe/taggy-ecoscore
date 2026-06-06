@@ -152,13 +152,13 @@ _TECHNICAL_SPECS_VALUES = {
     "elapsed_estacionamento_avg_sec": 30,
     "elapsed_times_source": "Premissa declarada — sem dado público disponível (Sem Parar/ConectCar não publicam tempo médio por passagem)",
 
-    # ── Custos de manutenção (para cálculo financeiro) ──
-    "maint_cost_leve": 0.05,
-    "maint_cost_pesado": 0.25,
-
-    # ── Accel surge (mantido no DB; engine usa apenas idle_rate) ──
-    "accel_surge_leve": 0.0,
-    "accel_surge_pesado": 0.0,
+    # ── Combustível extra por parada (frenagem + aceleração) ──
+    # Derivado das taxas idle já fonteadas (Contele 1,5 L/h leve; Edenred 4 L/h pesado):
+    # 1 ciclo parada+arranque em pedágio manual ≈ 30s leve / 45s pesado de consumo equivalente.
+    # Edenred: custo do "anda e para" — blog.edenredmobilidade.com.br/gestao-de-frete/pedagio-eletronico-e-tradicional/
+    # Contele: consumo em marcha lenta — blog.contelerastreador.com.br/consumo-em-marcha-lenta/
+    "accel_surge_leve": 0.0125,   # 30s × 0.000417 L/s
+    "accel_surge_pesado": 0.05,   # 45s × 0.001111 L/s
 
     # ── Source attribution ──
     "emission_factors_source": "FGV GHG Protocol Tool / BEN 2023 / MCTIC 2016",
@@ -170,6 +170,12 @@ _TECHNICAL_SPECS_VALUES = {
     "blend_factors_year": 2025,
     "paper_impact_source": "Ecoinvent 3.9 — papel térmico 80g/m²",
     "grid_factor_source": "FGV GHG Protocol Tool, Aba Fatores Variáveis / ONS 2023–2025",
+    "accel_surge_source": (
+        "Derivado das taxas idle (Contele/Edenred): 1 ciclo frenagem+aceleração "
+        "≈ 30s leve (0,0125 L) / 45s pesado (0,05 L) de consumo equivalente. "
+        "Edenred — blog.edenredmobilidade.com.br/gestao-de-frete/pedagio-eletronico-e-tradicional/; "
+        "Contele — blog.contelerastreador.com.br/consumo-em-marcha-lenta/"
+    ),
 }
 
 
@@ -428,6 +434,19 @@ def _build_parameters_snapshot(
     return {
         "payload": payload_dict,
         "emission_factors": specs.get("emission_factors"),
+        "ch4_factors": specs.get("ch4_factors"),
+        "n2o_factors": specs.get("n2o_factors"),
+        "gwp100": specs.get("gwp100"),
+        "blend": specs.get("blend"),
+        "sources": specs.get("sources"),
+        "idle_rates": specs.get("idle_rates"),
+        "accel_surge": specs.get("accel_surge"),
+        "baselines": specs.get("baselines"),
+        "paper_impact": specs.get("paper_impact"),
+        "ludic_metaphor_units": specs.get("ludic_metaphor_units"),
+        "vehicle_resolution": {
+            "vehicle": payload_dict.get("vehicle"),
+        },
         "pricing_snapshot": {
             "fuel_prices": fuel_prices_all,
             "fuel_prices_by_uf": specs.get("fuel_prices_by_uf"),

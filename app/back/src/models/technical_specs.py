@@ -140,17 +140,11 @@ class TechnicalSpecs(SQLModel, table=True):
         sa_column=Column(String, nullable=False, server_default=""),
     )
 
-    # ── Custos de manutenção (mantido para cálculo financeiro) ──
-    maint_cost_leve: float = Field(
-        default=0, sa_column=Column(Float, nullable=False))
-    maint_cost_pesado: float = Field(
-        default=0, sa_column=Column(Float, nullable=False))
-
-    # ── Accel surge — extra fuel per braking+acceleration event at manual toll/parking ──
+    # ── Combustível extra por parada (frenagem + aceleração em pedágio/estacionamento manual) ──
     accel_surge_leve: float = Field(
-        default=0, sa_column=Column(Float, nullable=False))
+        default=0.0125, sa_column=Column(Float, nullable=False, server_default="0.0125"))
     accel_surge_pesado: float = Field(
-        default=0, sa_column=Column(Float, nullable=False))
+        default=0.05, sa_column=Column(Float, nullable=False, server_default="0.05"))
 
     # ── Source attribution (auditabilidade) ──
     emission_factors_source: str = Field(
@@ -184,6 +178,15 @@ class TechnicalSpecs(SQLModel, table=True):
     )
     grid_factor_source: str = Field(
         default="FGV GHG Protocol Tool, Aba Fatores Variáveis / ONS 2023–2025",
+        sa_column=Column(String, nullable=False, server_default=""),
+    )
+    accel_surge_source: str = Field(
+        default=(
+            "Derivado das taxas idle (Contele/Edenred): 1 ciclo frenagem+aceleração "
+            "≈ 30s leve (0,0125 L) / 45s pesado (0,05 L) de consumo equivalente. "
+            "Edenred — blog.edenredmobilidade.com.br/gestao-de-frete/pedagio-eletronico-e-tradicional/; "
+            "Contele — blog.contelerastreador.com.br/consumo-em-marcha-lenta/"
+        ),
         sa_column=Column(String, nullable=False, server_default=""),
     )
 

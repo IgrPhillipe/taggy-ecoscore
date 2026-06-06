@@ -66,14 +66,14 @@ const FALLBACK = {
   paper_co2: 0.012,
   ef_source: "FGV GHG Protocol Tool / BEN 2023 / MCTIC 2016",
   ef_year: 2023,
-  idle_source: "Edenred Mobilidade / Contele Rastreador — referências brasileiras",
+  idle_source: "Edenred Mobilidade / Contele Rastreador, referências brasileiras",
   elapsed_pedagio: 15,
   elapsed_estacionamento: 30,
-  elapsed_source: "Premissa declarada — Sem Parar/ConectCar não publicam tempo médio por passagem",
+  elapsed_source: "Premissa declarada: Sem Parar/ConectCar não publicam tempo médio por passagem",
   gwp_source: "IPCC AR6 2021, Tabela 7.SM.7",
   blend_source: "ANP/CNPE: E30 por Lei 14.993/2024 (em vigor ago/2025); B15 por Resolução CNPE (em vigor ago/2025)",
   blend_year: 2025,
-  paper_source: "Ecoinvent 3.9 — papel térmico 80g/m²",
+  paper_source: "Ecoinvent 3.9, papel térmico 80g/m²",
 }
 
 type ParamRowProps = {
@@ -103,7 +103,7 @@ const ParamRow = ({ label, value, unit, source, year, warn }: ParamRowProps) => 
       <span className="text-xs text-muted-foreground">{unit}</span>
     </TableCell>
     <TableCell className="text-xs text-muted-foreground">{source}</TableCell>
-    <TableCell className="text-xs text-muted-foreground">{year ?? "—"}</TableCell>
+    <TableCell className="text-xs text-muted-foreground">{year ?? "-"}</TableCell>
   </TableRow>
 )
 
@@ -169,7 +169,7 @@ export const MetodologiaPage = () => {
       label: "Fator CO₂ elétrico (rede SIN)",
       value: s?.emission_factor_eletrico_kwh ?? FALLBACK.ev_kwh,
       unit: "kg CO₂/kWh",
-      source: "FGV GHG Protocol, Aba Fatores Variáveis / ONS 2023–2025",
+      source: "FGV GHG Protocol, Aba Fatores Variáveis / ONS 2023-2025",
       year: 2025,
     },
     {
@@ -187,7 +187,7 @@ export const MetodologiaPage = () => {
       year: 2021,
     },
     {
-      label: "Taxa consumo idle — veículo leve",
+      label: "Taxa consumo idle: veículo leve",
       value: `${s?.idle_rate_leve ?? FALLBACK.idle_leve} (${((s?.idle_rate_leve ?? FALLBACK.idle_leve) * 3600).toFixed(1)} L/h)`,
       unit: "L/s",
       source: s?.idle_rates_source ?? FALLBACK.idle_source,
@@ -195,7 +195,7 @@ export const MetodologiaPage = () => {
       warn: true,
     },
     {
-      label: "Taxa consumo idle — veículo pesado",
+      label: "Taxa consumo idle: veículo pesado",
       value: `${s?.idle_rate_pesado ?? FALLBACK.idle_pesado} (${((s?.idle_rate_pesado ?? FALLBACK.idle_pesado) * 3600).toFixed(1)} L/h)`,
       unit: "L/s",
       source: s?.idle_rates_source ?? FALLBACK.idle_source,
@@ -203,28 +203,28 @@ export const MetodologiaPage = () => {
       warn: true,
     },
     {
-      label: "Tempo médio sem tag — pedágio",
+      label: "Tempo médio sem tag: pedágio",
       value: s?.baseline_pedagio_avg_wait_sec ?? FALLBACK.baseline_pedagio,
       unit: "s",
-      source: "Premissa declarada — sem dado público ANP/ABCR/ANTT disponível",
+      source: "Premissa declarada: sem dado público ANP/ABCR/ANTT disponível",
       warn: true,
     },
     {
-      label: "Tempo médio sem tag — estacionamento",
+      label: "Tempo médio sem tag: estacionamento",
       value: s?.baseline_estacionamento_avg_wait_sec ?? FALLBACK.baseline_estacionamento,
       unit: "s",
       source: "Premissa declarada",
       warn: true,
     },
     {
-      label: "Tempo estimado com tag — pedágio",
+      label: "Tempo estimado com tag: pedágio",
       value: s?.elapsed_pedagio_avg_sec ?? FALLBACK.elapsed_pedagio,
       unit: "s",
       source: s?.elapsed_times_source ?? FALLBACK.elapsed_source,
       warn: true,
     },
     {
-      label: "Tempo estimado com tag — estacionamento",
+      label: "Tempo estimado com tag: estacionamento",
       value: s?.elapsed_estacionamento_avg_sec ?? FALLBACK.elapsed_estacionamento,
       unit: "s",
       source: s?.elapsed_times_source ?? FALLBACK.elapsed_source,
@@ -250,7 +250,7 @@ export const MetodologiaPage = () => {
       warn: true,
     },
     {
-      title: "Consumo em idle — veículo elétrico",
+      title: "Consumo em idle: veículo elétrico",
       text: "O consumo em marcha lenta de veículos elétricos (ar-condicionado, painel) é ínfimo comparado a motores de combustão. Para fins deste modelo, foi considerado desprezível e não contabilizado no Escopo 2. O fator da rede SIN (0.046 kg CO₂/kWh, média 2023-2025) se aplica normalmente ao consumo em movimento.",
       warn: false,
     },
@@ -269,36 +269,41 @@ export const MetodologiaPage = () => {
   const references = [
     {
       name: "FGV GHG Protocol Tool",
-      desc: "Fatores CO₂, CH4, N2O por combustível — BEN 2023 / MCTIC 2016",
+      desc: "Fatores CO₂, CH4, N2O por combustível: BEN 2023 / MCTIC 2016",
       url: "https://eaesp.fgv.br/centros/centro-estudos-sustentabilidade/projetos/programa-brasileiro-ghg-protocol",
     },
     {
-      name: "IPCC AR6 (2021) — Tabela 7.SM.7",
+      name: "IPCC AR6 (2021), Tabela 7.SM.7",
       desc: "GWP100: CH4 = 27.9, N2O = 273.0",
       url: "https://www.ipcc.ch/report/ar6/wg1/",
     },
     {
-      name: "Lei 14.993/2024 — Combustível do Futuro",
+      name: "Lei 14.993/2024: Combustível do Futuro",
       desc: "Blend gasolina: E27 → E30 (em vigor desde ago/2025)",
       url: "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2024/lei/l14993.htm",
     },
     {
-      name: "ANP — Especificação do Biodiesel (B15)",
-      desc: "Blend diesel: B14 → B15 (em vigor desde ago/2025) — especificação ANP",
+      name: "ANP: Especificação do Biodiesel (B15)",
+      desc: "Blend diesel: B14 → B15 (em vigor desde ago/2025), especificação ANP",
       url: "https://www.gov.br/anp/pt-br/assuntos/producao-e-fornecimento-de-biocombustiveis/biodiesel/especificacao-do-biodiesel",
     },
     {
-      name: "Edenred Mobilidade — Impacto da condução no consumo de combustível",
-      desc: "Idle fuel consumption — 4 L/h para veículos pesados (referência brasileira)",
+      name: "Edenred Mobilidade: Impacto da condução no consumo de combustível",
+      desc: "Idle fuel consumption: 4 L/h para veículos pesados (referência brasileira)",
       url: "https://blog.edenredmobilidade.com.br/gestao-de-frotas/impacto-da-conducao-no-consumo-de-combustivel/",
     },
     {
-      name: "Contele Rastreador — Consumo em marcha lenta",
-      desc: "Idle fuel consumption — ~1,5 L/h para veículos leves (faixa 1–3 L/h, referência brasileira)",
+      name: "Edenred Mobilidade: Pedágio eletrônico vs. tradicional",
+      desc: "Combustível extra por parada: ciclo frenagem+aceleração em cabine manual",
+      url: "https://blog.edenredmobilidade.com.br/gestao-de-frete/pedagio-eletronico-e-tradicional/",
+    },
+    {
+      name: "Contele Rastreador: Consumo em marcha lenta",
+      desc: "Idle fuel consumption: ~1,5 L/h para veículos leves (faixa 1-3 L/h, referência brasileira)",
       url: "https://blog.contelerastreador.com.br/consumo-em-marcha-lenta/",
     },
     {
-      name: "apibrasil.io — Consulta Veicular",
+      name: "apibrasil.io: Consulta Veicular",
       desc: "Lookup de placa → tipo de combustível, categoria, dados FIPE e DETRAN",
       url: "https://apibrasil.io",
     },
@@ -351,7 +356,7 @@ export const MetodologiaPage = () => {
                 <ol className="space-y-1 text-sm text-muted-foreground">
                   <li>1. Veículo desacelera até a cabine</li>
                   <li>2. Espera em fila (~3 minutos)</li>
-                  <li>3. Realiza o pagamento (~30–45s)</li>
+                  <li>3. Realiza o pagamento (~30-45s)</li>
                   <li>4. Recebe ticket de papel</li>
                   <li>5. Acelera de volta à velocidade de cruzeiro</li>
                 </ol>
@@ -365,7 +370,7 @@ export const MetodologiaPage = () => {
                 </p>
                 <ol className="space-y-1 text-sm text-muted-foreground">
                   <li>1. Veículo mantém velocidade reduzida (~40 km/h)</li>
-                  <li>2. Passa pela cancela em ~5–15 segundos</li>
+                  <li>2. Passa pela cancela em ~5-15 segundos</li>
                   <li>3. Sem parada, sem fila, sem ticket</li>
                   <li>4. Retoma velocidade</li>
                 </ol>
@@ -405,11 +410,11 @@ export const MetodologiaPage = () => {
               <div>
                 <p className="font-semibold">Variáveis de entrada</p>
                 <ul className="mt-2 space-y-1 text-muted-foreground">
-                  <li><code className="rounded bg-muted px-1 text-xs">baseline_sem_tag</code> — tempo médio sem tag</li>
-                  <li><code className="rounded bg-muted px-1 text-xs">tempo_com_tag</code> — tempo real da passagem</li>
-                  <li><code className="rounded bg-muted px-1 text-xs">categoria_veículo</code> — leve ou pesado</li>
-                  <li><code className="rounded bg-muted px-1 text-xs">combustível</code> — gasolina/diesel/etanol/GNV/elétrico</li>
-                  <li><code className="rounded bg-muted px-1 text-xs">is_digital</code> — tag digital elimina ticket de papel</li>
+                  <li><code className="rounded bg-muted px-1 text-xs">baseline_sem_tag</code>: tempo médio sem tag</li>
+                  <li><code className="rounded bg-muted px-1 text-xs">tempo_com_tag</code>: tempo real da passagem</li>
+                  <li><code className="rounded bg-muted px-1 text-xs">categoria_veículo</code>: leve ou pesado</li>
+                  <li><code className="rounded bg-muted px-1 text-xs">combustível</code>: gasolina/diesel/etanol/GNV/elétrico</li>
+                  <li><code className="rounded bg-muted px-1 text-xs">is_digital</code>: tag digital elimina ticket de papel</li>
                 </ul>
               </div>
               <div>
@@ -422,9 +427,8 @@ export const MetodologiaPage = () => {
               </div>
             </div>
             <div className="rounded border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-              <strong className="text-foreground">Aceleração (accel_surge):</strong> O modelo contabiliza apenas o consumo em marcha lenta (idle).
-              A variável <code className="rounded bg-muted px-1 text-xs">accel_surge</code> já existe na arquitetura (valor atual: 0.0 — conservador)
-              e poderá ser calibrada com medições de campo para capturar o pico de consumo no arranque.
+              <strong className="text-foreground">Combustível extra por parada:</strong> Além do consumo em marcha lenta, o modelo contabiliza o combustível gasto na frenagem e aceleração típicas de uma parada manual (pedágio ou estacionamento).
+              Valores derivados das mesmas fontes de idle: <strong className="text-foreground">0,0125 L</strong> (leve, 30s × Contele 1,5 L/h) e <strong className="text-foreground">0,05 L</strong> (pesado, 45s × Edenred 4 L/h).
             </div>
             <div className="rounded border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
               <strong className="text-foreground">Etanol:</strong> O CO₂ gerado pela queima de etanol é biogênico.
@@ -473,7 +477,7 @@ export const MetodologiaPage = () => {
 
               {/* PASSO 1 */}
               <div className="w-full max-w-2xl rounded border border-border bg-background p-4">
-                <p className="text-xs font-semibold text-muted-foreground">Passo 1 — Tempo salvo</p>
+                <p className="text-xs font-semibold text-muted-foreground">Passo 1: Tempo salvo</p>
                 <p className="mt-2 font-mono text-sm">
                   tempo_salvo = <span className="text-warning">baseline_avg_wait_sec</span> − <span className="text-warning">elapsed_avg_sec</span>
                 </p>
@@ -490,7 +494,7 @@ export const MetodologiaPage = () => {
 
               {/* PASSO 2 */}
               <div className="w-full max-w-2xl rounded border border-border bg-background p-4">
-                <p className="text-xs font-semibold text-muted-foreground">Passo 2 — Combustível evitado</p>
+                <p className="text-xs font-semibold text-muted-foreground">Passo 2: Combustível evitado</p>
                 <p className="mt-2 font-mono text-sm">
                   combustível = tempo_salvo × <span className="text-primary">idle_rate</span>[categoria]
                 </p>
@@ -503,7 +507,7 @@ export const MetodologiaPage = () => {
 
               {/* PASSO 3 */}
               <div className="w-full max-w-2xl rounded border border-border bg-background p-4">
-                <p className="mb-3 text-xs font-semibold text-muted-foreground">Passo 3 — Emissões por gás</p>
+                <p className="mb-3 text-xs font-semibold text-muted-foreground">Passo 3: Emissões por gás</p>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="rounded border border-border bg-muted/30 p-2 text-center">
                     <p className="text-xs font-semibold">CO₂ fóssil</p>

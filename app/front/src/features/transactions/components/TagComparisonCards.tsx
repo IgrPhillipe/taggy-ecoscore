@@ -35,7 +35,7 @@ const ROWS: ComparisonRow[] = [
 ];
 
 function formatDuration(sec: number | null | undefined): string {
-  if (sec == null || Number.isNaN(sec)) return "—";
+  if (sec == null || Number.isNaN(sec)) return "-";
   return formatDurationSeconds(sec);
 }
 
@@ -44,7 +44,7 @@ function formatValue(
   value: number | null | undefined,
   unit?: string,
 ): string {
-  if (value == null || Number.isNaN(value)) return "—";
+  if (value == null || Number.isNaN(value)) return "-";
   if (key === "time_sec") return formatDuration(value);
   if (key === "estimated_brl") return formatKpiCurrency(value);
   if (key === "water_liters") return formatKpiWater(value);

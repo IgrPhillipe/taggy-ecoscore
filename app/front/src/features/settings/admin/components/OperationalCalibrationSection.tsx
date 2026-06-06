@@ -22,33 +22,114 @@ import {
   useUpdateFuelPrice,
   useUpdateTechnicalSpecs,
 } from "../../hooks/useSettings";
-import type { FuelPriceByUF } from "../../api/requests";
+import type { FuelPriceByUF, TechnicalSpecs } from "../../api/requests";
 
-const SPEC_FIELDS: {
-  key: keyof import("../../api/requests").TechnicalSpecs;
+type SpecField = {
+  key: keyof TechnicalSpecs;
   label: string;
-}[] = [
-  { key: "emission_factor_diesel_s10", label: "Fator emissão Diesel S10" },
-  { key: "emission_factor_gasolina_c", label: "Fator emissão Gasolina C" },
-  { key: "emission_factor_etanol", label: "Fator emissão Etanol" },
-  { key: "idle_rate_leve", label: "Taxa ociosidade leve" },
-  { key: "idle_rate_pesado", label: "Taxa ociosidade pesado" },
-  { key: "paper_co2_per_ticket", label: "CO₂ por ticket (papel)" },
-  { key: "paper_water_per_ticket", label: "Água por ticket (papel)" },
+};
+
+type SpecCategory = {
+  title: string;
+  fields: SpecField[];
+};
+
+const SPEC_CATEGORIES: SpecCategory[] = [
   {
-    key: "ludic_tree_year_absorption",
-    label: "Absorção anual árvore (lúdico)",
+    title: "Fatores de emissão CO₂",
+    fields: [
+      { key: "emission_factor_diesel_s10", label: "diesel s10 (kg co₂/l)" },
+      { key: "emission_factor_gasolina_c", label: "gasolina c (kg co₂/l)" },
+      { key: "emission_factor_etanol", label: "etanol (kg co₂/l)" },
+      { key: "emission_factor_gnv", label: "gnv (kg co₂/m³)" },
+      { key: "emission_factor_eletrico_kwh", label: "elétrico (kg co₂/kwh)" },
+    ],
   },
-  { key: "baseline_pedagio_avg_wait_sec", label: "Espera média pedágio (s)" },
   {
-    key: "baseline_estacionamento_avg_wait_sec",
-    label: "Espera média estacionamento (s)",
+    title: "Fatores CH₄",
+    fields: [
+      { key: "ch4_factor_gasolina_c", label: "gasolina c (kg ch₄/l)" },
+      { key: "ch4_factor_diesel_s10", label: "diesel s10 (kg ch₄/l)" },
+      { key: "ch4_factor_etanol", label: "etanol (kg ch₄/l)" },
+      { key: "ch4_factor_gnv", label: "gnv (kg ch₄/m³)" },
+    ],
   },
-  { key: "maint_cost_leve", label: "Custo manutenção leve" },
-  { key: "maint_cost_pesado", label: "Custo manutenção pesado" },
-  { key: "accel_surge_leve", label: "Surto aceleração leve" },
-  { key: "accel_surge_pesado", label: "Surto aceleração pesado" },
+  {
+    title: "Fatores N₂O",
+    fields: [
+      { key: "n2o_factor_gasolina_c", label: "gasolina c (kg n₂o/l)" },
+      { key: "n2o_factor_diesel_s10", label: "diesel s10 (kg n₂o/l)" },
+      { key: "n2o_factor_etanol", label: "etanol (kg n₂o/l)" },
+      { key: "n2o_factor_gnv", label: "gnv (kg n₂o/m³)" },
+    ],
+  },
+  {
+    title: "GWP100 (IPCC AR6)",
+    fields: [
+      { key: "gwp100_ch4", label: "ch₄" },
+      { key: "gwp100_n2o", label: "n₂o" },
+    ],
+  },
+  {
+    title: "Percentuais de biocombustível",
+    fields: [
+      { key: "blend_etanol_pct", label: "etanol na gasolina c" },
+      { key: "blend_biodiesel_pct", label: "biodiesel no diesel s10" },
+    ],
+  },
+  {
+    title: "Taxas de ociosidade",
+    fields: [
+      { key: "idle_rate_leve", label: "veículo leve (l/s)" },
+      { key: "idle_rate_pesado", label: "veículo pesado (l/s)" },
+      { key: "idle_rate_gnv", label: "gnv (m³/s)" },
+      { key: "idle_rate_eletrico", label: "elétrico (kwh/s)" },
+    ],
+  },
+  {
+    title: "Impacto do ticket de papel",
+    fields: [
+      { key: "paper_co2_per_ticket", label: "co₂ por ticket (kg)" },
+      { key: "paper_water_per_ticket", label: "água por ticket (l)" },
+    ],
+  },
+  {
+    title: "Metáforas lúdicas",
+    fields: [
+      { key: "ludic_tree_year_absorption", label: "absorção anual por árvore (kg co₂)" },
+    ],
+  },
+  {
+    title: "Tempos de passagem",
+    fields: [
+      { key: "baseline_pedagio_avg_wait_sec", label: "pedágio — sem tag (s)" },
+      { key: "elapsed_pedagio_avg_sec", label: "pedágio — com tag (s)" },
+      {
+        key: "baseline_estacionamento_avg_wait_sec",
+        label: "estacionamento — sem tag (s)",
+      },
+      {
+        key: "elapsed_estacionamento_avg_sec",
+        label: "estacionamento — com tag (s)",
+      },
+    ],
+  },
+  {
+    title: "Combustível extra por parada",
+    fields: [
+      {
+        key: "accel_surge_leve",
+        label: "frenagem e aceleração — veículo leve (l)",
+      },
+      {
+        key: "accel_surge_pesado",
+        label: "frenagem e aceleração — veículo pesado (l)",
+      },
+    ],
+  },
 ];
+
+const SPEC_FIELDS: SpecField[] = SPEC_CATEGORIES.flatMap((cat) => cat.fields);
 
 const BRASILIA_UTC_OFFSET_MS = 3 * 60 * 60 * 1000;
 
@@ -114,7 +195,8 @@ export const OperationalCalibrationSection = () => {
     if (!bundle?.specs) return;
     const next: Record<string, string> = {};
     for (const field of SPEC_FIELDS) {
-      next[field.key] = String(bundle.specs[field.key]);
+      const raw = bundle.specs[field.key];
+      next[field.key] = raw == null ? "" : String(raw);
     }
     setSpecValues(next);
   }, [bundle]);
@@ -277,52 +359,61 @@ export const OperationalCalibrationSection = () => {
             {isSyncingMcti ? "Sincronizando..." : "Sincronizar MCTI"}
           </Button>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            {SPEC_FIELDS.map((field) => {
-              const isUnlocked = unlockedSpecs.has(field.key);
+        <CardContent className="space-y-8">
+          {SPEC_CATEGORIES.map((category) => (
+            <div key={category.title} className="space-y-4">
+              <h3 className="text-sm font-semibold capitalize text-foreground">
+                {category.title}
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                {category.fields.map((field) => {
+                  const isUnlocked = unlockedSpecs.has(field.key);
 
-              return (
-                <div key={field.key} className="space-y-2">
-                  <Label htmlFor={field.key}>{field.label}</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id={field.key}
-                      type="number"
-                      step="any"
-                      readOnly={!isUnlocked}
-                      disabled={!isUnlocked}
-                      className={!isUnlocked ? "bg-muted" : undefined}
-                      value={specValues[field.key] ?? ""}
-                      onChange={(e) =>
-                        setSpecValues((prev) => ({
-                          ...prev,
-                          [field.key]: e.target.value,
-                        }))
-                      }
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="shrink-0"
-                      onClick={() => toggleSpecLock(field.key)}
-                      aria-label={
-                        isUnlocked ? "Bloquear campo" : "Desbloquear campo"
-                      }
-                      title={isUnlocked ? "Bloquear" : "Clique para editar"}
-                    >
-                      {isUnlocked ? (
-                        <LockOpen className="h-4 w-4" />
-                      ) : (
-                        <Lock className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  return (
+                    <div key={field.key} className="space-y-2">
+                      <Label htmlFor={field.key} className="capitalize">
+                        {field.label}
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id={field.key}
+                          type="number"
+                          step="any"
+                          readOnly={!isUnlocked}
+                          disabled={!isUnlocked}
+                          className={!isUnlocked ? "bg-muted" : undefined}
+                          value={specValues[field.key] ?? ""}
+                          onChange={(e) =>
+                            setSpecValues((prev) => ({
+                              ...prev,
+                              [field.key]: e.target.value,
+                            }))
+                          }
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="shrink-0"
+                          onClick={() => toggleSpecLock(field.key)}
+                          aria-label={
+                            isUnlocked ? "Bloquear campo" : "Desbloquear campo"
+                          }
+                          title={isUnlocked ? "Bloquear" : "Clique para editar"}
+                        >
+                          {isUnlocked ? (
+                            <LockOpen className="h-4 w-4" />
+                          ) : (
+                            <Lock className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
           <Button
             type="button"
             onClick={handleSaveSpecs}
