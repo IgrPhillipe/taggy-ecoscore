@@ -11,6 +11,12 @@ import {
   XCircle,
 } from "lucide-react";
 import { formatDurationSeconds } from "@/lib/format-duration";
+import {
+  formatKpiCo2,
+  formatKpiCurrency,
+  formatKpiFuel,
+  formatKpiWater,
+} from "@/features/sustainability/lib/kpi";
 import { cn } from "@/lib/utils";
 import type { CalcComparisonSide } from "../api/types";
 
@@ -33,11 +39,6 @@ function formatDuration(sec: number | null | undefined): string {
   return formatDurationSeconds(sec);
 }
 
-function formatNumber(value: number | null | undefined, digits = 3): string {
-  if (value == null || Number.isNaN(value)) return "—";
-  return value.toFixed(digits);
-}
-
 function formatValue(
   key: keyof CalcComparisonSide,
   value: number | null | undefined,
@@ -45,12 +46,12 @@ function formatValue(
 ): string {
   if (value == null || Number.isNaN(value)) return "—";
   if (key === "time_sec") return formatDuration(value);
-  if (key === "estimated_brl") return `R$ ${formatNumber(value, 2)}`;
-  if (key === "water_liters") return `${formatNumber(value, 2)} L`;
+  if (key === "estimated_brl") return formatKpiCurrency(value);
+  if (key === "water_liters") return formatKpiWater(value);
   if (key === "fuel_amount" || key === "fuel_liters") {
-    return `${formatNumber(value, 3)} ${unit ?? "L"}`;
+    return unit && unit !== "L" ? `${value.toFixed(3)} ${unit}` : formatKpiFuel(value);
   }
-  return `${formatNumber(value, 3)} kg`;
+  return formatKpiCo2(value);
 }
 
 function getNum(side: CalcComparisonSide | undefined, key: keyof CalcComparisonSide): number | undefined {

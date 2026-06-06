@@ -10,6 +10,7 @@ import {
   formatKpiCo2,
   formatKpiCurrency,
   formatKpiDuration,
+  formatKpiFuel,
 } from "@/features/sustainability/lib/kpi";
 import { EnumBadge } from "@/components/DataTable";
 import {
@@ -127,8 +128,8 @@ export function CalculatorResults({ result, onReset }: Props) {
         <MetricCard
           icon={<Fuel className="h-3.5 w-3.5 text-orange-500" />}
           label="Combustível"
-          monthly={`${monthly.fuel_liters.toFixed(2)} L`}
-          annual={`${annual.fuel_liters.toFixed(2)} L`}
+          monthly={formatKpiFuel(monthly.fuel_liters)}
+          annual={`${formatKpiFuel(annual.fuel_liters)}/ano`}
         />
       </div>
 

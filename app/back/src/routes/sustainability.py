@@ -20,6 +20,7 @@ router = APIRouter(prefix="/sustainability", tags=["Sustainability"])
 
 class ImpactMetricsPublic(SQLModel):
     days_saved_without_queues: float
+    time_saved_sec: float
     tree_saved: float
     total_carbon: float
     total_water_saved: float
@@ -135,6 +136,7 @@ async def get_impact_metrics(
     if stats is None:
         return ImpactMetricsPublic(
             days_saved_without_queues=0,
+            time_saved_sec=0,
             tree_saved=0,
             total_carbon=0,
             total_water_saved=0,
@@ -147,6 +149,7 @@ async def get_impact_metrics(
 
     return ImpactMetricsPublic(
         days_saved_without_queues=round(days_saved, 4),
+        time_saved_sec=round(stats.total_time_saved_sec, 2),
         tree_saved=round(tree_saved, 4),
         total_carbon=round(stats.co2_total_kg, 4),
         total_water_saved=round(stats.water_total_liters, 4),

@@ -1,6 +1,6 @@
-import { Leaf, Fuel, Coins, Tag, Scroll } from "lucide-react";
+import { Leaf, Fuel, Coins, Tag, Scroll, Clock } from "lucide-react";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
 
 import { FilterModal } from "@/components/FilterModal";
@@ -13,6 +13,7 @@ import {
   formatKpiCurrency,
   formatKpiFuel,
   formatKpiPaper,
+  formatKpiTimeSaved,
   KPI_ICON_SIZE,
   KPI_TITLES,
 } from "@/features/sustainability/lib/kpi";
@@ -61,6 +62,17 @@ export const DashboardPage = () => {
     setDateRange,
   } = useDashboardFilters();
 
+  const filterDefaults = useMemo(
+    (): DashboardFilterState => ({
+      ...DASHBOARD_FILTER_DEFAULTS,
+      organizationId:
+        user?.role === "gestor_frota"
+          ? (user.organization_id ?? undefined)
+          : undefined,
+    }),
+    [user?.role, user?.organization_id],
+  );
+
   const appliedFilters: DashboardFilterState = {
     organizationId,
     fleetId,
@@ -78,7 +90,7 @@ export const DashboardPage = () => {
     activeCount,
   } = useFilterDraft({
     applied: appliedFilters,
-    defaults: DASHBOARD_FILTER_DEFAULTS,
+    defaults: filterDefaults,
     onApply: (values) => {
       if (isAdmin) {
         setOrganizationId(values.organizationId);
@@ -142,6 +154,11 @@ export const DashboardPage = () => {
       title: KPI_TITLES.fuelSaved,
       value: formatKpiFuel(summary?.total_fuel_saved_liters),
       icon: <Fuel className="text-[#72C215]" size={KPI_ICON_SIZE} />,
+    },
+    {
+      title: KPI_TITLES.hoursSaved,
+      value: formatKpiTimeSaved(summary?.total_time_saved_sec),
+      icon: <Clock className="text-[#72C215]" size={KPI_ICON_SIZE} />,
     },
     {
       title: KPI_TITLES.paperSaved,
@@ -230,7 +247,7 @@ export const DashboardPage = () => {
         <ExportButton url={dashboardExportUrl} />
       </section>
 
-      <section className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
+      <section className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6">
         {METRICS.map((metric) => (
           <KpiCard
             key={metric.title}

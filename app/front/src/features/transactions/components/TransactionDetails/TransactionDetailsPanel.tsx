@@ -26,6 +26,7 @@ import {
   formatKpiCurrency,
   formatKpiFuel,
   formatKpiPaper,
+  formatKpiWater,
   KPI_ICON_SIZE,
   KPI_TITLES,
 } from "@/features/sustainability/lib/kpi";
@@ -58,11 +59,6 @@ function formatDuration(sec: number | null | undefined): string {
   return formatDurationSeconds(sec);
 }
 
-function formatNumber(value: number | null | undefined, digits = 3): string {
-  if (value == null || Number.isNaN(value)) return "—";
-  return value.toFixed(digits);
-}
-
 function formatFuelPrice(value: number, unit: string): string {
   return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}/${unit}`;
 }
@@ -83,11 +79,11 @@ function formatComparisonValue(
   if (value == null || Number.isNaN(value)) return "—";
   if (key === "time_sec") return formatDuration(value);
   if (key === "estimated_brl") return formatKpiCurrency(value);
-  if (key === "water_liters") return `${formatNumber(value, 2)} L`;
+  if (key === "water_liters") return formatKpiWater(value);
   if (key === "fuel_amount" || key === "fuel_liters") {
-    return `${formatNumber(value, 3)} ${unit ?? "L"}`;
+    return unit && unit !== "L" ? `${value.toFixed(3)} ${unit}` : formatKpiFuel(value);
   }
-  return `${formatNumber(value, 3)} kg`;
+  return formatKpiCo2(value);
 }
 
 const COMPARISON_ROWS: { key: keyof CalcComparisonSide; label: string }[] = [
@@ -325,29 +321,29 @@ export function TransactionDetailsPanel({
       <SectionCard title="Detalhamento ambiental">
         <InfoRow
           label="CO₂ evitado no total"
-          value={`${formatNumber(env.co2_kg)} kg`}
+          value={formatKpiCo2(env.co2_kg)}
         />
         {fuelUnit === "kWh" ? (
           <InfoRow
             label="CO₂ da rede elétrica evitado"
-            value={`${formatNumber(env.co2e_scope2_kg)} kg`}
+            value={formatKpiCo2(env.co2e_scope2_kg)}
           />
         ) : (
           <InfoRow
             label="CO₂ da queima do combustível"
-            value={`${formatNumber(env.co2_fossil_kg)} kg`}
+            value={formatKpiCo2(env.co2_fossil_kg)}
           />
         )}
         {(env.co2_biogenic_kg ?? 0) > 0 && (
           <InfoRow
             label="CO₂ biogênico (etanol)"
-            value={`${formatNumber(env.co2_biogenic_kg)} kg`}
+            value={formatKpiCo2(env.co2_biogenic_kg)}
           />
         )}
         {(env.paper_co2_avoided_kg ?? 0) > 0 && (
           <InfoRow
             label="CO₂ do ticket de papel evitado"
-            value={`${formatNumber(env.paper_co2_avoided_kg)} kg`}
+            value={formatKpiCo2(env.paper_co2_avoided_kg)}
           />
         )}
         {(env.water_liters ?? 0) > 0 && (
@@ -356,7 +352,7 @@ export function TransactionDetailsPanel({
             value={
               <span className="inline-flex items-center gap-1">
                 <Droplet className="h-3.5 w-3.5 text-primary" />
-                {formatNumber(env.water_liters, 2)} L
+                {formatKpiWater(env.water_liters)}
               </span>
             }
           />

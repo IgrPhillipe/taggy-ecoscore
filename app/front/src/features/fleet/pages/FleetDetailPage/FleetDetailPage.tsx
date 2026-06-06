@@ -59,6 +59,7 @@ import { transactionActionsColumn } from "@/features/reports/components/transact
 import { TransactionDetailsDialog } from "@/features/transactions/components/TransactionDetails";
 import type { Transaction } from "@/features/transactions/api/types";
 import { vehicleTransactionToTransaction } from "@/features/transactions/lib/vehicle-transaction-to-transaction";
+import { formatTxCurrency } from "@/features/transactions/lib/transaction-metric-formatters";
 import {
   FUEL_TYPE_LABELS,
   USER_ROLE_LABELS,
@@ -161,11 +162,8 @@ const baseTransactionColumns: ColumnDef<VehicleTransaction>[] = [
   transactionUfColumn<VehicleTransaction>(),
   {
     accessorKey: "financial_savings_brl",
-    header: "ECONOMIA (R$)",
-    cell: ({ row }) =>
-      row.original.financial_savings_brl != null
-        ? `R$ ${row.original.financial_savings_brl.toFixed(2)}`
-        : "—",
+    header: "Economia",
+    cell: ({ row }) => formatTxCurrency(row.original.financial_savings_brl),
   },
   {
     accessorKey: "created_at",

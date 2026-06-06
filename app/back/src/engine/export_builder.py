@@ -445,6 +445,10 @@ def build_dashboard_workbook(data: dict[str, Any]) -> io.BytesIO:
             ("CO₂ evitado total (kg)", round(summary["total_co2_avoided_kg"], 3)),
             ("Árvores equiv. (~1 ano)", _trees_equiv(summary["total_co2_avoided_kg"])),
             ("Combustível economizado (L)", round(summary["total_fuel_saved_liters"], 3)),
+            (
+                "Tempo economizado (h)",
+                round((summary.get("total_time_saved_sec") or 0) / 3600, 2),
+            ),
             ("Papel economizado (m)", round(summary["paper_saved_meters"], 2)),
             ("Economia acumulada (R$)", round(summary["accumulated_economy"], 2)),
             ("Tags ativos", summary["active_tags"]),

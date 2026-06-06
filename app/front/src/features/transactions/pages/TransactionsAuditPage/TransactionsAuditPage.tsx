@@ -42,9 +42,14 @@ import { buildTransactionListExportUrl } from "@/features/reports/lib/export-url
 import { TransactionDetailsDialog } from "../../components/TransactionDetails";
 import type { Transaction } from "../../api/types";
 import { useGetTransactions } from "../../hooks/useGetTransactions";
-
-const formatNumber = (value: number | null, digits = 2) =>
-  value != null ? value.toFixed(digits) : "—";
+import {
+  formatTxCo2,
+  formatTxCurrency,
+  formatTxElapsedTime,
+  formatTxFuel,
+  formatTxTimeSaved,
+  formatTxWater,
+} from "@/features/transactions/lib/transaction-metric-formatters";
 
 const formatDateTime = (value: string) =>
   new Date(value).toLocaleString("pt-BR");
@@ -67,36 +72,33 @@ function buildAuditColumns(
     transactionDigitalColumn<Transaction>(),
     {
       accessorKey: "elapsed_time_sec",
-      header: "Tempo (s)",
-      cell: ({ row }) => formatNumber(row.original.elapsed_time_sec, 0),
+      header: "Tempo",
+      cell: ({ row }) => formatTxElapsedTime(row.original.elapsed_time_sec),
     },
     {
       accessorKey: "co2_avoided_kg",
-      header: "CO₂ (kg)",
-      cell: ({ row }) => formatNumber(row.original.co2_avoided_kg, 3),
+      header: "CO₂ evitado",
+      cell: ({ row }) => formatTxCo2(row.original.co2_avoided_kg),
     },
     {
       accessorKey: "fuel_saved_liters",
-      header: "Comb. (L)",
-      cell: ({ row }) => formatNumber(row.original.fuel_saved_liters, 3),
+      header: "Combustível",
+      cell: ({ row }) => formatTxFuel(row.original.fuel_saved_liters),
     },
     {
       accessorKey: "time_saved_sec",
-      header: "Tempo econ. (s)",
-      cell: ({ row }) => formatNumber(row.original.time_saved_sec, 0),
+      header: "Tempo econ.",
+      cell: ({ row }) => formatTxTimeSaved(row.original.time_saved_sec),
     },
     {
       accessorKey: "financial_savings_brl",
-      header: "Economia (R$)",
-      cell: ({ row }) =>
-        row.original.financial_savings_brl != null
-          ? `R$ ${row.original.financial_savings_brl.toFixed(2)}`
-          : "—",
+      header: "Economia",
+      cell: ({ row }) => formatTxCurrency(row.original.financial_savings_brl),
     },
     {
       accessorKey: "water_saved_liters",
-      header: "Água (L)",
-      cell: ({ row }) => formatNumber(row.original.water_saved_liters, 2),
+      header: "Água",
+      cell: ({ row }) => formatTxWater(row.original.water_saved_liters),
     },
     transactionUserColumn<Transaction>(userNameMap),
     transactionVehicleColumn<Transaction>(vehicleLabelMap),

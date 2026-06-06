@@ -2,7 +2,7 @@ import { Clock, Leaf, Ticket } from "lucide-react";
 import {
   formatKpiCo2,
   formatKpiCount,
-  formatKpiHours,
+  formatKpiTimeSaved,
   KPI_ICON_SIZE,
   KPI_TITLES,
 } from "../../lib/kpi";
@@ -12,10 +12,10 @@ type StatCardProps = {
   label: string;
   passages: number | string;
   co2: number | string;
-  hours: number | string;
+  timeSavedSec: number | string;
 };
 
-export const StatCard = ({ label, passages, co2, hours }: StatCardProps) => {
+export const StatCard = ({ label, passages, co2, timeSavedSec }: StatCardProps) => {
   const metrics = [
     {
       title: KPI_TITLES.passages,
@@ -29,7 +29,9 @@ export const StatCard = ({ label, passages, co2, hours }: StatCardProps) => {
     },
     {
       title: KPI_TITLES.hoursSaved,
-      value: formatKpiHours(typeof hours === "number" ? hours : Number(hours)),
+      value: formatKpiTimeSaved(
+        typeof timeSavedSec === "number" ? timeSavedSec : Number(timeSavedSec),
+      ),
       icon: <Clock className="text-[#72C215]" size={KPI_ICON_SIZE} />,
     },
   ];

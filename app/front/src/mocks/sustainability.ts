@@ -7,6 +7,7 @@ import type {
 
 export const MOCK_IMPACT_METRICS: ImpactMetrics = {
   daysSavedWithoutQueues: 147,
+  timeSavedSec: 147 * 86400,
   treeSaved: 15,
   totalCarbon: 342,
   totalWaterSaved: 8500,

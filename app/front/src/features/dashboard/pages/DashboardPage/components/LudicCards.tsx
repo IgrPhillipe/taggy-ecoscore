@@ -1,5 +1,6 @@
 import { TreePine, Droplet, Scroll } from "lucide-react";
 import { KpiCard } from "@/features/sustainability/components/MetricCard";
+import { formatKpiPaper, formatKpiWater } from "@/features/sustainability/lib/kpi";
 import { useGetImpactMetrics } from "@/features/sustainability/hooks/useGetImpactMetrics";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -25,12 +26,12 @@ export const LudicCards = () => {
     },
     {
       icon: <Droplet className="text-[#72C215]" size={30} />,
-      value: `${(metrics?.totalWaterSaved ?? 0).toLocaleString("pt-BR")} L`,
-      title: "LITROS DE ÁGUA POUPADOS",
+      value: formatKpiWater(metrics?.totalWaterSaved ?? 0),
+      title: "ÁGUA POUPADA",
     },
     {
       icon: <Scroll className="text-[#72C215]" size={30} />,
-      value: `${metrics?.paperSaved ?? 0} m`,
+      value: formatKpiPaper(metrics?.paperSaved ?? 0),
       title: "METROS DE PAPEL EVITADOS",
     },
   ];

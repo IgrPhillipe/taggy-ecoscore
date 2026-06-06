@@ -12,6 +12,7 @@ export const getImpactMetrics = async (userId: number): Promise<ImpactMetrics> =
     .get("/api/sustainability/impact", { searchParams: { user_id: userId } })
     .json<{
       days_saved_without_queues: number
+      time_saved_sec: number
       tree_saved: number
       total_carbon: number
       total_water_saved: number
@@ -20,6 +21,8 @@ export const getImpactMetrics = async (userId: number): Promise<ImpactMetrics> =
 
   return {
     daysSavedWithoutQueues: raw.days_saved_without_queues,
+    timeSavedSec:
+      raw.time_saved_sec ?? raw.days_saved_without_queues * 86400,
     treeSaved: raw.tree_saved,
     totalCarbon: raw.total_carbon,
     totalWaterSaved: raw.total_water_saved,

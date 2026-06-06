@@ -15,7 +15,7 @@ export const KPI_TITLES = {
   duration: "DURAÇÃO ESTIMADA",
 } as const;
 
-import { formatMinutes } from "@/lib/format-duration";
+import { formatMinutes, formatTimeSavedHero } from "@/lib/format-duration";
 
 const ptNumber = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 
@@ -33,13 +33,27 @@ export function formatKpiCount(value: number | null | undefined): string {
   return formatOrDash(value, (n) => ptNumber.format(n));
 }
 
+/** Mirrors backend _fmt_carbon: grams below 1 kg, otherwise kg. */
 export function formatKpiCo2(kg: number | null | undefined): string {
-  return formatOrDash(kg, (n) => `${ptNumber.format(n)}kg`);
+  return formatOrDash(kg, (n) => {
+    const grams = n * 1000;
+    if (grams < 1000) return `${Math.round(grams)}g`;
+    return `${ptNumber.format(n)}kg`;
+  });
 }
 
 export function formatKpiFuel(liters: number | null | undefined): string {
   return formatOrDash(liters, (n) => {
     if (n < 0.1) return `${(n * 1000).toFixed(0)}mL`;
+    return `${ptNumber.format(n)}L`;
+  });
+}
+
+/** Mirrors backend _fmt_water: ml below 1 L, otherwise L. */
+export function formatKpiWater(liters: number | null | undefined): string {
+  return formatOrDash(liters, (n) => {
+    const ml = n * 1000;
+    if (ml < 1000) return `${Math.round(ml)}ml`;
     return `${ptNumber.format(n)}L`;
   });
 }
@@ -52,6 +66,12 @@ export function formatKpiCurrency(brl: number | null | undefined): string {
   return formatOrDash(brl, (n) => `R$ ${ptNumber.format(n)}`);
 }
 
+/** Accumulated time saved — min / h min / days (not decimal hours). */
+export function formatKpiTimeSaved(sec: number | null | undefined): string {
+  return formatOrDash(sec, formatTimeSavedHero);
+}
+
+/** @deprecated Use formatKpiTimeSaved for accumulated queue time saved. */
 export function formatKpiHours(hours: number | null | undefined): string {
   return formatOrDash(hours, (n) => `${ptNumber.format(n)}h`);
 }

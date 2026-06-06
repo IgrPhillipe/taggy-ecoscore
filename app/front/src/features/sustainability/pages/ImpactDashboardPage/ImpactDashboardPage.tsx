@@ -2,6 +2,12 @@ import { Droplet, Info, Leaf, Scroll } from "lucide-react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MetricCard } from "@/features/sustainability/components/MetricCard";
+import {
+  formatKpiCo2,
+  formatKpiPaper,
+  formatKpiTimeSaved,
+  formatKpiWater,
+} from "@/features/sustainability/lib/kpi";
 import { useGetImpactMetrics } from "../../hooks/useGetImpactMetrics";
 import { useGetWeeklyGoal } from "../../hooks/useGetWeeklyGoal";
 
@@ -18,21 +24,21 @@ export const ImpactDashboardPage = () => {
       key: "carbono",
       title: `${metrics?.treeSaved ?? 0} árvores`,
       subtitle: "equivalentes plantadas por 1 ano",
-      detail: `${metrics?.totalCarbon ?? 0} kg de CO₂e`,
+      detail: formatKpiCo2(metrics?.totalCarbon ?? 0),
       icon: <Leaf className="h-10 w-10 text-primary" />,
     },
     {
       key: "agua",
-      title: `${(metrics?.totalWaterSaved ?? 0).toLocaleString("pt-BR")} litros`,
+      title: formatKpiWater(metrics?.totalWaterSaved ?? 0),
       subtitle: "de água poupados",
-      detail: `${(metrics?.totalWaterSaved ?? 0).toLocaleString("pt-BR")} L`,
+      detail: formatKpiWater(metrics?.totalWaterSaved ?? 0),
       icon: <Droplet className="h-10 w-10 text-primary" />,
     },
     {
       key: "papel",
-      title: `${metrics?.paperSaved ?? 0} metros`,
+      title: formatKpiPaper(metrics?.paperSaved ?? 0),
       subtitle: "de papel evitados",
-      detail: `${metrics?.paperSaved ?? 0} m de papel`,
+      detail: `${formatKpiPaper(metrics?.paperSaved ?? 0)} de papel`,
       icon: <Scroll className="h-10 w-10 text-primary" />,
     },
   ];
@@ -46,12 +52,12 @@ export const ImpactDashboardPage = () => {
         {metricsLoading ? (
           <Skeleton className="h-32 w-full rounded" />
         ) : (
-          <MetricCard className="p-6">
+          <MetricCard className="p-6 flex flex-col">
             <span className="mb-1 block text-5xl font-black tracking-tight text-foreground">
-              {metrics?.daysSavedWithoutQueues ?? 0}
+              {formatKpiTimeSaved(metrics?.timeSavedSec ?? 0)}
             </span>
             <span className="text-xs font-semibold text-muted-foreground">
-              dias economizados em filas de pedágio
+              Economizados em filas de pedágio
             </span>
             <a
               href="/metodologia"

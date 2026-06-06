@@ -3,6 +3,7 @@ import { z } from "zod"
 /** contratos-api §1.1 — Métricas de impacto */
 export const impactMetricsSchema = z.object({
   daysSavedWithoutQueues: z.number(),
+  timeSavedSec: z.number(),
   treeSaved: z.number(),
   totalCarbon: z.number(),
   totalWaterSaved: z.number(),

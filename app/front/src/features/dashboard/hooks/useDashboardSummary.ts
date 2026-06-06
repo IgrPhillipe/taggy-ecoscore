@@ -6,6 +6,7 @@ export type DashboardSummary = {
   total_co2_avoided_kg: number;
   total_fuel_saved_liters: number;
   accumulated_economy: number;
+  total_time_saved_sec: number;
   active_tags: number;
   paper_saved_meters: number;
   transaction_count: number;

@@ -89,7 +89,7 @@ export const PassagesHistoryPage = () => {
             label="Resumo total"
             passages={summary?.totalPassages ?? 0}
             co2={summary?.totalCarbon ?? 0}
-            hours={summary?.hoursSaved ?? 0}
+            timeSavedSec={(summary?.hoursSaved ?? 0) * 3600}
           />
         )}
       </section>

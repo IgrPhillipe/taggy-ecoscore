@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef, OnChangeFn, PaginationState } from "@tanstack/react-table";
-import { Coins, Fuel, Leaf, Scroll, Ticket } from "lucide-react";
+import { Coins, Fuel, Leaf, Scroll, Ticket, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { DriverFormDialog } from "../../components/DriverFormDialog/DriverFormDialog";
@@ -22,6 +22,7 @@ import {
   formatKpiCount,
   formatKpiFuel,
   formatKpiPaper,
+  formatKpiTimeSaved,
   KPI_ICON_SIZE,
   KPI_TITLES,
 } from "@/features/sustainability/lib/kpi";
@@ -38,6 +39,10 @@ import { transactionActionsColumn } from "@/features/reports/components/transact
 import { TransactionDetailsDialog } from "@/features/transactions/components/TransactionDetails";
 import type { Transaction } from "@/features/transactions/api/types";
 import { vehicleTransactionToTransaction } from "@/features/transactions/lib/vehicle-transaction-to-transaction";
+import {
+  formatTxCo2,
+  formatTxCurrency,
+} from "@/features/transactions/lib/transaction-metric-formatters";
 import {
   transactionContextColumn,
   transactionPlateColumn,
@@ -66,19 +71,13 @@ const baseTransactionColumns: ColumnDef<VehicleTransaction>[] = [
   transactionUfColumn<VehicleTransaction>(),
   {
     accessorKey: "co2_avoided_kg",
-    header: "CO₂ Evitado (kg)",
-    cell: ({ row }) =>
-      row.original.co2_avoided_kg != null
-        ? row.original.co2_avoided_kg.toFixed(3)
-        : "—",
+    header: "CO₂ evitado",
+    cell: ({ row }) => formatTxCo2(row.original.co2_avoided_kg),
   },
   {
     accessorKey: "financial_savings_brl",
-    header: "Economia (R$)",
-    cell: ({ row }) =>
-      row.original.financial_savings_brl != null
-        ? `R$ ${row.original.financial_savings_brl.toFixed(2)}`
-        : "—",
+    header: "Economia",
+    cell: ({ row }) => formatTxCurrency(row.original.financial_savings_brl),
   },
   {
     accessorKey: "created_at",
@@ -219,7 +218,7 @@ export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
         />
       )}
 
-      <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-6">
         <KpiCard
           title={KPI_TITLES.passages}
           value={formatKpiCount(stats?.transactions_count)}
@@ -234,6 +233,11 @@ export const DriverDetailPage = ({ driverId }: DriverDetailPageProps) => {
           title={KPI_TITLES.fuelSaved}
           value={formatKpiFuel(stats?.fuel_total_liters)}
           icon={<Fuel className="text-[#72C215]" size={KPI_ICON_SIZE} />}
+        />
+        <KpiCard
+          title={KPI_TITLES.hoursSaved}
+          value={formatKpiTimeSaved(stats?.total_time_saved_sec)}
+          icon={<Clock className="text-[#72C215]" size={KPI_ICON_SIZE} />}
         />
         <KpiCard
           title={KPI_TITLES.paperSaved}

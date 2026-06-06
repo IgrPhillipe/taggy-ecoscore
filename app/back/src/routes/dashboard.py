@@ -39,6 +39,7 @@ async def get_dashboard_summary(
         func.coalesce(func.sum(Transaction.co2_avoided_kg), 0),
         func.coalesce(func.sum(Transaction.fuel_saved_liters), 0),
         func.coalesce(func.sum(Transaction.financial_savings_brl), 0),
+        func.coalesce(func.sum(Transaction.time_saved_sec), 0),
     )
     vehicle_query = select(func.count()).select_from(Vehicle)
     digital_query = select(func.count()).where(
@@ -76,7 +77,7 @@ async def get_dashboard_summary(
     )
 
     tx_result = await db.execute(tx_query)
-    transaction_count, co2_total, fuel_total, savings_total = tx_result.one()
+    transaction_count, co2_total, fuel_total, savings_total, time_saved_total = tx_result.one()
 
     vehicle_count_result = await db.execute(vehicle_query)
     active_tags = int(vehicle_count_result.scalar_one())
@@ -92,6 +93,7 @@ async def get_dashboard_summary(
         "total_co2_avoided_kg": float(co2_total),
         "total_fuel_saved_liters": float(fuel_total),
         "accumulated_economy": float(savings_total),
+        "total_time_saved_sec": float(time_saved_total),
         "active_tags": active_tags,
         "paper_saved_meters": paper_saved_meters,
         "transaction_count": int(transaction_count),

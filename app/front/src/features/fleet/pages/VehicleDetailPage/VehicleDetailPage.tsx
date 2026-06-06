@@ -16,8 +16,8 @@ import {
   formatKpiCo2,
   formatKpiCount,
   formatKpiFuel,
-  formatKpiHours,
   formatKpiPaper,
+  formatKpiTimeSaved,
   KPI_ICON_SIZE,
   KPI_TITLES,
 } from "@/features/sustainability/lib/kpi";
@@ -42,6 +42,11 @@ import { transactionActionsColumn } from "@/features/reports/components/transact
 import { TransactionDetailsDialog } from "@/features/transactions/components/TransactionDetails";
 import type { Transaction } from "@/features/transactions/api/types";
 import { vehicleTransactionToTransaction } from "@/features/transactions/lib/vehicle-transaction-to-transaction";
+import {
+  formatTxCo2,
+  formatTxCurrency,
+  formatTxFuel,
+} from "@/features/transactions/lib/transaction-metric-formatters";
 
 type VehicleDetailPageProps = {
   vehicleId: number;
@@ -54,27 +59,18 @@ const baseTransactionColumns: ColumnDef<VehicleTransaction>[] = [
   transactionUfColumn<VehicleTransaction>(),
   {
     accessorKey: "co2_avoided_kg",
-    header: "CO₂ Evitado (kg)",
-    cell: ({ row }) =>
-      row.original.co2_avoided_kg != null
-        ? row.original.co2_avoided_kg.toFixed(3)
-        : "—",
+    header: "CO₂ evitado",
+    cell: ({ row }) => formatTxCo2(row.original.co2_avoided_kg),
   },
   {
     accessorKey: "fuel_saved_liters",
-    header: "Comb. (L)",
-    cell: ({ row }) =>
-      row.original.fuel_saved_liters != null
-        ? row.original.fuel_saved_liters.toFixed(3)
-        : "—",
+    header: "Combustível",
+    cell: ({ row }) => formatTxFuel(row.original.fuel_saved_liters),
   },
   {
     accessorKey: "financial_savings_brl",
-    header: "Economia (R$)",
-    cell: ({ row }) =>
-      row.original.financial_savings_brl != null
-        ? `R$ ${row.original.financial_savings_brl.toFixed(2)}`
-        : "—",
+    header: "Economia",
+    cell: ({ row }) => formatTxCurrency(row.original.financial_savings_brl),
   },
   {
     accessorKey: "created_at",
@@ -260,7 +256,7 @@ export const VehicleDetailPage = ({ vehicleId }: VehicleDetailPageProps) => {
         />
         <KpiCard
           title={KPI_TITLES.hoursSaved}
-          value={formatKpiHours(summary?.time_total_sec != null ? summary.time_total_sec / 3600 : null)}
+          value={formatKpiTimeSaved(summary?.time_total_sec)}
           icon={<Clock className="text-[#72C215]" size={KPI_ICON_SIZE} />}
         />
         <KpiCard
