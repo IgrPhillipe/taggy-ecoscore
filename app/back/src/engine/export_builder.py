@@ -48,6 +48,7 @@ _TREE_ABSORPTION_KG = 15.0
 def _trees_equiv(co2_kg: float) -> float:
     return round(co2_kg / _TREE_ABSORPTION_KG, 1)
 
+
 _TRANSACTION_HEADERS = [
     "ID",
     "Placa",
@@ -70,7 +71,8 @@ _TRANSACTION_HEADERS = [
 
 def _require_openpyxl() -> None:
     if not _HAS_OPENPYXL:
-        raise RuntimeError("openpyxl não está instalado. Execute: uv add openpyxl")
+        raise RuntimeError(
+            "openpyxl não está instalado. Execute: uv add openpyxl")
 
 
 def _format_dt(value: datetime | None) -> str:
@@ -144,7 +146,8 @@ def _write_key_value_sheet(
     for row_idx, (label, value) in enumerate(pairs, start=header_row + 1):
         alt = row_idx % 2 == 0
         write_data_cell(ws, row_idx, 1, label, alt=alt, bold=True)
-        write_data_cell(ws, row_idx, 2, value if value is not None else "", alt=alt)
+        write_data_cell(
+            ws, row_idx, 2, value if value is not None else "", alt=alt)
     set_col_widths(ws, [28, 40])
     ws.freeze_panes = ws.cell(row=header_row + 1, column=1).coordinate
 
@@ -207,10 +210,13 @@ def build_fleet_detail_workbook(
             ("Motoristas", summary.get("driver_count")),
             ("Passagens", summary.get("transaction_count")),
             ("CO₂ total (kg)", round(summary.get("co2_total_kg") or 0, 3)),
-            ("Árvores equiv. (~1 ano)", _trees_equiv(summary.get("co2_total_kg") or 0)),
-            ("Combustível total (L)", round(summary.get("fuel_total_liters") or 0, 3)),
+            ("Árvores equiv. (~1 ano)", _trees_equiv(
+                summary.get("co2_total_kg") or 0)),
+            ("Combustível total (L)", round(
+                summary.get("fuel_total_liters") or 0, 3)),
             ("Economia total (R$)", round(summary.get("total_savings_brl") or 0, 2)),
-            ("Papel economizado (m)", round(summary.get("paper_saved_meters") or 0, 2)),
+            ("Papel economizado (m)", round(
+                summary.get("paper_saved_meters") or 0, 2)),
         ],
     )
 
@@ -220,7 +226,8 @@ def build_fleet_detail_workbook(
         title="Veículos da Frota",
         subtitle="Veículos vinculados à frota no momento da exportação.",
         template_slug=FROTA_SLUG,
-        headers=["ID", "TAG ID", "Placa", "Modelo", "Combustível", "Categoria", "Org ID"],
+        headers=["ID", "TAG ID", "Placa", "Modelo",
+                 "Combustível", "Categoria", "Org ID"],
         rows=[
             [
                 v.id,
@@ -330,11 +337,14 @@ def build_vehicle_detail_workbook(
             ("Frota ID", vehicle.fleet_id),
             ("Passagens", summary.get("transaction_count")),
             ("CO₂ total (kg)", round(summary.get("co2_total_kg") or 0, 3)),
-            ("Árvores equiv. (~1 ano)", _trees_equiv(summary.get("co2_total_kg") or 0)),
-            ("Combustível total (L)", round(summary.get("fuel_total_liters") or 0, 3)),
+            ("Árvores equiv. (~1 ano)", _trees_equiv(
+                summary.get("co2_total_kg") or 0)),
+            ("Combustível total (L)", round(
+                summary.get("fuel_total_liters") or 0, 3)),
             ("Economia total (R$)", round(summary.get("financial_total_brl") or 0, 2)),
             ("Tempo total (h)", round((summary.get("time_total_sec") or 0) / 3600, 2)),
-            ("Papel economizado (m)", round(summary.get("paper_saved_meters") or 0, 2)),
+            ("Papel economizado (m)", round(
+                summary.get("paper_saved_meters") or 0, 2)),
         ],
     )
 
@@ -399,14 +409,17 @@ def build_driver_detail_workbook(
             ("ID", driver.id),
             ("Nome", driver.name),
             ("E-mail", driver.email),
-            ("Função", driver.role.value if hasattr(driver.role, "value") else driver.role),
+            ("Função", driver.role.value if hasattr(
+                driver.role, "value") else driver.role),
             ("Org ID", driver.organization_id),
             ("Passagens", stats.get("transactions_count")),
             ("CO₂ total (kg)", round(stats.get("co2_total_kg") or 0, 3)),
-            ("Árvores equiv. (~1 ano)", _trees_equiv(stats.get("co2_total_kg") or 0)),
+            ("Árvores equiv. (~1 ano)", _trees_equiv(
+                stats.get("co2_total_kg") or 0)),
             ("Combustível total (L)", round(stats.get("fuel_total_liters") or 0, 3)),
             ("Economia total (R$)", round(stats.get("financial_total_brl") or 0, 2)),
-            ("Tempo economizado (h)", round((stats.get("total_time_saved_sec") or 0) / 3600, 2)),
+            ("Tempo economizado (h)", round(
+                (stats.get("total_time_saved_sec") or 0) / 3600, 2)),
             ("Papel economizado (m)", round(stats.get("paper_saved_meters") or 0, 2)),
         ],
     )
@@ -440,17 +453,23 @@ def build_dashboard_workbook(data: dict[str, Any]) -> io.BytesIO:
         pairs=[
             ("Organização ID", filters.get("organization_id") or "Todas"),
             ("Frota ID", filters.get("fleet_id") or "Todas"),
-            ("Período (início)", filters.get("from_date") or filters.get("daily_period_start")),
-            ("Período (fim)", filters.get("to_date") or filters.get("daily_period_end")),
-            ("CO₂ evitado total (kg)", round(summary["total_co2_avoided_kg"], 3)),
-            ("Árvores equiv. (~1 ano)", _trees_equiv(summary["total_co2_avoided_kg"])),
-            ("Combustível economizado (L)", round(summary["total_fuel_saved_liters"], 3)),
+            ("Período (início)", filters.get("from_date")
+             or filters.get("daily_period_start")),
+            ("Período (fim)", filters.get("to_date")
+             or filters.get("daily_period_end")),
+            ("CO₂ evitado total (kg)", round(
+                summary["total_co2_avoided_kg"], 3)),
+            ("Árvores equiv. (~1 ano)", _trees_equiv(
+                summary["total_co2_avoided_kg"])),
+            ("Combustível economizado (L)", round(
+                summary["total_fuel_saved_liters"], 3)),
             (
                 "Tempo economizado (h)",
                 round((summary.get("total_time_saved_sec") or 0) / 3600, 2),
             ),
             ("Papel economizado (m)", round(summary["paper_saved_meters"], 2)),
-            ("Economia acumulada (R$)", round(summary["accumulated_economy"], 2)),
+            ("Economia acumulada (R$)", round(
+                summary["accumulated_economy"], 2)),
             ("Tags ativos", summary["active_tags"]),
             ("Total de passagens", summary["transaction_count"]),
         ],
@@ -529,7 +548,8 @@ def build_transaction_detail_workbook(
         pairs=[
             ("ID", transaction.id),
             ("Placa", transaction.plate),
-            ("Contexto", _CONTEXT_LABELS.get(transaction.context, transaction.context)),
+            ("Contexto", _CONTEXT_LABELS.get(
+                transaction.context, transaction.context)),
             ("UF", transaction.uf),
             ("Digital", "Sim" if transaction.is_digital else "Não"),
             ("Tempo com tag (s)", transaction.elapsed_time_sec),
