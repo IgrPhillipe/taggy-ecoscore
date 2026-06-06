@@ -697,30 +697,26 @@ export const MetodologiaPage = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="flex flex-col items-center gap-4 py-8 text-center">
-            <div>
-              <p className="text-base font-semibold">
-                Quer verificar o cálculo completo com fórmulas?
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Exporte a planilha auditável com glossário, premissas, passo a passo, análise de sensibilidade e projeção de escala.
-              </p>
-            </div>
-            {isAdmin ? (
+        {isAdmin ? (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardContent className="flex flex-col items-center gap-4 py-8 text-center">
+              <div>
+                <p className="text-base font-semibold">
+                  Quer verificar o cálculo completo com fórmulas?
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Exporte a planilha auditável com glossário, premissas, passo a passo, análise de sensibilidade e projeção de escala.
+                </p>
+              </div>
               <ExportButton
                 url="/api/reports/calculadora.xlsx?plate=DEMO0001&elapsed_time=30&context=pedagio&uf=SP"
                 label={EXPORT_LABELS.calculationTemplate}
                 variant="audit"
                 size="default"
               />
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                {EXPORT_LABELS.adminOnly}
-              </p>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
     </PageLayout>
   )

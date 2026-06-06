@@ -116,3 +116,18 @@ def autosize_columns(ws: Worksheet, min_width: int = 14) -> None:
             continue
         max_len = max(len(str(value)) for value in values)
         ws.column_dimensions[get_column_letter(col_idx)].width = max(max_len + 4, min_width)
+
+
+def write_attribution_note(ws: Worksheet, merge_cols: int) -> None:
+    """Rodapé de atribuição FGV/WRI — escreve após a última linha de dados."""
+    note_row = ws.max_row + 2
+    end_col = get_column_letter(merge_cols)
+    ws.merge_cells(f"A{note_row}:{end_col}{note_row}")
+    ws[f"A{note_row}"] = (
+        "Fatores de emissão (CO₂, CH₄, N₂O) baseados em: IPCC AR6 2021 (GWP100), "
+        "BEN 2023 / MCTIC 2016 (fatores combustíveis), ANP/CNPE (blends E30/B15). "
+        "Fator elétrico SIN: ONS/FGV 2023-2025. Metodologia: GHG Protocol (Escopo 1 e 2)."
+    )
+    ws[f"A{note_row}"].font = font_small()
+    ws[f"A{note_row}"].alignment = Alignment(wrap_text=True, vertical="top")
+    ws.row_dimensions[note_row].height = 36

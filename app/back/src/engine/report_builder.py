@@ -77,7 +77,7 @@ def _cell(ws: "Worksheet", row: int, col: int, value, *,
 
 # ── Source URLs — hyperlinks para a coluna Fonte na aba Premissas ─────────────
 _SOURCE_URLS: dict[str, str] = {
-    "emission_factors": "https://fgvcli.fgv.br/ghg",
+    "emission_factors": "https://registropublicodeemissoes.fgv.br/",
     "gwp100":           "https://www.ipcc.ch/report/ar6/wg1/",
     "blend_factors":    "https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2024/lei/l14993.htm",
     "idle_rates":       "https://blog.edenredmobilidade.com.br/gestao-de-frotas/impacto-da-conducao-no-consumo-de-combustivel/",
@@ -539,6 +539,18 @@ def _build_premises_sheet(ws: "Worksheet", specs: Dict[str, Any], fuel_price: fl
                     c.hyperlink = src_url
                     c.font = Font(name="Calibri", size=10, color="0563C1", underline="single")
             row_l += 1
+
+    # ── Nota de atribuição FGV/WRI ───────────────────────────────────────────
+    note_row = row_l + 1
+    ws.merge_cells(f"A{note_row}:G{note_row}")
+    ws[f"A{note_row}"].value = (
+        "Fatores de emissão (CO₂, CH₄, N₂O) baseados em: IPCC AR6 2021 (GWP100), "
+        "BEN 2023 / MCTIC 2016 (fatores combustíveis), ANP/CNPE (blends E30/B15). "
+        "Fator elétrico SIN: ONS/FGV 2023-2025. Metodologia: GHG Protocol (Escopo 1 e 2)."
+    )
+    ws[f"A{note_row}"].font = Font(name="Calibri", size=9, italic=True, color="555555")
+    ws[f"A{note_row}"].alignment = Alignment(wrap_text=True)
+    ws.row_dimensions[note_row].height = 36
 
     return prem_rows
 
@@ -1236,6 +1248,52 @@ def _build_glossary_sheet(ws: "Worksheet") -> None:
 
     _set_col_widths(ws, [28, 68, 52])
     ws.freeze_panes = "A5"
+
+    # ── Atribuição de fontes ──────────────────────────────────────────────────
+    attr_row = len(_GLOSSARY) + 6  # após header (row4) + glossário + 1 espaço
+    ws.merge_cells(f"A{attr_row}:C{attr_row}")
+    ws[f"A{attr_row}"].value = "Atribuição e Licença dos Fatores de Emissão"
+    ws[f"A{attr_row}"].font = _FONT_TITLE()
+    ws[f"A{attr_row}"].alignment = Alignment(horizontal="left", vertical="center")
+    ws.row_dimensions[attr_row].height = 24
+
+    attr_items = [
+        (
+            "Ferramenta GHG Protocol (FGV/WRI)",
+            "Fatores de emissão de combustíveis (CO₂, CH₄, N₂O) e fator elétrico SIN "
+            "extraídos da Ferramenta de Estimativa de GEE para Fontes Intersetoriais, "
+            "Versão 2026.0.1. Desenvolvida pela FGV e WRI no âmbito do Programa "
+            "Brasileiro GHG Protocol.",
+            "https://registropublicodeemissoes.fgv.br/",
+        ),
+        (
+            "IPCC AR6 (2021)",
+            "Valores de GWP100 para CH₄ (×27,9) e N₂O (×273). "
+            "Sexto Relatório de Avaliação do IPCC, Grupo de Trabalho I.",
+            "https://www.ipcc.ch/report/ar6/wg1/",
+        ),
+        (
+            "Metodologia",
+            "Cálculos seguem a metodologia GHG Protocol (Escopos 1 e 2). "
+            "Fatores de emissão derivados de fontes primárias públicas: "
+            "IPCC AR6 2021, BEN 2023, MCTIC 2016, ANP/CNPE.",
+            "https://ghgprotocol.org/",
+        ),
+    ]
+    for i, (titulo, desc, url) in enumerate(attr_items):
+        r = attr_row + 1 + i
+        fill = _FILL_ALT() if i % 2 == 0 else None
+        for col, v in enumerate([titulo, desc, url], 1):
+            c = ws.cell(row=r, column=col, value=v)
+            c.font = Font(name="Calibri", size=10, bold=(col == 1))
+            c.border = _THIN()
+            c.alignment = Alignment(wrap_text=True, vertical="top")
+            if fill:
+                c.fill = fill
+            if col == 3 and url:
+                c.hyperlink = url
+                c.font = Font(name="Calibri", size=10, color="0563C1", underline="single")
+        ws.row_dimensions[r].height = 52
 
 
 # ── Public API ────────────────────────────────────────────────────────────────

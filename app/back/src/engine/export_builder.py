@@ -22,6 +22,7 @@ from src.engine.report_builder import build_audit_workbook
 from src.engine.workbook_styles import (
     autosize_columns,
     set_col_widths,
+    write_attribution_note,
     write_data_cell,
     write_header_row,
     write_sheet_banner,
@@ -122,6 +123,7 @@ def _write_table_sheet(
         for col_idx, value in enumerate(row, start=1):
             write_data_cell(ws, row_idx, col_idx, value, alt=alt)
     autosize_columns(ws)
+    write_attribution_note(ws, merge_cols=len(headers))
     ws.freeze_panes = ws.cell(row=header_row + 1, column=1).coordinate
 
 
@@ -146,6 +148,7 @@ def _write_key_value_sheet(
         write_data_cell(ws, row_idx, 1, label, alt=alt, bold=True)
         write_data_cell(ws, row_idx, 2, value if value is not None else "", alt=alt)
     set_col_widths(ws, [28, 40])
+    write_attribution_note(ws, merge_cols=2)
     ws.freeze_panes = ws.cell(row=header_row + 1, column=1).coordinate
 
 
