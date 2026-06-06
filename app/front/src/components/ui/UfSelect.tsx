@@ -38,7 +38,7 @@ export const UfSelect = ({
     >
       <SelectValue placeholder={placeholder} />
     </SelectTrigger>
-    <SelectContent className="max-h-48 [&>div:nth-child(2)]:!h-auto [&>div:nth-child(2)]:max-h-40">
+    <SelectContent>
       <SelectItem value="all">Todas</SelectItem>
       {UF_OPTIONS.map((uf) => (
         <SelectItem key={uf} value={uf}>

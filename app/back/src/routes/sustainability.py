@@ -100,7 +100,7 @@ def _fmt_time(seconds: float | None) -> str:
         return f"{total_min}min"
     h = total_min // 60
     m = total_min % 60
-    return f"{h}h {m}min" if m else f"{h}h"
+    return f"{h}h{m}min" if m else f"{h}h"
 
 
 def _fmt_datetime(dt) -> str:

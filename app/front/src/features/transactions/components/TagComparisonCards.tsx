@@ -10,6 +10,7 @@ import {
   Ticket,
   XCircle,
 } from "lucide-react";
+import { formatDurationSeconds } from "@/lib/format-duration";
 import { cn } from "@/lib/utils";
 import type { CalcComparisonSide } from "../api/types";
 
@@ -29,10 +30,7 @@ const ROWS: ComparisonRow[] = [
 
 function formatDuration(sec: number | null | undefined): string {
   if (sec == null || Number.isNaN(sec)) return "—";
-  if (sec < 60) return `${Math.round(sec)}s`;
-  const min = Math.floor(sec / 60);
-  const rest = Math.round(sec % 60);
-  return rest > 0 ? `${min}min ${rest}s` : `${min}min`;
+  return formatDurationSeconds(sec);
 }
 
 function formatNumber(value: number | null | undefined, digits = 3): string {

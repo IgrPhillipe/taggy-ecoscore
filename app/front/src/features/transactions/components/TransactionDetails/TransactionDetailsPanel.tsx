@@ -35,6 +35,7 @@ import { getUserById } from "@/features/users/api/requests";
 import { userQueryKeys } from "@/features/users/api/query-keys";
 import { useEntityLabelMap } from "@/hooks/useEntityLabelMap";
 import { useOrganizationNameMap } from "@/hooks/useOrganizationNameMap";
+import { formatDurationSeconds } from "@/lib/format-duration";
 import { TRANSACTION_CONTEXT_LABELS } from "@/lib/enum-labels";
 import type { CalcComparisonSide, CalcResult, Transaction } from "../../api/types";
 import {
@@ -54,10 +55,7 @@ const InfoRow = ({ label, value }: { label: string; value: ReactNode }) => (
 
 function formatDuration(sec: number | null | undefined): string {
   if (sec == null || Number.isNaN(sec)) return "—";
-  if (sec < 60) return `${Math.round(sec)}s`;
-  const min = Math.floor(sec / 60);
-  const rest = Math.round(sec % 60);
-  return rest > 0 ? `${min}min ${rest}s` : `${min}min`;
+  return formatDurationSeconds(sec);
 }
 
 function formatNumber(value: number | null | undefined, digits = 3): string {

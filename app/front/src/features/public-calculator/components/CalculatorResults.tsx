@@ -9,6 +9,7 @@ import {
 import {
   formatKpiCo2,
   formatKpiCurrency,
+  formatKpiDuration,
 } from "@/features/sustainability/lib/kpi";
 import { EnumBadge } from "@/components/DataTable";
 import {
@@ -120,8 +121,8 @@ export function CalculatorResults({ result, onReset }: Props) {
         <MetricCard
           icon={<Clock className="h-3.5 w-3.5 text-blue-500" />}
           label="Tempo poupado"
-          monthly={`${monthly.time_min.toFixed(0)} min`}
-          annual={`${annual.time_min.toFixed(0)} min`}
+          monthly={formatKpiDuration(monthly.time_min)}
+          annual={formatKpiDuration(annual.time_min)}
         />
         <MetricCard
           icon={<Fuel className="h-3.5 w-3.5 text-orange-500" />}

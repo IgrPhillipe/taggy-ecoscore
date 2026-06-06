@@ -15,6 +15,8 @@ export const KPI_TITLES = {
   duration: "DURAÇÃO ESTIMADA",
 } as const;
 
+import { formatMinutes } from "@/lib/format-duration";
+
 const ptNumber = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 
 function formatOrDash(
@@ -59,7 +61,7 @@ export function formatKpiDistance(km: number | null | undefined): string {
 }
 
 export function formatKpiDuration(min: number | null | undefined): string {
-  return formatOrDash(min, (n) => `${ptNumber.format(n)}min`);
+  return formatOrDash(min, formatMinutes);
 }
 
 export type EnvironmentalSummary = {
