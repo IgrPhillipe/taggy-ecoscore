@@ -267,6 +267,7 @@ async def process_transaction(
             "pricing_snapshot": {
                 "fuel_prices_by_uf": specs.get("fuel_prices_by_uf"),
                 "fuel_prices_meta": specs.get("fuel_prices_meta"),
+                **(meta.get("pricing_snapshot") or {}),
             },
             "result": result,
         },

@@ -44,9 +44,12 @@ def reconstruct_transaction_audit_context(
     if not vehicle_snap:
         vehicle_snap = {"category": "leve", "fuel_type": "gasolina_c", "model": ""}
 
-    pricing_snap = snap.get("pricing_snapshot") or (snap_result.get("metadata") or {}).get(
-        "pricing_snapshot"
-    ) or {}
+    # result.metadata.pricing_snapshot has the actual price used (fuel_price_brl_per_unit).
+    # snap.pricing_snapshot only has fuel_prices_by_uf / fuel_prices_meta (no per-unit price).
+    # Merge both so newer fields win over the legacy top-level snapshot.
+    _meta_pricing: dict = (snap_result.get("metadata") or {}).get("pricing_snapshot") or {}
+    _snap_pricing: dict = snap.get("pricing_snapshot") or {}
+    pricing_snap = {**_snap_pricing, **_meta_pricing}
 
     eff_plate = (snap_payload.get("plate") or txn.plate or plate_fallback).upper()
     eff_elapsed = snap_payload.get("elapsed_time", txn.elapsed_time_sec or elapsed_time_fallback)
