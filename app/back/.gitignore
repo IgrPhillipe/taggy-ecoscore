@@ -3,6 +3,7 @@
 .env.local
 credentials.json
 credentials/
+data/
 
 # Python
 __pycache__/
