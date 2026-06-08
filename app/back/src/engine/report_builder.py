@@ -271,7 +271,7 @@ def _pref(row: int) -> str:
 
 
 def _s2e(row: int) -> str:
-    return f"{_S2}!E{row}"
+    return f"{_S2}!D{row}"
 
 
 def _sens_total(
@@ -603,55 +603,55 @@ def _build_steps_sheet(
         ("tempo_salvo",
          "Tempo economizado",
          f"MAX(0, E{R['baseline']} − E{R['elapsed']})",
-         f"=MAX(0,E{R['baseline']}-E{R['elapsed']})",
+         f"=MAX(0,D{R['baseline']}-D{R['elapsed']})",
          "s"),
 
         ("combustivel_evitado",
          f"Combustível não consumido (L/m³/kWh conforme combustível selecionado)",
          f"E{R['time_saved']} × idle_rate(combustível, categoria) + accel_surge(combustível, categoria)",
-         f"=E{R['time_saved']}*{idle_ref}+{accel_ref}",
+         f"=D{R['time_saved']}*{idle_ref}+{accel_ref}",
          funit),
 
         ("co2_fossil",
          "CO₂ fóssil evitado (0 para etanol biogênico e elétrico)",
          f"E{R['fuel']} × ef_scope1(combustível)",
-         f"=E{R['fuel']}*{ef_ref}",
+         f"=D{R['fuel']}*{ef_ref}",
          "kg CO₂"),
 
         ("ch4_absoluto",
          "CH4 evitado (massa): 0 para elétrico",
          f"E{R['fuel']} × ch4_factor(combustível)",
-         f"=E{R['fuel']}*{ch4_ref}",
+         f"=D{R['fuel']}*{ch4_ref}",
          "kg CH4"),
 
         ("ch4_co2e",
          "CH4 em CO₂e",
          f"E{R['ch4_abs']} × Premissas!C{r_gch4} (GWP100)",
-         f"=E{R['ch4_abs']}*{_pref(r_gch4)}",
+         f"=D{R['ch4_abs']}*{_pref(r_gch4)}",
          "kg CO₂e"),
 
         ("n2o_absoluto",
          "N2O evitado (massa): 0 para elétrico",
          f"E{R['fuel']} × n2o_factor(combustível)",
-         f"=E{R['fuel']}*{n2o_ref}",
+         f"=D{R['fuel']}*{n2o_ref}",
          "kg N2O"),
 
         ("n2o_co2e",
          "N2O em CO₂e",
          f"E{R['n2o_abs']} × Premissas!C{r_gn2o} (GWP100)",
-         f"=E{R['n2o_abs']}*{_pref(r_gn2o)}",
+         f"=D{R['n2o_abs']}*{_pref(r_gn2o)}",
          "kg CO₂e"),
 
         ("co2e_scope1",
          "CO₂e Escopo 1 (combustão direta)",
          f"E{R['co2_fossil']} + E{R['ch4_co2e']} + E{R['n2o_co2e']}",
-         f"=E{R['co2_fossil']}+E{R['ch4_co2e']}+E{R['n2o_co2e']}",
+         f"=D{R['co2_fossil']}+D{R['ch4_co2e']}+D{R['n2o_co2e']}",
          "kg CO₂e"),
 
         ("co2e_scope2",
          "CO₂e Escopo 2 (rede elétrica: só EV, 0 para outros)",
          f"E{R['fuel']} × ef_eletrico se combustível=eletrico, senão 0",
-         f"=E{R['fuel']}*{_dyn_scope2_ref(prem_rows, _FUEL)}",
+         f"=D{R['fuel']}*{_dyn_scope2_ref(prem_rows, _FUEL)}",
          "kg CO₂e"),
 
         ("paper_co2_avoided",
@@ -663,7 +663,7 @@ def _build_steps_sheet(
         ("TOTAL_EVITADO",
          "TOTAL CO₂e EVITADO",
          f"E{R['scope1']} + E{R['scope2']} + E{R['paper']}",
-         f"=E{R['scope1']}+E{R['scope2']}+E{R['paper']}",
+         f"=D{R['scope1']}+D{R['scope2']}+D{R['paper']}",
          "kg CO₂e"),
     ]
 
@@ -748,7 +748,7 @@ def _build_steps_sheet(
     c_pval.border = _THIN()
     c_pval.fill = PatternFill("solid", fgColor="E8F4FD")
     c_pval.alignment = Alignment(horizontal="center")
-    c_pval.number_format = "R$ #,##0.0000"
+    c_pval.number_format = '"R$ "#,##0.0000'
     ws.row_dimensions[6].height = 20
 
     # ── Row 7: vehicle info ───────────────────────────────────────────────────
@@ -978,7 +978,7 @@ def _build_sensitivity_sheet(
 
     ws.merge_cells("A2:F2")
     ws["A2"].value = (
-        f"CO₂e base = {_S2}!E{R['total']} kg | "
+        f"CO₂e base = {_S2}!D{R['total']} kg | "
         "Cada linha recalcula o total variando apenas aquele parâmetro. "
         "⚠️ = premissa sem fonte pública: maior incerteza."
     )
