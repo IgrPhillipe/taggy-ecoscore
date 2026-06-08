@@ -762,27 +762,27 @@ def _build_steps_sheet(
     ws.row_dimensions[7].height = 20
 
     # ── Row 8: column header ──────────────────────────────────────────────────
-    _header_row(ws, 8, ["Passo", "Descrição", "Fórmula / Referência", "Referências (células)", "Resultado", "Unidade"])
+    _header_row(ws, 8, ["Passo", "Descrição", "Fórmula / Referência", "Resultado", "Unidade"])
 
     # ── Rows 9+: steps ────────────────────────────────────────────────────────
     for row_i, (key, desc, formula_desc, result_val, unit) in enumerate(steps, 9):
         is_total = key == "TOTAL_EVITADO"
         fill = _FILL_TOTAL() if is_total else (_FILL_ALT() if row_i % 2 == 0 else None)
 
-        for col, v in enumerate([key, desc, formula_desc, "", result_val, unit], 1):
+        for col, v in enumerate([key, desc, formula_desc, result_val, unit], 1):
             c = ws.cell(row=row_i, column=col, value=v)
             c.font = Font(name="Calibri", size=10, bold=is_total)
             c.border = _THIN()
             c.alignment = Alignment(wrap_text=True, vertical="top")
             if fill:
                 c.fill = fill
-            if col == 5:
+            if col == 4:
                 if isinstance(v, str) and v.startswith("="):
                     c.number_format = "0.000000"
                 elif isinstance(v, int) and not isinstance(v, bool):
                     c.number_format = "0"
 
-    _set_col_widths(ws, [26, 42, 42, 1, 14, 12])
+    _set_col_widths(ws, [26, 42, 42, 20, 14])
     ws.freeze_panes = "A9"
 
 
