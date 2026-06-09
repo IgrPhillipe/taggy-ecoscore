@@ -1,6 +1,4 @@
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import {
   ChartContainer,
   ChartTooltip,
@@ -8,6 +6,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import type { DailyStatItem } from "@/features/dashboard/hooks/useDailyStats";
+import { formatCalendarDayLabel } from "@/lib/format-calendar-day";
 
 const chartConfig = {
   co2_total_kg: {
@@ -23,7 +22,7 @@ type DailyCo2ChartProps = {
 export const DailyCo2Chart = ({ data }: DailyCo2ChartProps) => {
   const formatted = data.map((d) => ({
     ...d,
-    label: format(parseISO(d.day), "dd/MM", { locale: ptBR }),
+    label: formatCalendarDayLabel(d.day),
   }));
 
   return (

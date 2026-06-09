@@ -3,9 +3,15 @@ from __future__ import annotations
 from datetime import date, timedelta
 from typing import Any
 
-from sqlalchemy import cast, func, select, Date
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.constants.timezone import (
+    brasilia_day_expr,
+    end_of_day_brasilia_exclusive,
+    start_of_day_brasilia,
+    today_brasilia,
+)
 from src.models.transaction import Transaction
 from src.models.vehicle import Vehicle
 from src.services.paper_savings import compute_paper_saved_meters
@@ -53,6 +59,10 @@ def _apply_vehicle_scope(
     return query
 
 
+def _transaction_brasilia_day():
+    return brasilia_day_expr(Transaction.created_at)
+
+
 def _apply_date_scope(
     query,
     *,
@@ -61,11 +71,13 @@ def _apply_date_scope(
     since: date | None = None,
 ):
     if from_date is not None:
-        query = query.where(Transaction.created_at >= from_date)
+        query = query.where(Transaction.created_at >= start_of_day_brasilia(from_date))
     elif since is not None:
-        query = query.where(Transaction.created_at >= since)
+        query = query.where(Transaction.created_at >= start_of_day_brasilia(since))
     if to_date is not None:
-        query = query.where(Transaction.created_at <= to_date)
+        query = query.where(
+            Transaction.created_at < end_of_day_brasilia_exclusive(to_date)
+        )
     return query
 
 
@@ -77,9 +89,9 @@ def _resolve_daily_range(
 ) -> tuple[date, date]:
     if from_date is not None:
         start = from_date
-        end = to_date or date.today()
+        end = to_date or today_brasilia()
         return start, end
-    end = to_date or date.today()
+    end = to_date or today_brasilia()
     start = end - timedelta(days=days - 1)
     return start, end
 
@@ -152,18 +164,19 @@ async def collect_dashboard_export_data(
         from_date=from_date,
         to_date=to_date,
     )
+    brasilia_day = _transaction_brasilia_day()
     daily_query = (
         select(
-            cast(Transaction.created_at, Date).label("day"),
+            brasilia_day.label("day"),
             func.count().label("transaction_count"),
             func.coalesce(func.sum(Transaction.co2_avoided_kg), 0).label("co2_total_kg"),
         )
         .where(
-            cast(Transaction.created_at, Date) >= daily_start,
-            cast(Transaction.created_at, Date) <= daily_end,
+            brasilia_day >= daily_start,
+            brasilia_day <= daily_end,
         )
-        .group_by(cast(Transaction.created_at, Date))
-        .order_by(cast(Transaction.created_at, Date))
+        .group_by(brasilia_day)
+        .order_by(brasilia_day)
     )
     daily_query = _apply_transaction_scope(
         daily_query,

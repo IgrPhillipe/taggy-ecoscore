@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import cast, func, select, Date
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.connection import get_db
@@ -16,6 +16,7 @@ from src.services.dashboard_export import (
     _apply_transaction_scope,
     _apply_vehicle_scope,
     _resolve_daily_range,
+    _transaction_brasilia_day,
 )
 from src.services.paper_savings import compute_paper_saved_meters
 
@@ -118,18 +119,19 @@ async def get_daily_stats(
         to_date=to_date,
     )
 
+    brasilia_day = _transaction_brasilia_day()
     query = (
         select(
-            cast(Transaction.created_at, Date).label("day"),
+            brasilia_day.label("day"),
             func.count().label("transaction_count"),
             func.coalesce(func.sum(Transaction.co2_avoided_kg), 0).label("co2_total_kg"),
         )
         .where(
-            cast(Transaction.created_at, Date) >= daily_start,
-            cast(Transaction.created_at, Date) <= daily_end,
+            brasilia_day >= daily_start,
+            brasilia_day <= daily_end,
         )
-        .group_by(cast(Transaction.created_at, Date))
-        .order_by(cast(Transaction.created_at, Date))
+        .group_by(brasilia_day)
+        .order_by(brasilia_day)
     )
 
     query = _apply_transaction_scope(
