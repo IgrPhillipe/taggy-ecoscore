@@ -22,11 +22,13 @@ router = APIRouter(tags=["Organizations"])
 class OrganizationBody(BaseModel):
     name: str
     cnpj: str | None = None
+    razao_social: str | None = None
 
 
 class OrganizationUpdate(BaseModel):
     name: str | None = None
     cnpj: str | None = None
+    razao_social: str | None = None
 
 
 @router.get("/organizations")
@@ -161,6 +163,7 @@ async def create_organization(
     organization = await repository.create(
         name=body.name,
         cnpj=body.cnpj,
+        razao_social=body.razao_social,
     )
 
     return {
@@ -176,7 +179,7 @@ async def update_organization(
     db: AsyncSession = Depends(get_db),
 ):
     repository = OrganizationRepository(db)
-    organization = await repository.update(organization_id, name=body.name, cnpj=body.cnpj)
+    organization = await repository.update(organization_id, name=body.name, cnpj=body.cnpj, razao_social=body.razao_social)
     if organization is None:
         raise HTTPException(status_code=404, detail=err.ORGANIZATION_NOT_FOUND)
     await db.commit()

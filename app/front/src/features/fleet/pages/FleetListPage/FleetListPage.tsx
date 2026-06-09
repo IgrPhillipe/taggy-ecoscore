@@ -22,7 +22,7 @@ import {
   OrganizationsRelationSelect,
 } from "@/components/form/relation-selects";
 import { Button } from "@/components/ui/button";
-import { DataTable, entityIdColumn, EnumBadge, RelatedEntityCell } from "@/components/DataTable";
+import { DataTable, EnumBadge, RelatedEntityCell } from "@/components/DataTable";
 import { FilterSelect } from "@/components/ui/FilterSelect";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { useFilterDraft } from "@/hooks/useFilterDraft";
@@ -185,10 +185,9 @@ export const FleetListPage = () => {
   };
 
   const columns: ColumnDef<Vehicle>[] = [
-    entityIdColumn<Vehicle>(),
+    { accessorKey: "model", header: "NOME", enableSorting: true },
     { accessorKey: "id_tag", header: "TAG ID", enableSorting: true },
     { accessorKey: "license_plate", header: "PLACA", enableSorting: true },
-    { accessorKey: "model", header: "MODELO", enableSorting: true },
     {
       accessorKey: "organization_id",
       header: "ORGANIZAÇÃO",
@@ -252,7 +251,7 @@ export const FleetListPage = () => {
           onDebouncedSearchChange={(value) =>
             setParams({ search: value || null, page: 1 })
           }
-          placeholder="Buscar por placa, modelo ou TAG"
+          placeholder="Buscar por placa, modelo, TAG, frota ou organização"
           searchId="vehicle-search"
         >
           <FilterModal

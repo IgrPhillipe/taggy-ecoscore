@@ -2,8 +2,10 @@ from typing import Literal, Optional
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
-from src.models.fleet import FleetUser
+from src.models.fleet import Fleet, FleetUser
+from src.models.organization import Organization
 from src.models.user import User
 
 UserRole = Literal["motorista", "gestor_frota", "admin"]
@@ -48,12 +50,25 @@ class UserRepository:
             ).where(FleetUser.fleet_id == fleet_id)
 
         if search:
+            like = f"%{search}%"
+            fu_alias = aliased(FleetUser)
+            fleet_alias = aliased(Fleet)
+            query = (
+                query
+                .join(Organization, User.organization_id == Organization.id, isouter=True)
+                .join(fu_alias, fu_alias.user_id == User.id, isouter=True)
+                .join(fleet_alias, fleet_alias.id == fu_alias.fleet_id, isouter=True)
+            )
             query = query.where(
                 or_(
-                    User.name.ilike(f"%{search}%"),
-                    User.email.ilike(f"%{search}%"),
+                    User.name.ilike(like),
+                    User.email.ilike(like),
+                    fleet_alias.name.ilike(like),
+                    Organization.name.ilike(like),
+                    Organization.cnpj.ilike(like),
+                    Organization.razao_social.ilike(like),
                 )
-            )
+            ).distinct()
 
         result = await self.session.execute(query)
 
@@ -93,12 +108,25 @@ class UserRepository:
             )
 
         if search:
+            like = f"%{search}%"
+            fu_alias = aliased(FleetUser)
+            fleet_alias = aliased(Fleet)
+            query = (
+                query
+                .join(Organization, User.organization_id == Organization.id, isouter=True)
+                .join(fu_alias, fu_alias.user_id == User.id, isouter=True)
+                .join(fleet_alias, fleet_alias.id == fu_alias.fleet_id, isouter=True)
+            )
             query = query.where(
                 or_(
-                    User.name.ilike(f"%{search}%"),
-                    User.email.ilike(f"%{search}%"),
+                    User.name.ilike(like),
+                    User.email.ilike(like),
+                    fleet_alias.name.ilike(like),
+                    Organization.name.ilike(like),
+                    Organization.cnpj.ilike(like),
+                    Organization.razao_social.ilike(like),
                 )
-            )
+            ).distinct()
 
         total_result = await self.session.execute(
             select(func.count()).select_from(query.subquery())

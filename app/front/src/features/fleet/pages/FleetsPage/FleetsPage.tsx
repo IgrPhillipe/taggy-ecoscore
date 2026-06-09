@@ -312,7 +312,7 @@ export const FleetsPage = () => {
             onDebouncedSearchChange={(value) =>
               setParams({ search: value || null, page: 1 })
             }
-            placeholder="Buscar frota por nome ou ID"
+            placeholder="Buscar por nome da frota, organização ou CNPJ"
             searchId="fleet-search"
           >
             <FilterModal
@@ -338,7 +338,7 @@ export const FleetsPage = () => {
           </FilterSearchRow>
         ) : (
           <FilterInput
-            placeholder="Buscar frota por nome ou ID"
+            placeholder="Buscar por nome da frota, organização ou CNPJ"
             value={search ?? ""}
             debounceMs={300}
             onDebouncedChange={(value) =>

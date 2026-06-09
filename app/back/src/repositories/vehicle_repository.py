@@ -1,7 +1,9 @@
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.dto.vehicle import VehicleIn, VehicleUpdate
+from src.models.fleet import Fleet
+from src.models.organization import Organization
 from src.models.vehicle import Vehicle
 
 
@@ -53,8 +55,21 @@ class VehicleRepository:
             query = query.where(Vehicle.organization_id == organization_id)
         if search:
             like = f"%{search}%"
+            query = (
+                query
+                .join(Organization, Vehicle.organization_id == Organization.id, isouter=True)
+                .join(Fleet, Vehicle.fleet_id == Fleet.id, isouter=True)
+            )
             query = query.where(
-                Vehicle.license_plate.ilike(like) | Vehicle.model.ilike(like) | Vehicle.id_tag.ilike(like)
+                or_(
+                    Vehicle.license_plate.ilike(like),
+                    Vehicle.model.ilike(like),
+                    Vehicle.id_tag.ilike(like),
+                    Fleet.name.ilike(like),
+                    Organization.name.ilike(like),
+                    Organization.cnpj.ilike(like),
+                    Organization.razao_social.ilike(like),
+                )
             )
         if fuel_type:
             query = query.where(Vehicle.fuel_type == fuel_type)
@@ -85,10 +100,21 @@ class VehicleRepository:
             query = query.where(Vehicle.organization_id == organization_id)
         if search:
             like = f"%{search}%"
+            query = (
+                query
+                .join(Organization, Vehicle.organization_id == Organization.id, isouter=True)
+                .join(Fleet, Vehicle.fleet_id == Fleet.id, isouter=True)
+            )
             query = query.where(
-                Vehicle.license_plate.ilike(like)
-                | Vehicle.model.ilike(like)
-                | Vehicle.id_tag.ilike(like)
+                or_(
+                    Vehicle.license_plate.ilike(like),
+                    Vehicle.model.ilike(like),
+                    Vehicle.id_tag.ilike(like),
+                    Fleet.name.ilike(like),
+                    Organization.name.ilike(like),
+                    Organization.cnpj.ilike(like),
+                    Organization.razao_social.ilike(like),
+                )
             )
         if fuel_type:
             query = query.where(Vehicle.fuel_type == fuel_type)

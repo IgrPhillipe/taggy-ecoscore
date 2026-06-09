@@ -46,7 +46,7 @@ class OrganizationRepository:
         )
         return list(result.scalars().all()), total
 
-    async def update(self, id: int, name: str | None = None, cnpj: str | None = None) -> Optional[Organization]:
+    async def update(self, id: int, name: str | None = None, cnpj: str | None = None, razao_social: str | None = None) -> Optional[Organization]:
         org = await self.get_by_id(id)
         if org is None:
             return None
@@ -54,6 +54,8 @@ class OrganizationRepository:
             org.name = name
         if cnpj is not None:
             org.cnpj = cnpj
+        if razao_social is not None:
+            org.razao_social = razao_social
         await self.session.flush()
         return org
 
@@ -69,10 +71,12 @@ class OrganizationRepository:
         self,
         name: str,
         cnpj: str | None = None,
+        razao_social: str | None = None,
     ) -> Organization:
         organization = Organization(
             name=name,
             cnpj=cnpj,
+            razao_social=razao_social,
         )
 
         self.session.add(organization)

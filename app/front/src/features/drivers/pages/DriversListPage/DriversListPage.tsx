@@ -252,7 +252,7 @@ export const DriversListPage = () => {
               onDebouncedSearchChange={(value) =>
                 setParams({ search: value || null, page: 1 })
               }
-              placeholder="Buscar por nome ou placa"
+              placeholder="Buscar por nome, organização ou frota"
               searchId="driver-search"
             >
               <FilterModal

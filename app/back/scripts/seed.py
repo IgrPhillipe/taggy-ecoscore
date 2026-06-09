@@ -231,8 +231,8 @@ async def seed_fuel_prices(db) -> None:
 
 async def seed_organizations(db) -> list[Organization]:
     orgs_data = [
-        Organization(name="Logística ABC Ltda", cnpj="12.345.678/0001-90"),
-        Organization(name="Frota Express XYZ", cnpj="98.765.432/0001-10"),
+        Organization(name="Logística ABC Ltda", cnpj="12.345.678/0001-90", razao_social="Logística ABC Ltda ME"),
+        Organization(name="Frota Express XYZ", cnpj="98.765.432/0001-10", razao_social="Frota Express XYZ S.A."),
     ]
     orgs = []
     for org in orgs_data:

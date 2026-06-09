@@ -120,7 +120,10 @@ export function TransactionDetailsPanel({
     [transaction.vehicle_id],
     vehicleKeys.detail,
     getVehicle,
-    (vehicle) => vehicle.license_plate || `#${vehicle.id}`,
+    (vehicle) =>
+      vehicle.model?.trim() ||
+      vehicle.license_plate ||
+      `#${vehicle.id}`,
   );
   const result =
     resultProp ?? getCalcResultFromSnapshot(transaction.parameters_snapshot);

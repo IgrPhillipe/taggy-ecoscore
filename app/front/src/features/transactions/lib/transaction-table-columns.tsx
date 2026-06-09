@@ -73,17 +73,20 @@ export function transactionUserColumn<T extends { user_id?: number | null }>(
 }
 
 export function transactionVehicleColumn<
-  T extends { vehicle_id?: number | null },
+  T extends { vehicle_id?: number | null; plate?: string | null },
 >(labelMap: Map<number, string>, header = "Veículo"): ColumnDef<T> {
   return {
     accessorKey: "vehicle_id",
     header,
-    cell: ({ row }) => (
-      <RelatedEntityCell
-        id={row.original.vehicle_id ?? null}
-        labelMap={labelMap}
-      />
-    ),
+    cell: ({ row }) => {
+      const { vehicle_id, plate } = row.original;
+      if (vehicle_id != null) {
+        return (
+          <RelatedEntityCell id={vehicle_id} labelMap={labelMap} />
+        );
+      }
+      return plate?.trim() || "—";
+    },
   };
 }
 

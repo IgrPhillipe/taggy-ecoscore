@@ -1,7 +1,8 @@
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.fleet import Fleet, FleetUser
+from src.models.organization import Organization
 from src.models.transaction import Transaction
 from src.models.user import User
 from src.models.vehicle import Vehicle
@@ -34,7 +35,16 @@ class FleetRepository:
         if organization_id is not None:
             query = query.where(Fleet.organization_id == organization_id)
         if search:
-            query = query.where(Fleet.name.ilike(f"%{search}%"))
+            like = f"%{search}%"
+            query = query.join(Organization, Fleet.organization_id == Organization.id, isouter=True)
+            query = query.where(
+                or_(
+                    Fleet.name.ilike(like),
+                    Organization.name.ilike(like),
+                    Organization.cnpj.ilike(like),
+                    Organization.razao_social.ilike(like),
+                )
+            )
         result = await self.session.execute(query.order_by(Fleet.name))
         return [
             {**{c.key: getattr(fleet, c.key) for c in Fleet.__table__.columns}, "vehicle_count": vc}
@@ -53,13 +63,31 @@ class FleetRepository:
         if organization_id is not None:
             base = base.where(Fleet.organization_id == organization_id)
         if search:
-            base = base.where(Fleet.name.ilike(f"%{search}%"))
+            like = f"%{search}%"
+            base = base.join(Organization, Fleet.organization_id == Organization.id, isouter=True)
+            base = base.where(
+                or_(
+                    Fleet.name.ilike(like),
+                    Organization.name.ilike(like),
+                    Organization.cnpj.ilike(like),
+                    Organization.razao_social.ilike(like),
+                )
+            )
         total = (await self.session.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
         query = select(Fleet, vc.label("vehicle_count"))
         if organization_id is not None:
             query = query.where(Fleet.organization_id == organization_id)
         if search:
-            query = query.where(Fleet.name.ilike(f"%{search}%"))
+            like = f"%{search}%"
+            query = query.join(Organization, Fleet.organization_id == Organization.id, isouter=True)
+            query = query.where(
+                or_(
+                    Fleet.name.ilike(like),
+                    Organization.name.ilike(like),
+                    Organization.cnpj.ilike(like),
+                    Organization.razao_social.ilike(like),
+                )
+            )
         offset = (page - 1) * page_size
         result = await self.session.execute(query.order_by(Fleet.name).offset(offset).limit(page_size))
         rows = [

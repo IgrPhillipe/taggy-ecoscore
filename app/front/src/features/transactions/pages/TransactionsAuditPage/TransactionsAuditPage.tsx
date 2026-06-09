@@ -42,6 +42,7 @@ import { buildTransactionListExportUrl } from "@/features/reports/lib/export-url
 import { TransactionDetailsDialog } from "../../components/TransactionDetails";
 import type { Transaction } from "../../api/types";
 import { useGetTransactions } from "../../hooks/useGetTransactions";
+import { getTransactionElapsedSec } from "@/features/transactions/lib/transaction-display-fields";
 import {
   formatTxCo2,
   formatTxCurrency,
@@ -73,7 +74,8 @@ function buildAuditColumns(
     {
       accessorKey: "elapsed_time_sec",
       header: "Tempo",
-      cell: ({ row }) => formatTxElapsedTime(row.original.elapsed_time_sec),
+      cell: ({ row }) =>
+        formatTxElapsedTime(getTransactionElapsedSec(row.original)),
     },
     {
       accessorKey: "co2_avoided_kg",
@@ -212,7 +214,10 @@ export const TransactionsAuditPage = () => {
     items.map((item) => item.vehicle_id),
     vehicleKeys.detail,
     getVehicle,
-    (vehicle) => vehicle.license_plate || `#${vehicle.id}`,
+    (vehicle) =>
+      vehicle.model?.trim() ||
+      vehicle.license_plate ||
+      `#${vehicle.id}`,
   );
 
   const columns = useMemo(() => {

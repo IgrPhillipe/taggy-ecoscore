@@ -78,10 +78,9 @@ type FleetDetailPageProps = {
 const makeVehicleColumns = (
   onUnlink: (vehicle: Vehicle) => void,
 ): ColumnDef<Vehicle>[] => [
-  entityIdColumn<Vehicle>(),
+  { accessorKey: "model", header: "NOME", enableSorting: true },
   { accessorKey: "id_tag", header: "TAG ID", enableSorting: true },
   { accessorKey: "license_plate", header: "PLACA", enableSorting: true },
-  { accessorKey: "model", header: "MODELO", enableSorting: true },
   {
     accessorKey: "fuel_type",
     header: "COMBUSTÍVEL",

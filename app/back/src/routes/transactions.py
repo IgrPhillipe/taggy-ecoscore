@@ -32,6 +32,7 @@ from src.services.transactions import (
 )
 from src.services.user_stats import upsert_user_stats_from_transaction
 from src.services.vehicle_lookup_service import resolve_vehicle_from_plate
+from src.repositories.user_repository import UserRepository
 from src.repositories.vehicle_repository import VehicleRepository
 from src.services.vehicles import create_vehicle as create_vehicle_svc
 from src.dto.vehicle import VehicleIn, VehicleUpdate
@@ -178,9 +179,13 @@ async def process_transaction(
     orchestrator = TransactionOrchestrator(engine)
 
     # Resolve vehicle data: from request body or from plate lookup
+    vehicle_repo = VehicleRepository(db)
     vehicle_resolution: dict[str, Any] | None = None
+    resolved_vehicle = None
+
     if body.vehicle is not None:
         vehicle_dict = body.vehicle.model_dump()
+        resolved_vehicle = await vehicle_repo.get_by_license_plate(body.plate)
     else:
         lookup = await resolve_vehicle_from_plate(body.plate)
         if lookup["error"] or lookup["vehicle"] is None:
@@ -193,20 +198,19 @@ async def process_transaction(
         extra_fields: dict = lookup.get("extra") or {}
 
         # Auto-cadastro / enriquecimento do veículo com dados FIPE/DETRAN
-        vehicle_repo = VehicleRepository(db)
-        existing = await vehicle_repo.get_by_license_plate(body.plate)
+        resolved_vehicle = await vehicle_repo.get_by_license_plate(body.plate)
 
-        if existing:
+        if resolved_vehicle:
             # Veículo já cadastrado: enriquece campos FIPE sem sobrescrever dados manuais
-            patch: dict = {k: v for k, v in extra_fields.items() if v is not None and getattr(existing, k, None) is None}
+            patch: dict = {k: v for k, v in extra_fields.items() if v is not None and getattr(resolved_vehicle, k, None) is None}
             if patch:
-                await vehicle_repo.update(existing.id, VehicleUpdate(**patch))
-                logger.info("Enriquecidos campos FIPE para veículo id=%s placa=%s: %s", existing.id, body.plate, list(patch.keys()))
+                await vehicle_repo.update(resolved_vehicle.id, VehicleUpdate(**patch))
+                logger.info("Enriquecidos campos FIPE para veículo id=%s placa=%s: %s", resolved_vehicle.id, body.plate, list(patch.keys()))
         elif body.user_id:
             # Veículo novo: cria com todos os dados disponíveis
             plate_upper = body.plate.strip().upper()
             effective_id_tag = body.id_tag or f"AUTO_{plate_upper}"
-            new_vehicle = await create_vehicle_svc(
+            resolved_vehicle = await create_vehicle_svc(
                 db,
                 VehicleIn(
                     id_tag=effective_id_tag,
@@ -219,7 +223,7 @@ async def process_transaction(
                     **{k: v for k, v in extra_fields.items() if v is not None},
                 ),
             )
-            logger.info("Veículo auto-cadastrado: id=%s placa=%s id_tag=%s", new_vehicle.id, plate_upper, effective_id_tag)
+            logger.info("Veículo auto-cadastrado: id=%s placa=%s id_tag=%s", resolved_vehicle.id, plate_upper, effective_id_tag)
 
     payload_dict: dict[str, Any] = {
         "plate": body.plate.strip().upper(),
@@ -240,15 +244,28 @@ async def process_transaction(
     env = result.get("environmental") or {}
     meta = result.get("metadata") or {}
     fin = result.get("financial") or {}
+    comparison = result.get("comparison") or {}
+    with_tag = comparison.get("with_tag") or {}
+
+    resolved_vehicle_id = body.vehicle_id or (
+        resolved_vehicle.id if resolved_vehicle is not None else None
+    )
+    resolved_org_id = body.organization_id
+    if resolved_org_id is None and resolved_vehicle is not None:
+        resolved_org_id = resolved_vehicle.organization_id
+    if resolved_org_id is None and body.user_id is not None:
+        user = await UserRepository(db).get_by_id(body.user_id)
+        if user is not None:
+            resolved_org_id = user.organization_id
 
     transaction_in = TransactionIn(
         user_id=body.user_id,
-        vehicle_id=body.vehicle_id,
-        organization_id=body.organization_id,
+        vehicle_id=resolved_vehicle_id,
+        organization_id=resolved_org_id,
         plate=body.plate.strip().upper(),
         context=body.context,
         uf=body.uf.strip().upper(),
-        elapsed_time_sec=None,
+        elapsed_time_sec=with_tag.get("time_sec"),
         is_digital=body.is_digital,
         co2_avoided_kg=env.get("co2_kg"),
         fuel_saved_liters=env.get("fuel_liters"),

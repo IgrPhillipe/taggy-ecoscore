@@ -23,6 +23,11 @@ class Organization(SQLModel, table=True):
         sa_column=Column(String, nullable=True, unique=True),
     )
 
+    razao_social: str | None = Field(
+        default=None,
+        sa_column=Column(String, nullable=True),
+    )
+
     created_at: datetime = Field(
         default_factory=utc_now,
         sa_column=Column(DateTime(timezone=True), nullable=False),
@@ -35,4 +40,5 @@ class OrganizationPublic(SQLModel):
     id: int
     name: str
     cnpj: str | None
+    razao_social: str | None
     created_at: datetime
