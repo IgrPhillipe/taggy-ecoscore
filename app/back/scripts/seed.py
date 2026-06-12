@@ -324,7 +324,7 @@ async def seed_vehicles(
             id_tag="TAG-002-DEF",
             user_id=users[1].id,
             organization_id=orgs[0].id,
-            fleet_id=fleets[0].id,
+            fleet_id=fleets[1].id,
             assigned_driver_id=None,
             license_plate="DEF-5678",
             model="Mercedes-Benz Atego 1719",
@@ -460,6 +460,7 @@ async def seed_fleet_users(db, users: list[User], fleets: list[Fleet]) -> None:
     links = [
         (fleets[0].id, users[1].id),
         (fleets[0].id, users[3].id),
+        (fleets[1].id, users[1].id),
         (fleets[2].id, users[2].id),
         (fleets[2].id, users[4].id),
     ]
@@ -510,7 +511,7 @@ async def seed_transactions(db, users: list[User], vehicles: list[Vehicle], orgs
         dict(user_id=users[3].id, vehicle_id=vehicles[0].id, organization_id=orgs[0].id, plate="ABC-1234",
              context="pedagio", uf="MG", elapsed_time_sec=155.0, is_digital=True,
              created_at=base_date + timedelta(days=5, hours=7, minutes=20)),
-        # Veículo DEF-5678
+        # Carlos gestor — Frota Secundária (DEF-5678)
         dict(user_id=users[1].id, vehicle_id=vehicles[1].id, organization_id=orgs[0].id, plate="DEF-5678",
              context="pedagio", uf="SP", elapsed_time_sec=170.0, is_digital=True,
              created_at=base_date + timedelta(days=3, hours=10, minutes=0)),
@@ -520,6 +521,9 @@ async def seed_transactions(db, users: list[User], vehicles: list[Vehicle], orgs
         dict(user_id=users[1].id, vehicle_id=vehicles[1].id, organization_id=orgs[0].id, plate="DEF-5678",
              context="pedagio", uf="RS", elapsed_time_sec=140.0, is_digital=True,
              created_at=base_date + timedelta(days=8, hours=7, minutes=0)),
+        dict(user_id=users[1].id, vehicle_id=vehicles[1].id, organization_id=orgs[0].id, plate="DEF-5678",
+             context="pedagio", uf="MG", elapsed_time_sec=148.0, is_digital=True,
+             created_at=base_date + timedelta(days=11, hours=6, minutes=30)),
         # Ana motorista — GHI-9012
         dict(user_id=users[4].id, vehicle_id=vehicles[2].id, organization_id=orgs[1].id, plate="GHI-9012",
              context="pedagio", uf="RJ", elapsed_time_sec=125.0, is_digital=True,
@@ -557,10 +561,17 @@ async def seed_transactions(db, users: list[User], vehicles: list[Vehicle], orgs
         dict(user_id=users[4].id, vehicle_id=vehicles[2].id, organization_id=orgs[1].id, plate="GHI-9012",
              context="pedagio", uf="RJ", elapsed_time_sec=142.0, is_digital=True,
              created_at=utc_now() - timedelta(hours=3)),
-        # Carlos gestor — DEF-5678
+        # Carlos gestor — semana atual (Frota Secundária / DEF-5678)
         dict(user_id=users[1].id, vehicle_id=vehicles[1].id, organization_id=orgs[0].id, plate="DEF-5678",
              context="pedagio", uf="PR", elapsed_time_sec=155.0, is_digital=True,
              created_at=utc_now() - timedelta(days=1, hours=6)),
+        dict(user_id=users[1].id, vehicle_id=vehicles[1].id, organization_id=orgs[0].id, plate="DEF-5678",
+             context="estacionamento", uf="SP", elapsed_time_sec=280.0, is_digital=True,
+             created_at=utc_now() - timedelta(hours=2)),
+        # Carlos gestor — semana atual (Frota Principal / ABC-1234)
+        dict(user_id=users[1].id, vehicle_id=vehicles[0].id, organization_id=orgs[0].id, plate="ABC-1234",
+             context="pedagio", uf="SP", elapsed_time_sec=158.0, is_digital=True,
+             created_at=utc_now() - timedelta(days=2, hours=5)),
         # Pedro motorista — MNO-7890 (etanol)
         dict(user_id=users[5].id, vehicle_id=vehicles[3].id, organization_id=None, plate="MNO-7890",
              context="pedagio", uf="SP", elapsed_time_sec=118.0, is_digital=True,
@@ -645,8 +656,8 @@ async def seed_weekly_goals(db, users: list[User]) -> None:
         dict(user_id=users[0].id, week_start_date=week_start, target_transactions=5, current_transactions=1,
              target_co2_kg=1.0, current_co2_kg=0.19, is_completed=False),
         # Carlos gestor
-        dict(user_id=users[1].id, week_start_date=week_start, target_transactions=10, current_transactions=1,
-             target_co2_kg=3.0, current_co2_kg=0.57, is_completed=False),
+        dict(user_id=users[1].id, week_start_date=week_start, target_transactions=10, current_transactions=3,
+             target_co2_kg=3.0, current_co2_kg=1.05, is_completed=False),
         # Fernanda gestora
         dict(user_id=users[2].id, week_start_date=week_start, target_transactions=8, current_transactions=0,
              target_co2_kg=2.0, current_co2_kg=0.0, is_completed=False),
