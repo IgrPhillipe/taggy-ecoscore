@@ -106,7 +106,7 @@ export const APP_NAV_ITEMS: NavItem[] = [
     to: "/simulador",
     label: "Simulador",
     icon: FlaskConical,
-    roles: ["admin"],
+    roles: ["admin", "motorista"],
     category: "ferramentas",
   },
   {

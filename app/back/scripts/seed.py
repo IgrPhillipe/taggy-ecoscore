@@ -561,6 +561,30 @@ async def seed_transactions(db, users: list[User], vehicles: list[Vehicle], orgs
         dict(user_id=users[1].id, vehicle_id=vehicles[1].id, organization_id=orgs[0].id, plate="DEF-5678",
              context="pedagio", uf="PR", elapsed_time_sec=155.0, is_digital=True,
              created_at=utc_now() - timedelta(days=1, hours=6)),
+        # Pedro motorista — MNO-7890 (etanol)
+        dict(user_id=users[5].id, vehicle_id=vehicles[3].id, organization_id=None, plate="MNO-7890",
+             context="pedagio", uf="SP", elapsed_time_sec=118.0, is_digital=True,
+             created_at=base_date + timedelta(days=1, hours=7, minutes=10)),
+        dict(user_id=users[5].id, vehicle_id=vehicles[3].id, organization_id=None, plate="MNO-7890",
+             context="estacionamento", uf="SP", elapsed_time_sec=265.0, is_digital=True,
+             created_at=base_date + timedelta(days=3, hours=9, minutes=0)),
+        dict(user_id=users[5].id, vehicle_id=vehicles[3].id, organization_id=None, plate="MNO-7890",
+             context="pedagio", uf="SP", elapsed_time_sec=132.0, is_digital=True,
+             created_at=base_date + timedelta(days=6, hours=8, minutes=45)),
+        # Pedro motorista — PQR-1122 (gasolina)
+        dict(user_id=users[5].id, vehicle_id=vehicles[4].id, organization_id=None, plate="PQR-1122",
+             context="pedagio", uf="RJ", elapsed_time_sec=140.0, is_digital=True,
+             created_at=base_date + timedelta(days=10, hours=7, minutes=30)),
+        dict(user_id=users[5].id, vehicle_id=vehicles[4].id, organization_id=None, plate="PQR-1122",
+             context="estacionamento", uf="RJ", elapsed_time_sec=295.0, is_digital=True,
+             created_at=base_date + timedelta(days=12, hours=10, minutes=0)),
+        # Pedro — semana atual
+        dict(user_id=users[5].id, vehicle_id=vehicles[3].id, organization_id=None, plate="MNO-7890",
+             context="pedagio", uf="SP", elapsed_time_sec=125.0, is_digital=True,
+             created_at=utc_now() - timedelta(days=1, hours=8)),
+        dict(user_id=users[5].id, vehicle_id=vehicles[4].id, organization_id=None, plate="PQR-1122",
+             context="pedagio", uf="SP", elapsed_time_sec=138.0, is_digital=True,
+             created_at=utc_now() - timedelta(hours=4)),
     ]
 
     for r in records:
@@ -632,6 +656,9 @@ async def seed_weekly_goals(db, users: list[User]) -> None:
         # Ana motorista
         dict(user_id=users[4].id, week_start_date=week_start, target_transactions=12, current_transactions=2,
              target_co2_kg=3.0, current_co2_kg=0.30, is_completed=False),
+        # Pedro motorista
+        dict(user_id=users[5].id, week_start_date=week_start, target_transactions=10, current_transactions=2,
+             target_co2_kg=2.5, current_co2_kg=0.28, is_completed=False),
     ]
 
     for g in goals_data:

@@ -3,6 +3,6 @@ import { TransactionSimulatorPage } from "@/features/transactions/pages/Transact
 import { requireRoles } from "@/lib/route-guard";
 
 export const Route = createFileRoute("/simulador")({
-  beforeLoad: requireRoles(["admin"]),
+  beforeLoad: requireRoles(["admin", "motorista"]),
   component: TransactionSimulatorPage,
 });
